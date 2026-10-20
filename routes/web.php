@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Wisatawan\ProfileController;
+use App\Http\Controllers\Admin\WahanaController;
+use App\Http\Controllers\Admin\DaftarTiketController;
+use App\Http\Controllers\Admin\FasilitasController;
 
 // Halaman utama
 Route::get('/', function () {
@@ -82,5 +85,24 @@ Route::middleware('auth')->group(function () {
         return 'Dashboard Admin - SIMTicketingKRM';
     })->middleware('role:admin')
       ->name('admin.dashboard');
+
+    // Master Data Admin
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('wahana', WahanaController::class)
+        ->except(['show']);
+
+    Route::resource('daftar-tiket', DaftarTiketController::class)
+        ->parameters(['daftar-tiket' => 'daftarTiket'])
+        ->except(['show']);
+    
+    Route::patch('/fasilitas/{fasilitas}/toggle-status', [
+        \App\Http\Controllers\Admin\FasilitasController::class,
+        'toggleStatus',
+    ])->name('fasilitas.toggle-status');
+
+    Route::resource('fasilitas', FasilitasController::class)
+        ->parameters(['fasilitas' => 'fasilitas'])
+        ->except(['show']);
+    });
 
 });
