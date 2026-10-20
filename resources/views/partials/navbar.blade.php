@@ -1,23 +1,78 @@
+
 @php
-    // Beranda sudah tersedia. Tambahkan URL untuk menu lain setelah route dibuat.
+    $isPublicHome = request()->routeIs('home');
+
+    $berandaUrl = $isPublicHome
+        ? route('home')
+        : (
+            auth()->user()?->role === 'wisatawan'
+                ? route('wisatawan.beranda')
+                : route('home')
+        );
+
     $navItems = [
-        ['label' => 'Beranda', 'href' => url('/')],
-        ['label' => 'Destinasi', 'href' => null],
-        ['label' => 'Tiket', 'href' => null],
-        ['label' => 'Reservasi', 'href' => null],
-        ['label' => 'Berita', 'href' => null],
-        ['label' => 'Tentang', 'href' => null],
-        ['label' => 'Kontak', 'href' => null],
+        [
+            'label' => 'Beranda',
+            'href' => $berandaUrl ?? url('/'),
+            'active' => request()->routeIs(
+                'home',
+                'wisatawan.beranda'
+            ),
+        ],
+        [
+            'label' => 'Destinasi',
+            'href' => route('wisatawan.destinasi'),
+            'active' => request()->routeIs(
+                'wisatawan.destinasi',
+                'wahana.show'
+            ),
+        ],
+        [
+            'label' => 'Tiket',
+            'href' => null,
+            'active' => false,
+        ],
+        [
+            'label' => 'Reservasi',
+            'href' => null,
+            'active' => false,
+        ],
+        [
+            'label' => 'Berita',
+            'href' => route('wisatawan.berita.index'),
+            'active' => request()->routeIs(
+                'wisatawan.berita.*'
+            ),
+        ],
+        [
+            'label' => 'Tentang',
+            'href' => null,
+            'active' => false,
+        ],
+        [
+            'label' => 'Kontak',
+            'href' => null,
+            'active' => false,
+        ],
     ];
 
-    // Tautan akun diarahkan ke route yang memang sudah ada di project.
-    $accountRoute = match (auth()->user()?->role) {
-        'wisatawan' => 'wisatawan.profil',
-        'petugas' => 'petugas.dashboard',
-        'admin' => 'admin.dashboard',
-        default => 'login',
-    };
-    $accountLabel = auth()->check() ? 'Profil / Akun' : 'Masuk';
+    if ($isPublicHome) {
+        // Di "/" selalu tampil sebagai halaman publik
+        $accountRoute = 'login';
+        $accountLabel = 'Masuk';
+    } else {
+        // Di halaman lain ikuti autentikasi pengguna
+        $accountRoute = match (auth()->user()?->role) {
+            'wisatawan' => 'wisatawan.profil',
+            'petugas' => 'petugas.dashboard',
+            'admin' => 'admin.dashboard',
+            default => 'login',
+        };
+
+        $accountLabel = auth()->check()
+            ? 'Profil / Akun'
+            : 'Masuk';
+    }
 @endphp
 
 <header class="relative z-30">
@@ -46,20 +101,37 @@
             </a>
 
             <!-- Menu desktop -->
-            <nav class="hidden items-center gap-5 lg:flex" aria-label="Navigasi utama">
+            <nav class="hidden items-center gap-5 lg:flex"
+                aria-label="Navigasi utama">
+
                 @foreach ($navItems as $item)
+
                     @if ($item['href'])
                         <a href="{{ $item['href'] }}"
-                           class="text-[13px] font-semibold text-[#164B39] transition hover:text-[#2F795B] focus-visible:underline">
+                        @if($item['active'])
+                            aria-current="page"
+                        @endif
+                        class="text-[13px] transition-all duration-200
+                                hover:text-[#064631]
+                                {{ $item['active']
+                                    ? 'font-bold text-[#064631] underline decoration-2 underline-offset-[7px]'
+                                    : 'font-normal text-[#466459]' }}">
+
                             {{ $item['label'] }}
+
                         </a>
                     @else
-                        <span class="cursor-not-allowed text-[13px] text-[#64766C]"
-                              title="Halaman sedang dikembangkan">
+                        <span
+                            class="cursor-not-allowed text-[13px] font-normal text-[#64766C]"
+                            title="Halaman sedang dikembangkan">
+
                             {{ $item['label'] }}
+
                         </span>
                     @endif
+
                 @endforeach
+
             </nav>
 
             <div class="flex shrink-0 items-center gap-3">
@@ -84,16 +156,29 @@
                     <nav class="absolute right-0 top-full z-50 mt-2 w-52 rounded border border-[#D7E3DA] bg-white py-2 shadow-lg"
                          aria-label="Navigasi seluler">
                         @foreach ($navItems as $item)
-                            @if ($item['href'])
-                                <a href="{{ $item['href'] }}" class="block px-4 py-2 text-sm font-semibold text-[#064631] hover:bg-[#EEF4EE]">
-                                    {{ $item['label'] }}
-                                </a>
-                            @else
-                                <span class="block cursor-not-allowed px-4 py-2 text-sm text-[#77857D]" title="Halaman sedang dikembangkan">
-                                    {{ $item['label'] }}
-                                </span>
+                        @if ($item['href'])
+                            <a href="{{ $item['href'] }}"
+                            @if($item['active'])
+                                aria-current="page"
                             @endif
-                        @endforeach
+                            class="block px-4 py-2 text-sm
+                                    {{ $item['active']
+                                        ? 'bg-[#EEF4EE] font-bold text-[#064631] underline underline-offset-4'
+                                        : 'font-normal text-[#466459] hover:bg-[#EEF4EE]' }}">
+
+                                {{ $item['label'] }}
+
+                            </a>
+                        @else
+                            <span
+                                class="block cursor-not-allowed px-4 py-2 text-sm font-normal text-[#77857D]">
+
+                                {{ $item['label'] }}
+
+                            </span>
+                        @endif
+
+                    @endforeach
                     </nav>
                 </details>
             </div>
