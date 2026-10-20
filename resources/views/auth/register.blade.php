@@ -1,54 +1,162 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Wisatawan - SIMTicketingKRM</title>
-</head>
-<body>
-    <h1>Daftar Akun Wisatawan</h1>
+@extends('layouts.auth')
+
+@section('title', 'Daftar Wisatawan')
+
+@section('content')
+
+<div class="register-content">
+
+    <!-- Logo Daun -->
+    <div class="register-logo">
+        <svg width="32" height="32"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="#267658"
+             stroke-width="1.8"
+             stroke-linecap="round"
+             stroke-linejoin="round"
+             aria-hidden="true">
+            <path d="M20 4c-9 0-15 4-15 12a4 4 0 0 0 4 4c8 0 12-6 11-16Z"/>
+            <path d="M5 20c3-6 7-9 12-12"/>
+        </svg>
+    </div>
+
+    <h1>Daftar akun wisatawan</h1>
+
+    <p class="register-subtitle">
+        Buat akun untuk memesan tiket dan reservasi.
+    </p>
 
     @if ($errors->any())
-        <ul>
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
+        <div class="auth-alert" role="alert">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
     @endif
 
-    <form method="POST" action="{{ route('register.store') }}">
+    <form method="POST"
+          action="{{ route('register.store') }}"
+          class="auth-form register-form">
+
         @csrf
 
-        <input type="text" name="name"
-            value="{{ old('name') }}" placeholder="Nama Lengkap" required>
+        <div class="auth-field">
+            <label for="name">Nama Lengkap</label>
+            <input type="text"
+                   id="name"
+                   name="name"
+                   value="{{ old('name') }}"
+                   placeholder="Masukkan nama lengkap"
+                   autocomplete="name"
+                   required>
+        </div>
 
-        <input type="text" name="identity_number"
-            value="{{ old('identity_number') }}" placeholder="Nomor Identitas" required>
+        <div class="auth-field">
+            <label for="identity_number">
+                No. Identitas (KTP / Paspor)
+            </label>
+            <input type="text"
+                   id="identity_number"
+                   name="identity_number"
+                   value="{{ old('identity_number') }}"
+                   placeholder="Masukkan nomor identitas"
+                   required>
+        </div>
 
-        <input type="tel" name="phone"
-            value="{{ old('phone') }}" placeholder="Nomor Telepon" required>
+        <div class="auth-field">
+            <label for="phone">Nomor Telepon</label>
+            <input type="tel"
+                   id="phone"
+                   name="phone"
+                   value="{{ old('phone') }}"
+                   placeholder="Masukkan nomor telepon"
+                   autocomplete="tel"
+                   required>
+        </div>
 
-        <input type="email" name="email"
-            value="{{ old('email') }}" placeholder="Email" required>
+        <div class="auth-field">
+            <label for="email">Email</label>
+            <input type="email"
+                   id="email"
+                   name="email"
+                   value="{{ old('email') }}"
+                   placeholder="Masukkan alamat email"
+                   autocomplete="email"
+                   required>
+        </div>
 
-        <input type="password" name="password"
-            placeholder="Password" required>
+        <div class="auth-field">
+            <label for="password">Kata Sandi</label>
+            <input type="password"
+                   id="password"
+                   name="password"
+                   placeholder="Minimal 8 karakter"
+                   autocomplete="new-password"
+                   required>
+        </div>
 
-        <input type="password" name="password_confirmation"
-            placeholder="Konfirmasi Password" required>
+        <div class="auth-field">
+            <label for="password_confirmation">
+                Konfirmasi Kata Sandi
+            </label>
+            <input type="password"
+                   id="password_confirmation"
+                   name="password_confirmation"
+                   placeholder="Masukkan ulang kata sandi"
+                   autocomplete="new-password"
+                   required>
+        </div>
 
-        <select name="visitor_type" required>
-            <option value="">Pilih Jenis Wisatawan</option>
-            <option value="domestik">Domestik</option>
-            <option value="mancanegara">Mancanegara</option>
-        </select>
+        <div class="auth-field">
+            <label for="visitor_type">
+                Jenis Wisatawan
+            </label>
 
-        <label>
-            <input type="checkbox" name="terms" value="1" required>
-            Saya menyetujui syarat dan ketentuan.
+            <select id="visitor_type"
+                    name="visitor_type"
+                    required>
+                <option value="">
+                    Pilih jenis wisatawan
+                </option>
+
+                <option value="domestik"
+                    @selected(old('visitor_type') === 'domestik')>
+                    Domestik (WNI)
+                </option>
+
+                <option value="mancanegara"
+                    @selected(old('visitor_type') === 'mancanegara')>
+                    Mancanegara (WNA)
+                </option>
+            </select>
+        </div>
+
+        <label class="register-terms">
+            <input type="checkbox"
+                   name="terms"
+                   value="1"
+                   @checked(old('terms'))
+                   required>
+
+            <span>
+                Saya menyetujui syarat dan ketentuan penggunaan
+            </span>
         </label>
 
-        <button type="submit">Daftar</button>
+        <button type="submit" class="auth-button">
+            Daftar
+        </button>
+
     </form>
-</body>
-</html>
+
+    <p class="register-login">
+        Sudah punya akun?
+        <a href="{{ route('login') }}">Masuk</a>
+    </p>
+
+</div>
+
+@endsection

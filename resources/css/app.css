@@ -7,3 +7,73 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+
+/* ===== DESIGN SYSTEM KEBUN RAYA ===== */
+
+:root {
+    --color-primary: #063a2b;
+    --color-secondary: #2f795b;
+    --color-background: #fbfcf8;
+    --color-surface: #ffffff;
+    --color-text: #193b31;
+    --color-muted: #718079;
+    --color-border: #dae3dd;
+    --color-accent: #a1c977;
+
+    --container-width: 1180px;
+    --radius: 4px;
+}
+
+/* ===== GLOBAL ===== */
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--color-background);
+    color: var(--color-text);
+}
+
+.krm-container {
+    width: min(100% - 48px, var(--container-width));
+    margin-inline: auto;
+}
+
+.krm-page-title {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+/* ===== REUSABLE BUTTON ===== */
+
+.krm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    border: 1px solid var(--color-primary);
+    background: transparent;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.krm-btn-primary {
+    background: var(--color-primary);
+    color: white;
+}
+
+.krm-btn-primary:hover {
+    background: var(--color-secondary);
+}
+
+/* ===== REUSABLE CARD ===== */
+
+.krm-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: 24px;
+    border-radius: var(--radius);
+}
