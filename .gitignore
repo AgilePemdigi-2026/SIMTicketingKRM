@@ -3,6 +3,9 @@
 .env
 .env.backup
 .env.production
+.env.ticket-local
+/database/simticketingkrm_local.sqlite*
+/storage/framework/ticket-local/
 .phpactor.json
 .phpunit.result.cache
 /.codex
