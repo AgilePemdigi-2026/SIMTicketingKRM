@@ -4,11 +4,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Wisatawan\ProfileController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Wisatawan\WahanaController;
+use App\Http\Controllers\Wisatawan\BeritaController;
 
-// Halaman utama
-Route::get('/', function () {
-    return view('welcome');
-});
+// Home Publik bagi Pengguna Publik (Tidak Login)
+Route::get('/', [HomeController::class, 'index'])
+    ->name('home');
 
 // Route untuk pengguna yang belum login
 Route::middleware('guest')->group(function () {
@@ -49,11 +51,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])
         ->name('logout');
 
+    // Beranda Wisatawan — wajib login
+    Route::get('/beranda', [HomeController::class, 'index'])
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.beranda');
+
     // Dashboard Wisatawan
     Route::get('/wisatawan/dashboard', function () {
-        return view('wisatawan.dashboard');
+        return redirect()->route('wisatawan.beranda');
     })->middleware('role:wisatawan')
-      ->name('wisatawan.dashboard');
+    ->name('wisatawan.dashboard');
 
     // Profil Wisatawan
     Route::get('/wisatawan/profil', [
@@ -84,6 +91,31 @@ Route::middleware('auth')->group(function () {
         ProfileController::class, 'update'
     ])->middleware('role:wisatawan')
       ->name('wisatawan.profil.update');
+
+    // Halaman Destinasi
+    Route::get(
+        '/destinasi',
+        [\App\Http\Controllers\Wisatawan\DestinasiController::class, 'index']
+    )->middleware('role:wisatawan')
+    ->name('wisatawan.destinasi');
+
+    // Detail informasi wahana
+    Route::get('/wahana/{slug}', [
+        WahanaController::class, 'show'
+    ])->where('slug', '[a-z0-9-]+')
+    ->middleware('role:wisatawan')
+    ->name('wahana.show');
+
+    // Daftar Berita & Artikel
+    Route::get('/berita', [BeritaController::class, 'index'])
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.berita.index');
+
+    // Detail Artikel
+    Route::get('/berita/{slug}', [BeritaController::class, 'show'])
+        ->where('slug', '[a-z0-9-]+')
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.berita.show');
 
     // Dashboard Petugas
     Route::get('/petugas/dashboard', function () {
