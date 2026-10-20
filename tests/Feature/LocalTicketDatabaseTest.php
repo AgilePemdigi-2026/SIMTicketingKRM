@@ -62,26 +62,29 @@ class LocalTicketDatabaseTest extends LocalTicketTestCase
     }
 
     public function test_configuration_cache_blocks_setup_before_connection(): void
-    {
-        $this->app->instance('env', 'ticket-local');
-        config(['database.connections.sqlite.database' => database_path('simticketingkrm_local.sqlite')]);
-        // Existing file used only as a marker; never read or changed.
-        $original = $_ENV['APP_CONFIG_CACHE'] ?? null;
-        $_ENV['APP_CONFIG_CACHE'] = base_path('composer.json');
-        try {
-            DB::shouldReceive('connection')->never();
-            app(LocalTicketDatabase::class)->connection();
-            $this->fail('Configuration cache should be rejected.');
-        } catch (RuntimeException $exception) {
-            $this->assertStringContainsString('cache', $exception->getMessage());
-        } finally {
-            if ($original === null) {
-                unset($_ENV['APP_CONFIG_CACHE']);
-            } else {
-                $_ENV['APP_CONFIG_CACHE'] = $original;
-            }
-        }
+{
+    $this->app->instance('env', 'ticket-local');
+
+    config([
+        'database.connections.sqlite.database' =>
+            database_path('simticketingkrm_local.sqlite'),
+    ]);
+
+    // Simulasikan bahwa konfigurasi Laravel sudah di-cache.
+    $this->app->instance('config_loaded_from_cache', true);
+
+    DB::shouldReceive('connection')->never();
+
+    try {
+        app(LocalTicketDatabase::class)->connection();
+        $this->fail('Configuration cache should be rejected.');
+    } catch (RuntimeException $exception) {
+        $this->assertStringContainsString(
+            'cache',
+            strtolower($exception->getMessage())
+        );
     }
+}
 
     public function test_active_connection_cannot_be_silently_retargeted(): void
     {

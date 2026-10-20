@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Wisatawan\ProfileController;
+use App\Http\Controllers\Admin\WahanaController as AdminWahanaController;
+use App\Http\Controllers\Admin\DaftarTiketController;
+use App\Http\Controllers\Admin\FasilitasController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Wisatawan\WahanaController;
 use App\Http\Controllers\Wisatawan\BeritaController;
@@ -28,7 +31,7 @@ Route::middleware('guest')->group(function () {
 
     Route::post('/login', [LoginController::class, 'store'])
         ->name('login.store');
-        
+
     // Login Admin
     Route::get('/admin/login', function () {
         return view('auth.portal-login', [
@@ -67,13 +70,13 @@ Route::middleware('auth')->group(function () {
         ProfileController::class, 'show'
     ])->middleware('role:wisatawan')
       ->name('wisatawan.profil');
-    
+
     // Form Edit Profil Wisatawan
     Route::get('/wisatawan/profil/edit', [
         ProfileController::class, 'edit'
     ])->middleware('role:wisatawan')
       ->name('wisatawan.profil.edit');
-    
+
     // Halaman Ubah Password Wisatawan
     Route::get('/wisatawan/profil/password', [
         ProfileController::class, 'editPassword'
@@ -128,5 +131,25 @@ Route::middleware('auth')->group(function () {
         return 'Dashboard Admin - SIMTicketingKRM';
     })->middleware('role:admin')
       ->name('admin.dashboard');
+
+
+    // Master Data Admin
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::resource('wahana', AdminWahanaController::class)
+            ->except(['show']);
+
+        Route::resource('daftar-tiket', DaftarTiketController::class)
+            ->parameters(['daftar-tiket' => 'daftarTiket'])
+            ->except(['show']);
+
+        Route::patch('/fasilitas/{fasilitas}/toggle-status', [
+            FasilitasController::class,
+            'toggleStatus',
+        ])->name('fasilitas.toggle-status');
+
+        Route::resource('fasilitas', FasilitasController::class)
+            ->parameters(['fasilitas' => 'fasilitas'])
+            ->except(['show']);
+    });
 
 });
