@@ -47,7 +47,7 @@ class LoginController extends Controller
         return match (Auth::user()->role) {
             'admin' => redirect()->route('admin.dashboard'),
             'petugas' => redirect()->route('petugas.dashboard'),
-            'wisatawan' => redirect()->route('wisatawan.dashboard'),
+            'wisatawan' => redirect()->route('wisatawan.beranda'),
             default => $this->rejectUnknownRole($request),
         };
     }
