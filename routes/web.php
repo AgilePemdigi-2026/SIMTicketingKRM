@@ -26,6 +26,20 @@ Route::middleware('guest')->group(function () {
 
     Route::post('/login', [LoginController::class, 'store'])
         ->name('login.store');
+        
+    // Halaman Login Admin
+    Route::get('/admin/login', function () {
+        return view('auth.portal-login', [
+            'portalRole' => 'admin',
+        ]);
+    })->name('admin.login');
+
+    // Halaman Login Petugas
+    Route::get('/petugas/login', function () {
+        return view('auth.portal-login', [
+            'portalRole' => 'petugas',
+        ]);
+    })->name('petugas.login');
 });
 
 // Route untuk pengguna yang sudah login
