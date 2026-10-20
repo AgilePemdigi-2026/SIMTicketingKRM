@@ -1,0 +1,731 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+/* ==================================
+   RESET DAN WARNA
+================================== */
+
+:root {
+    --green: #0C4F3A;
+    --dark: #193B31;
+    --muted: #829188;
+    --border: #CAD9D0;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+}
+
+body.auth-page {
+    font-family: 'DM Sans', Arial, sans-serif;
+    color: var(--dark);
+    background: #ffffff;
+}
+
+/* ==================================
+   LAYOUT 2 KOLOM
+================================== */
+
+.auth-wrapper {
+    display: grid;
+    grid-template-columns: 50% 50%;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* ==================================
+   BAGIAN KIRI: GAMBAR MANGROVE
+================================== */
+
+.auth-image {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+    background: #143e30;
+}
+
+.auth-image::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(
+            to bottom,
+            rgba(4, 32, 23, 0.07) 0%,
+            rgba(4, 32, 23, 0.15) 45%,
+            rgba(4, 32, 23, 0.72) 100%
+        ),
+        url('/images/auth-mangrove.png');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    transform: scale(1.08); /* zoom foto */
+    transform-origin: center;
+}
+
+.auth-image-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 100vh;
+    padding: 60px;
+    color: #ffffff;
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.auth-brand-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 55px;
+    height: 55px;
+    border: 1.5px solid white;
+    border-radius: 50%;
+}
+
+.auth-brand-text strong,
+.auth-brand-text span {
+    display: block;
+    color: white;
+}
+
+.auth-brand-text strong {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.auth-brand-text span {
+    margin-top: 5px;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.auth-image-bottom {
+    padding-bottom: 12px;
+}
+
+.auth-image-bottom span {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 3px;
+}
+
+.auth-image-bottom h2 {
+    margin: 15px 0 0;
+    font-size: clamp(33px, 3.6vw, 58px);
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -1.5px;
+}
+
+/* ==================================
+   BAGIAN KANAN: FORMULIR
+================================== */
+
+.auth-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 65px 8%;
+    background: #ffffff;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 590px;
+    margin: 0 auto;
+}
+
+/* ==================================
+   LOGIN WISATAWAN
+================================== */
+
+.login-content {
+    width: 100%;
+}
+
+.login-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    margin-bottom: 14px;
+    border-radius: 50%;
+    background: #eaf2e9;
+}
+
+.login-content h1 {
+    margin: 0 0 15px;
+    font-size: clamp(30px, 2.55vw, 42px);
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: -1.2px;
+    color: var(--dark);
+}
+
+.login-subtitle {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--muted);
+}
+
+/* ==================================
+   INPUT DAN FORM
+================================== */
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 24px;
+    margin-top: 37px;
+}
+
+.auth-field {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+}
+
+.auth-field label {
+    display: block;
+    width: 100%;
+    color: #53695f;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.auth-field input,
+.auth-field select {
+    display: block;
+    width: 100%;
+    height: 65px;
+    padding: 0 17px;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    outline: none;
+    background: #ffffff;
+    color: var(--dark);
+    font: inherit;
+    font-size: 17px;
+}
+
+.auth-field input:focus,
+.auth-field select:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 2px rgba(12, 79, 58, .10);
+}
+
+.auth-field input::placeholder {
+    color: #a2afa6;
+}
+
+/* ==================================
+   LUPA PASSWORD
+================================== */
+
+.login-forgot {
+    width: 100%;
+    text-align: right;
+    color: #25724f;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+/* ==================================
+   TOMBOL MASUK
+================================== */
+
+.auth-button {
+    display: block;
+    width: 100%;
+    height: 60px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 0;
+    background: var(--green);
+    color: white;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.auth-button:hover {
+    background: #083d2d;
+}
+
+/* ==================================
+   LINK DAFTAR
+================================== */
+
+.login-register {
+    margin: 25px 0 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 16px;
+}
+
+.login-register a {
+    margin-left: 4px;
+    color: #267451;
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+/* ==================================
+   PESAN VALIDASI
+================================== */
+
+.auth-alert {
+    padding: 14px 18px;
+    margin-top: 20px;
+    background: #fff1f0;
+    border: 1px solid #f3c6c6;
+    color: #a12c2c;
+    font-size: 13px;
+}
+
+.auth-alert ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.auth-alert.success {
+    background: #eaf7ee;
+    border-color: #bee3cb;
+    color: #17633a;
+}
+
+/* ==================================
+   RESPONSIVE
+================================== */
+
+@media (max-width: 900px) {
+    .auth-wrapper {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-image {
+        display: none;
+    }
+
+    .auth-panel {
+        min-height: 100vh;
+        padding: 40px 25px;
+    }
+
+    .auth-container {
+        max-width: 590px;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-content h1 {
+        font-size: 30px;
+    }
+
+    .auth-field input,
+    .auth-field select {
+        height: 56px;
+    }
+
+    .auth-button {
+        height: 56px;
+    }
+}
+
+
+/* Penyesuaian laptop dengan layar sedang */
+@media (min-width: 901px) and (max-width: 1366px) {
+    .auth-panel {
+        padding: 40px 6%;
+    }
+
+    .auth-image-content {
+        padding: 40px;
+    }
+
+    .auth-image-bottom h2 {
+        font-size: clamp(30px, 3.2vw, 46px);
+    }
+}
+
+/* Penyesuaian laptop dengan layar pendek */
+@media (min-width: 901px) and (max-height: 700px) {
+    .auth-panel {
+        padding-top: 30px;
+        padding-bottom: 30px;
+    }
+
+    .auth-image-content {
+        padding-top: 30px;
+        padding-bottom: 30px;
+    }
+
+    .login-logo {
+        width: 58px;
+        height: 58px;
+    }
+
+    .auth-form {
+        gap: 16px;
+        margin-top: 24px;
+    }
+}
+
+
+/* ==================================
+   REGISTER WISATAWAN - DATA MOCK UP
+================================== */
+
+.register-content {
+    width: 100%;
+    padding: 10px 0;
+}
+
+.register-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    margin-bottom: 10px;
+    border-radius: 50%;
+    background: #eaf2e9;
+}
+
+.register-content h1 {
+    margin: 0 0 12px;
+    color: var(--dark);
+    font-size: clamp(30px, 2.55vw, 42px);
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -1.2px;
+}
+
+.register-subtitle {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+/* Register memiliki lebih banyak input */
+.register-form {
+    margin-top: 30px;
+    gap: 18px;
+}
+
+.register-form .auth-field {
+    gap: 8px;
+}
+
+.register-form .auth-field input,
+.register-form .auth-field select {
+    height: 58px;
+}
+
+.register-terms {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    color: var(--dark);
+    font-size: 13px;
+    line-height: 1.6;
+    cursor: pointer;
+}
+
+.register-terms input {
+    width: 16px;
+    height: 16px;
+    margin: 2px 0 0;
+    flex-shrink: 0;
+    accent-color: #0876f9;
+}
+
+.register-form .auth-button {
+    height: 56px;
+}
+
+.register-login {
+    margin: 14px 0 0;
+    color: var(--muted);
+    text-align: center;
+    font-size: 15px;
+}
+
+.register-login a {
+    margin-left: 4px;
+    color: #267451;
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+/* Layar laptop yang lebih kecil */
+@media (min-width: 901px) and (max-width: 1366px) {
+    .register-form {
+        gap: 14px;
+    }
+
+    .register-form .auth-field input,
+    .register-form .auth-field select {
+        height: 52px;
+    }
+
+    .register-logo {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+/* Smartphone */
+@media (max-width: 900px) {
+    .register-content {
+        padding: 0;
+    }
+
+    .register-content h1 {
+        font-size: 30px;
+    }
+
+    .register-form .auth-field input,
+    .register-form .auth-field select {
+        height: 54px;
+    }
+}
+
+/* Foto tetap terlihat saat halaman Register di-scroll */
+@media (min-width: 901px) {
+    .auth-image {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        align-self: start;
+    }
+}
+
+
+/* ======================================
+   LOGIN PORTAL ADMIN & PETUGAS
+   SESUAI DATA MOCK UP
+====================================== */
+
+body.portal-page {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'DM Sans', Arial, sans-serif;
+    color: #193B31;
+    background: #173F31;
+}
+
+.portal-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 48px 20px;
+
+    background-image:
+        linear-gradient(
+            rgba(8, 45, 31, 0.32),
+            rgba(8, 45, 31, 0.52)
+        ),
+        url('/images/auth-mangrove.png');
+
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+/* Kartu putih di tengah */
+.portal-card {
+    width: 100%;
+    max-width: 560px;
+    padding: 52px 52px 58px;
+    background: #FFFFFF;
+    border: 1px solid #DDE6DF;
+}
+
+/* Logo */
+.portal-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 78px;
+    height: 78px;
+    margin: 0 auto 26px;
+
+    border-radius: 50%;
+    background: #EAF2E9;
+}
+
+/* Judul dan deskripsi */
+.portal-heading {
+    text-align: center;
+}
+
+.portal-label {
+    display: block;
+    margin-bottom: 15px;
+
+    color: #337957;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.portal-heading h1 {
+    margin: 0 0 13px;
+
+    color: #193B31;
+    font-size: clamp(28px, 3vw, 36px);
+    font-weight: 500;
+    letter-spacing: -1.2px;
+    line-height: 1.2;
+}
+
+.portal-heading p {
+    margin: 0;
+    color: #87958D;
+    font-size: 13px;
+}
+
+/* Form */
+.portal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+
+    margin-top: 42px;
+}
+
+.portal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.portal-field label {
+    color: #53695F;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.portal-field input {
+    display: block;
+    width: 100%;
+    height: 56px;
+    padding: 0 15px;
+
+    border: 1px solid #CCDAD2;
+    border-radius: 0;
+    outline: none;
+
+    background: #FFFFFF;
+    color: #193B31;
+    font: inherit;
+    font-size: 15px;
+}
+
+.portal-field input:focus {
+    border-color: #0C4F3A;
+    box-shadow: 0 0 0 2px rgba(12, 79, 58, 0.1);
+}
+
+.portal-field input::placeholder {
+    color: #9CAFA4;
+}
+
+/* Tombol */
+.portal-button {
+    width: 100%;
+    height: 56px;
+    margin-top: 4px;
+
+    border: 0;
+    border-radius: 0;
+    background: #0C4F3A;
+
+    color: #FFFFFF;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.portal-button:hover {
+    background: #083D2D;
+}
+
+/* Footer dalam kartu */
+.portal-footer {
+    margin-top: 36px;
+    padding-top: 20px;
+    border-top: 1px solid #E2EAE4;
+
+    text-align: center;
+    color: #8B9990;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+/* Laptop dengan layar pendek */
+@media (max-height: 750px) {
+    .portal-wrapper {
+        padding-top: 24px;
+        padding-bottom: 24px;
+    }
+
+    .portal-card {
+        padding-top: 32px;
+        padding-bottom: 32px;
+    }
+
+    .portal-logo {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 16px;
+    }
+
+    .portal-form {
+        margin-top: 26px;
+        gap: 16px;
+    }
+}
+
+/* Smartphone */
+@media (max-width: 600px) {
+    .portal-wrapper {
+        padding: 24px 15px;
+    }
+
+    .portal-card {
+        padding: 35px 24px;
+    }
+
+    .portal-heading h1 {
+        font-size: 29px;
+    }
+}
