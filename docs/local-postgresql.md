@@ -75,6 +75,87 @@ lingkungan developer baru.
 9. Jalankan aplikasi Laravel setelah dependensi,
    APP_KEY, dan database selesai disiapkan.
 
+## Langkah Menjalankan Database Lokal
+
+Jalankan perintah berikut dari folder utama project.
+
+### 1. Siapkan Laravel
+
+Pastikan file `.env` sudah dibuat dari
+`.env.postgres.example` dan DB_PASSWORD sudah diisi.
+
+Jangan menimpa file `.env` yang sudah digunakan
+tanpa memeriksa konfigurasi sebelumnya.
+
+```powershell
+composer install
+php artisan key:generate
+```
+
+### 2. Jalankan PostgreSQL
+
+Pastikan Docker Desktop sudah aktif.
+
+```powershell
+docker compose -f compose.local.yaml up -d --wait
+```
+
+### 3. Buat Struktur Database
+
+```powershell
+php artisan migrate --no-interaction
+```
+
+### 4. Isi Data Awal
+
+```powershell
+php artisan db:seed --class=PostgreSqlDemoSeeder --no-interaction
+```
+
+Seeder akan mengisi:
+- 1 wahana
+- 3 tiket
+- 2 fasilitas
+- 1 relasi tiket-wahana
+- 2 sesi fasilitas
+
+Total 9 record master data dan relasi.
+
+Data merupakan snapshot pengujian dari
+PostgreSQL hasil migrasi Supabase.
+
+Seeder tidak membuat akun pengguna.
+Akun pengujian perlu disiapkan secara terpisah.
+
+File gambar fisik juga tidak disertakan
+dalam seeder.
+
+### 5. Jalankan Aplikasi
+
+```powershell
+npm ci
+php artisan storage:link
+php artisan serve
+```
+
+Jalankan Vite pada terminal terpisah:
+
+```powershell
+npm run dev
+```
+
+## Hasil Pengujian
+
+- Docker Compose berhasil menjalankan PostgreSQL 17.
+- Container pengujian berstatus Healthy.
+- Laravel berhasil terhubung ke database Compose.
+- Seluruh 13 migration berhasil dijalankan.
+- Seeder berhasil memasukkan 9 record.
+- Seeder berhasil menolak pengisian ulang
+  ketika tabel master sudah berisi data.
+
+Pengujian dilakukan pada database terpisah,
+tanpa mengubah database utama hasil migrasi.
 
 ## Keamanan Data Docker
 
