@@ -128,10 +128,9 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard Admin
     Route::get('/admin/dashboard', function () {
-        return 'Dashboard Admin - SIMTicketingKRM';
+        return view('admin.dashboard');
     })->middleware('role:admin')
-      ->name('admin.dashboard');
-
+    ->name('admin.dashboard');
 
     // Master Data Admin
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {

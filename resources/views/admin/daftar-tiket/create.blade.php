@@ -1,288 +1,391 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tambah Tiket</title>
+@extends('layouts.admin')
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f7fb;
-            color: #243047;
-            margin: 32px;
-        }
+@section('title', 'Tambah Tiket - Kebun Raya Mangrove')
 
-        .container {
-            max-width: 750px;
-            margin: auto;
-            background: white;
-            padding: 24px;
-            border-radius: 12px;
-        }
+@section('content')
+<div class="max-w-[1400px]">
 
-        label {
-            display: block;
-            margin-top: 16px;
-            margin-bottom: 6px;
-            font-weight: bold;
-        }
+    {{-- HEADER HALAMAN --}}
+    <div class="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-[#D4DED7] pb-6">
+        <div>
+            <p class="mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-[#668977]">
+                Administrasi Kebun Raya Mangrove
+            </p>
 
-        input, select, textarea {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 10px;
-            border: 1px solid #ccd2dc;
-            border-radius: 6px;
-            font-size: 14px;
-        }
+            <h1 class="text-2xl font-semibold text-[#173D30]">
+                Tambah Tiket
+            </h1>
 
-        textarea {
-            min-height: 90px;
-            resize: vertical;
-        }
+            <p class="mt-2 text-sm text-[#74877B]">
+                Tambahkan produk tiket wisata beserta harga dan ketentuannya.
+            </p>
+        </div>
 
-        .wahana-box {
-            margin-top: 8px;
-            padding: 14px;
-            border: 1px solid #ccd2dc;
-            border-radius: 8px;
-            background: #fafbfc;
-        }
+        <a
+            href="{{ route('admin.daftar-tiket.index') }}"
+            class="inline-flex items-center border border-[#8CAA98] bg-white px-4 py-2.5 text-xs font-semibold text-[#17523B] transition hover:bg-[#EDF4EE]"
+        >
+            ← Kembali
+        </a>
+    </div>
 
-        .wahana-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 0;
-            border-bottom: 1px solid #e5e7eb;
-            cursor: pointer;
-        }
+    {{-- ERROR VALIDASI --}}
+    @if ($errors->any())
+        <div class="mb-6 border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+            <p class="mb-2 font-bold">
+                Periksa kembali data yang dimasukkan:
+            </p>
 
-        .wahana-item:last-child {
-            border-bottom: none;
-        }
+            <ul class="list-inside list-disc space-y-1">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
-        .wahana-item input {
-            width: 18px;
-            height: 18px;
-            margin: 0;
-            cursor: pointer;
-        }
+    {{-- FORM TAMBAH TIKET --}}
+    <div class="max-w-[1120px] border border-[#DCE5DE] bg-white p-5 sm:p-7">
 
-        .wahana-item span {
-            font-weight: normal;
-        }
+        <div class="mb-6 border-b border-[#E0E8E2] pb-4">
+            <h2 class="text-xs font-bold uppercase tracking-[0.09em] text-[#294A3C]">
+                Form Tambah Tiket
+            </h2>
 
-        .wahana-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
+            <p class="mt-2 text-xs text-[#89988E]">
+                Isi data produk tiket dengan lengkap.
+            </p>
+        </div>
 
-        .wahana-count {
-            font-size: 13px;
-            color: #176b45;
-            font-weight: bold;
-        }
-
-        .btn-clear {
-            border: none;
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 7px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .help {
-            display: block;
-            margin-top: 8px;
-            color: #667085;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 14px;
-            margin-top: 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .btn-save {
-            background: #176b45;
-            color: white;
-        }
-
-        .btn-back {
-            background: #e5e7eb;
-            color: #243047;
-        }
-
-        .error {
-            color: #b42318;
-        }
-
-        @media (max-width: 600px) {
-            body {
-                margin: 12px;
-            }
-
-            .container {
-                padding: 16px;
-            }
-        }
-    </style>
-</head>
-
-<body>
-    <main class="container">
-        <h1>Tambah Tiket</h1>
-        <p>Isi informasi tiket yang akan ditambahkan.</p>
-
-        @if ($errors->any())
-            <div class="error">
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <form action="{{ route('admin.daftar-tiket.store') }}" method="POST">
+        <form
+            action="{{ route('admin.daftar-tiket.store') }}"
+            method="POST"
+            class="space-y-6"
+        >
             @csrf
 
-            <label>Wahana yang Termasuk dalam Tiket</label>
+            {{-- NAMA, KATEGORI, WISATAWAN --}}
+            <div class="grid gap-5 md:grid-cols-3">
 
-            <div class="wahana-info">
-                <span class="wahana-count" id="wahana-count">
-                    0 wahana dipilih
-                </span>
-
-                <button type="button" class="btn-clear" id="clear-wahana">
-                    Batalkan Semua Pilihan
-                </button>
-            </div>
-
-            <div class="wahana-box">
-                @forelse ($wahana as $item)
-                    <label class="wahana-item">
-                        <input
-                            type="checkbox"
-                            name="wahana_ids[]"
-                            value="{{ $item->id_wahana }}"
-                            {{ in_array($item->id_wahana, old('wahana_ids', [])) ? 'checked' : '' }}
-                        >
-                        <span>{{ $item->nama_wahana }}</span>
+                {{-- NAMA TIKET --}}
+                <div>
+                    <label for="nama_tiket"
+                           class="mb-2 block text-xs font-semibold text-[#415C4D]">
+                        Nama Tiket <span class="text-red-500">*</span>
                     </label>
-                @empty
-                    <p>Belum ada data wahana.</p>
-                @endforelse
+
+                    <input
+                        type="text"
+                        id="nama_tiket"
+                        name="nama_tiket"
+                        value="{{ old('nama_tiket') }}"
+                        maxlength="100"
+                        placeholder="Contoh: Tiket Masuk Saja"
+                        required
+                        class="w-full border border-[#D3DED5] bg-white px-3 py-3 text-sm text-[#244737] outline-none transition focus:border-[#22704D] focus:ring-1 focus:ring-[#22704D]"
+                    >
+
+                    @error('nama_tiket')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- KATEGORI TIKET --}}
+                <div>
+                    <label for="kategori_tiket"
+                           class="mb-2 block text-xs font-semibold text-[#415C4D]">
+                        Kategori Tiket <span class="text-red-500">*</span>
+                    </label>
+
+                    <select
+                        id="kategori_tiket"
+                        name="kategori_tiket"
+                        required
+                        class="w-full border border-[#D3DED5] bg-white px-3 py-3 text-sm text-[#244737] outline-none transition focus:border-[#22704D] focus:ring-1 focus:ring-[#22704D]"
+                    >
+                        <option value="">-- Pilih Kategori --</option>
+
+                        <option
+                            value="Tiket Masuk"
+                            {{ old('kategori_tiket') == 'Tiket Masuk' ? 'selected' : '' }}
+                        >
+                            Tiket Masuk
+                        </option>
+
+                        <option
+                            value="Tiket Wahana"
+                            {{ old('kategori_tiket') == 'Tiket Wahana' ? 'selected' : '' }}
+                        >
+                            Tiket Wahana
+                        </option>
+                    </select>
+
+                    @error('kategori_tiket')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- JENIS WISATAWAN --}}
+                <div>
+                    <label for="kategori_wisatawan"
+                           class="mb-2 block text-xs font-semibold text-[#415C4D]">
+                        Jenis Wisatawan <span class="text-red-500">*</span>
+                    </label>
+
+                    <select
+                        id="kategori_wisatawan"
+                        name="kategori_wisatawan"
+                        required
+                        class="w-full border border-[#D3DED5] bg-white px-3 py-3 text-sm text-[#244737] outline-none transition focus:border-[#22704D] focus:ring-1 focus:ring-[#22704D]"
+                    >
+                        <option value="">-- Pilih Jenis Wisatawan --</option>
+
+                        <option
+                            value="Domestik (WNI)"
+                            {{ old('kategori_wisatawan') == 'Domestik (WNI)' ? 'selected' : '' }}
+                        >
+                            Domestik (WNI)
+                        </option>
+
+                        <option
+                            value="Mancanegara (WNA)"
+                            {{ old('kategori_wisatawan') == 'Mancanegara (WNA)' ? 'selected' : '' }}
+                        >
+                            Mancanegara (WNA)
+                        </option>
+                    </select>
+
+                    @error('kategori_wisatawan')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
             </div>
 
-            <small class="help">
-                Centang wahana yang ingin dimasukkan. Klik kembali centangnya
-                untuk membatalkan pilihan. Tiket masuk saja boleh tanpa wahana.
-            </small>
+            {{-- HARGA DAN KUOTA --}}
+            <div class="grid gap-5 md:grid-cols-3">
 
-            <label for="nama_tiket">Nama Tiket</label>
-            <input
-                type="text"
-                id="nama_tiket"
-                name="nama_tiket"
-                value="{{ old('nama_tiket') }}"
-                maxlength="100"
-                required
-            >
+                {{-- HARGA DEWASA --}}
+                <div>
+                    <label for="harga_dewasa"
+                           class="mb-2 block text-xs font-semibold text-[#415C4D]">
+                        Harga Dewasa (Rp) <span class="text-red-500">*</span>
+                    </label>
 
-            <label for="kategori_tiket">Kategori Tiket</label>
-            <select id="kategori_tiket" name="kategori_tiket" required>
-                <option value="">-- Pilih Kategori --</option>
-                <option value="Tiket Masuk"
-                    {{ old('kategori_tiket') == 'Tiket Masuk' ? 'selected' : '' }}>
-                    Tiket Masuk
-                </option>
-                <option value="Tiket Wahana"
-                    {{ old('kategori_tiket') == 'Tiket Wahana' ? 'selected' : '' }}>
-                    Tiket Wahana
-                </option>
-            </select>
+                    <input
+                        type="number"
+                        id="harga_dewasa"
+                        name="harga_dewasa"
+                        value="{{ old('harga_dewasa') }}"
+                        min="0"
+                        step="0.01"
+                        placeholder="Contoh: 25000"
+                        required
+                        class="w-full border border-[#D3DED5] bg-white px-3 py-3 text-sm text-[#244737] outline-none transition focus:border-[#22704D] focus:ring-1 focus:ring-[#22704D]"
+                    >
 
-            <label for="kuota">Kuota</label>
-            <input
-                type="number"
-                id="kuota"
-                name="kuota"
-                value="{{ old('kuota') }}"
-                min="0"
-                required
-            >
+                    @error('harga_dewasa')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
 
-            <label for="kategori_wisatawan">Kategori Wisatawan</label>
-            <select id="kategori_wisatawan" name="kategori_wisatawan" required>
-                <option value="">-- Pilih Kategori Wisatawan --</option>
-                <option value="Domestik (WNI)"
-                    {{ old('kategori_wisatawan') == 'Domestik (WNI)' ? 'selected' : '' }}>
-                    Domestik (WNI)
-                </option>
-                <option value="Mancanegara (WNA)"
-                    {{ old('kategori_wisatawan') == 'Mancanegara (WNA)' ? 'selected' : '' }}>
-                    Mancanegara (WNA)
-                </option>
-            </select>
+                {{-- HARGA ANAK --}}
+                <div>
+                    <label for="harga_anak"
+                           class="mb-2 block text-xs font-semibold text-[#415C4D]">
+                        Harga Anak (Rp) <span class="text-red-500">*</span>
+                    </label>
 
-            <label for="harga_dewasa">Harga Dewasa (Rp)</label>
-            <input
-                type="number"
-                id="harga_dewasa"
-                name="harga_dewasa"
-                value="{{ old('harga_dewasa') }}"
-                min="0"
-                step="0.01"
-                required
-            >
+                    <input
+                        type="number"
+                        id="harga_anak"
+                        name="harga_anak"
+                        value="{{ old('harga_anak') }}"
+                        min="0"
+                        step="0.01"
+                        placeholder="Contoh: 15000"
+                        required
+                        class="w-full border border-[#D3DED5] bg-white px-3 py-3 text-sm text-[#244737] outline-none transition focus:border-[#22704D] focus:ring-1 focus:ring-[#22704D]"
+                    >
 
-            <label for="harga_anak">Harga Anak (Rp)</label>
-            <input
-                type="number"
-                id="harga_anak"
-                name="harga_anak"
-                value="{{ old('harga_anak') }}"
-                min="0"
-                step="0.01"
-                required
-            >
+                    @error('harga_anak')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
 
-            <label for="status_aktif">Status</label>
-            <select id="status_aktif" name="status_aktif" required>
-                <option value="1" {{ old('status_aktif', '1') == '1' ? 'selected' : '' }}>
-                    Aktif
-                </option>
-                <option value="0" {{ old('status_aktif') == '0' ? 'selected' : '' }}>
-                    Tidak Aktif
-                </option>
-            </select>
+                {{-- KUOTA --}}
+                <div>
+                    <label for="kuota"
+                           class="mb-2 block text-xs font-semibold text-[#415C4D]">
+                        Kuota <span class="text-red-500">*</span>
+                    </label>
 
-            <label for="ketentuan">Ketentuan (opsional)</label>
-            <textarea id="ketentuan" name="ketentuan">{{ old('ketentuan') }}</textarea>
+                    <input
+                        type="number"
+                        id="kuota"
+                        name="kuota"
+                        value="{{ old('kuota') }}"
+                        min="0"
+                        placeholder="Contoh: 500"
+                        required
+                        class="w-full border border-[#D3DED5] bg-white px-3 py-3 text-sm text-[#244737] outline-none transition focus:border-[#22704D] focus:ring-1 focus:ring-[#22704D]"
+                    >
 
-            <button type="submit" class="btn btn-save">Simpan Tiket</button>
-            <a href="{{ route('admin.daftar-tiket.index') }}" class="btn btn-back">
-                Batal
-            </a>
+                    @error('kuota')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+            </div>
+
+            {{-- KETENTUAN --}}
+            <div>
+                <label for="ketentuan"
+                       class="mb-2 block text-xs font-semibold text-[#415C4D]">
+                    Aturan Penggunaan / Ketentuan
+                </label>
+
+                <textarea
+                    id="ketentuan"
+                    name="ketentuan"
+                    rows="4"
+                    placeholder="Tuliskan aturan dan ketentuan penggunaan tiket..."
+                    class="w-full resize-y border border-[#D3DED5] bg-white px-3 py-3 text-sm leading-6 text-[#244737] outline-none transition focus:border-[#22704D] focus:ring-1 focus:ring-[#22704D]"
+                >{{ old('ketentuan') }}</textarea>
+
+                @error('ketentuan')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- PILIH WAHANA --}}
+            <fieldset class="border border-[#DBE7DE] bg-[#FAFCFA] p-4 sm:p-5">
+
+                <legend class="px-2 text-xs font-bold uppercase tracking-[0.07em] text-[#294A3C]">
+                    Wahana yang Termasuk dalam Tiket
+                </legend>
+
+                <p class="mb-4 text-xs leading-6 text-[#829589]">
+                    Centang wahana yang termasuk dalam paket tiket.
+                    Tiket masuk saja boleh tanpa wahana.
+                </p>
+
+                <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+
+                    <span
+                        id="wahana-count"
+                        class="text-xs font-bold text-[#236247]"
+                        aria-live="polite"
+                    >
+                        0 wahana dipilih
+                    </span>
+
+                    <button
+                        type="button"
+                        id="clear-wahana"
+                        class="border border-[#E9CCBC] bg-white px-3 py-2 text-xs font-semibold text-[#B65B36] transition hover:bg-[#FFF2ED]"
+                    >
+                        Batalkan Semua Pilihan
+                    </button>
+
+                </div>
+
+                <div class="max-h-[220px] space-y-1 overflow-y-auto border border-[#D3DED5] bg-white p-3">
+
+                    @forelse ($wahana as $item)
+                        <label class="flex cursor-pointer items-center gap-3 border-b border-[#EDF1ED] px-2 py-3 last:border-0 hover:bg-[#F5F9F6]">
+
+                            <input
+                                type="checkbox"
+                                name="wahana_ids[]"
+                                value="{{ $item->id_wahana }}"
+                                {{ in_array($item->id_wahana, old('wahana_ids', [])) ? 'checked' : '' }}
+                                class="h-4 w-4 accent-[#176B45]"
+                            >
+
+                            <span class="text-sm text-[#355746]">
+                                {{ $item->nama_wahana }}
+                            </span>
+
+                        </label>
+                    @empty
+                        <p class="py-5 text-center text-sm text-[#829589]">
+                            Belum ada data wahana.
+                        </p>
+                    @endforelse
+
+                </div>
+
+                @error('wahana_ids')
+                    <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+
+                @error('wahana_ids.*')
+                    <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+
+            </fieldset>
+
+            {{-- STATUS --}}
+            <div class="max-w-[350px]">
+                <label for="status_aktif"
+                       class="mb-2 block text-xs font-semibold text-[#415C4D]">
+                    Status <span class="text-red-500">*</span>
+                </label>
+
+                <select
+                    id="status_aktif"
+                    name="status_aktif"
+                    required
+                    class="w-full border border-[#D3DED5] bg-white px-3 py-3 text-sm text-[#244737] outline-none transition focus:border-[#22704D] focus:ring-1 focus:ring-[#22704D]"
+                >
+                    <option
+                        value="1"
+                        {{ old('status_aktif', '1') == '1' ? 'selected' : '' }}
+                    >
+                        Aktif
+                    </option>
+
+                    <option
+                        value="0"
+                        {{ old('status_aktif') == '0' ? 'selected' : '' }}
+                    >
+                        Tidak Aktif
+                    </option>
+                </select>
+
+                @error('status_aktif')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- TOMBOL SIMPAN DAN BATAL --}}
+            <div class="flex flex-wrap items-center gap-3 border-t border-[#E0E8E2] pt-5">
+
+                <button
+                    type="submit"
+                    class="inline-flex min-h-11 items-center justify-center bg-[#064631] px-6 py-3 text-xs font-bold text-white transition hover:bg-[#237052]"
+                >
+                    Simpan Tiket
+                </button>
+
+                <a
+                    href="{{ route('admin.daftar-tiket.index') }}"
+                    class="inline-flex min-h-11 items-center justify-center border border-[#91AD9B] bg-white px-6 py-3 text-xs font-bold text-[#17523B] transition hover:bg-[#EFF5F0]"
+                >
+                    Batal
+                </a>
+
+            </div>
+
         </form>
-    </main>
+    </div>
+</div>
+@endsection
 
-    <script>
+@push('scripts')
+<script>
+    (function () {
         const wahanaCheckboxes = document.querySelectorAll(
             'input[name="wahana_ids[]"]'
         );
@@ -311,6 +414,6 @@
         });
 
         updateWahanaCount();
-    </script>
-</body>
-</html>
+    })();
+</script>
+@endpush
