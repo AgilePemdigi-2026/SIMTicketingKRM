@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Wisatawan;
 
 use App\Http\Controllers\Controller;
 use Illuminate\View\View;
+use App\Models\DaftarTiket;
 
 class DestinasiController extends Controller
 {
@@ -34,17 +35,35 @@ class DestinasiController extends Controller
                 ],
                 [
                     'judul' => 'Informasi Tiket',
-                    'isi' => 'Tiket masuk: Rp 25.000 (Dewasa) / Rp 15.000 (Anak). Tersedia berbagai paket tiket terusan dengan wahana pilihan.',
+                    'isi' => 'Harga tiket mengikuti master data tiket yang aktif pada aplikasi. Lihat rincian jenis tiket dan harga pada panel Harga Tiket.',
                 ],
             ],
         ];
 
-        // Nilai harga mengikuti *mockup*, bukan pembacaan database ataupun tarif resmi.
-        $hargaTiket = [
-            ['label' => 'Dewasa Domestik', 'harga' => 'Rp 25.000'],
-            ['label' => 'Anak Domestik', 'harga' => 'Rp 15.000'],
-            ['label' => 'Dewasa Asing', 'harga' => 'Rp 50.000'],
-        ];
+        $hargaTiket = DaftarTiket::query()
+            ->where('status_aktif', 1)
+            ->orderBy('id_tiket')
+            ->get()
+            ->flatMap(function (DaftarTiket $tiket) {
+                return [
+                    [
+                        'label' => $tiket->nama_tiket
+                            . ' - Dewasa (' . $tiket->kategori_wisatawan . ')',
+                        'harga' => 'Rp ' . number_format(
+                            (float) $tiket->harga_dewasa, 0, ',', '.'
+                        ),
+                    ],
+                    [
+                        'label' => $tiket->nama_tiket
+                            . ' - Anak (' . $tiket->kategori_wisatawan . ')',
+                        'harga' => 'Rp ' . number_format(
+                            (float) $tiket->harga_anak, 0, ',', '.'
+                        ),
+                    ],
+                ];
+            })
+            ->all();
+
 
         // Foto hasil cuplikan mockup. Ganti foto asli saat aset disediakan tim.
         $galeri = [
