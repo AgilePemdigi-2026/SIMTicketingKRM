@@ -69,7 +69,7 @@
             </section>
         </div>
 
-        {{-- Panel harga sebelah kanan; belum terhubung ke master tiket Dana. --}}
+        {{-- Panel harga sebelah kanan --}}
         <aside class="border border-[#D6E1DA] border-t-[5px] border-t-[#A1C977] bg-white p-5 sm:p-6 lg:sticky lg:top-6"
                aria-labelledby="harga-tiket-title">
             <h2 id="harga-tiket-title" class="mb-4 text-[12px] font-bold uppercase tracking-[0.12em] text-[#17392E]">
@@ -77,12 +77,18 @@
             </h2>
 
             <dl>
-                @foreach ($hargaTiket as $harga)
+                @forelse ($hargaTiket as $harga)
                     <div class="flex items-start justify-between gap-2 border-b border-[#DEE6E0] py-3 text-[13px]">
                         <dt class="text-[#445F51]">{{ $harga['label'] }}</dt>
                         <dd class="shrink-0 font-bold text-[#193B31]">{{ $harga['harga'] }}</dd>
                     </div>
-                @endforeach
+                @empty
+                    <div class="py-4">
+                        <dt class="text-sm text-[#718079]">
+                            Harga tiket belum tersedia.
+                        </dt>
+                    </div>
+                @endforelse
             </dl>
 
             @if (\Illuminate\Support\Facades\Route::has('tiket.index'))
@@ -110,7 +116,7 @@
             @endif
 
             <p class="mt-4 text-[11px] leading-5 text-[#708176]">
-                *Harga pada halaman ini merupakan data contoh dari mockup, belum tarif resmi atau data master.
+                *Harga diambil dari master data tiket aplikasi untuk pengujian. Tarif resmi mengikuti konfirmasi pengelola.
             </p>
         </aside>
     </div>

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Wahana;
+use App\Models\Fasilitas;
+
 class HomeController extends Controller
 {
     /**
@@ -11,52 +14,45 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $wahana = [
-            [
-                'slug' => 'kebun-raya-mangrove',
-                'nama' => 'Kebun Raya Mangrove',
-                'deskripsi' => 'Destinasi singkat mengenal keindahan mangrove dan pengalaman yang ditawarkan.',
-                'gambar' => 'images/home/boardwalk.jpg',
-            ],
-            [
-                'slug' => 'sepeda-air',
-                'nama' => 'Sepeda Air',
-                'deskripsi' => 'Nikmati suasana danau dan hijaunya kawasan mangrove dari sepeda air.',
-                'gambar' => 'images/home/water.jpg',
-            ],
-            [
-                'slug' => 'atv',
-                'nama' => 'ATV',
-                'deskripsi' => 'Petualangan singkat melintasi jalur alam dengan wahana ATV.',
-                'gambar' => 'images/home/atv.jpg',
-            ],
-            [
-                'slug' => 'mobil-golf',
-                'nama' => 'Mobil Golf',
-                'deskripsi' => 'Jelajahi kawasan dengan nyaman menggunakan mobil golf.',
-                'gambar' => 'images/home/boardwalk.jpg',
-            ],
-            [
-                'slug' => 'perahu-air',
-                'nama' => 'Perahu Air',
-                'deskripsi' => 'Susuri perairan mangrove dan nikmati ekosistem pesisir lebih dekat.',
-                'gambar' => 'images/home/river.jpg',
-            ],
-            [
-                'slug' => 'sepeda-listrik',
-                'nama' => 'Sepeda Listrik',
-                'deskripsi' => 'Berkeliling kawasan hijau dengan sepeda listrik yang ramah lingkungan.',
-                'gambar' => 'images/home/atv.jpg',
-            ],
-        ];
+        $wahana = Wahana::query()
+            ->where('status_aktif', 1)
+            ->orderBy('id_wahana')
+            ->get()
+            ->map(function (Wahana $item) {
+                $foto = $item->foto;
 
-        $fasilitas = [
-            ['nama' => 'Indoor / Auditorium', 'kapasitas' => 'Kapasitas 200 orang', 'gambar' => 'images/home/boardwalk.jpg'],
-            ['nama' => 'Area Outdoor', 'kapasitas' => 'Kapasitas 500 orang', 'gambar' => 'images/home/atv.jpg'],
-            ['nama' => 'Pujasera / Food Court', 'kapasitas' => '30 kios', 'gambar' => 'images/home/water.jpg'],
-            ['nama' => 'Area Reklame', 'kapasitas' => 'Media promosi di area publik', 'gambar' => 'images/home/river.jpg'],
-            ['nama' => 'Area Pre-wedding', 'kapasitas' => 'Sesuai kebutuhan', 'gambar' => 'images/home/atv.jpg'],
-        ];
+                $gambar = $foto && is_file(public_path('storage/' . $foto))
+                    ? 'storage/' . $foto
+                    : 'images/home/boardwalk.jpg';
+
+                return [
+                    'slug' => (string) $item->id_wahana,
+                    'nama' => $item->nama_wahana,
+                    'deskripsi' => $item->deskripsi
+                        ?: 'Deskripsi wahana belum tersedia.',
+                    'gambar' => $gambar,
+                ];
+            })
+            ->all();
+
+        $fasilitas = Fasilitas::query()
+            ->where('status_fasilitas', 1)
+            ->orderBy('id_fasilitas')
+            ->get()
+            ->map(function (Fasilitas $item) {
+                $foto = $item->foto_fasilitas;
+
+                $gambar = $foto && is_file(public_path('storage/' . $foto))
+                    ? 'storage/' . $foto
+                    : 'images/home/boardwalk.jpg';
+
+                return [
+                    'nama' => $item->nama_fasilitas,
+                    'kapasitas' => 'Kapasitas ' . $item->kapasitas_fasilitas . ' orang',
+                    'gambar' => $gambar,
+                ];
+            })
+            ->all();
 
         $galeri = [
             'images/home/boardwalk.jpg',
