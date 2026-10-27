@@ -10,13 +10,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['ticket_order_id', 'ticket_reference', 'ticket_name', 'ticket_category', 'adult_quantity', 'child_quantity', 'adult_unit_price', 'child_unit_price', 'subtotal'])]
 class TicketOrderItem extends Model
 {
-    protected $connection = 'sqlite';
-
     protected function casts(): array
     {
         return [
             'adult_quantity' => 'integer', 'child_quantity' => 'integer',
-            'adult_unit_price' => 'integer', 'child_unit_price' => 'integer', 'subtotal' => 'integer',
+            'adult_unit_price' => 'decimal:2', 'child_unit_price' => 'decimal:2', 'subtotal' => 'decimal:2',
         ];
     }
 

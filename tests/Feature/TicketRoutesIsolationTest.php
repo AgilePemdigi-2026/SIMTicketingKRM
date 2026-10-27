@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Bootstrap\LoadConfiguration;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
@@ -15,10 +16,7 @@ class TicketRoutesIsolationTest extends TestCase
         $this->traitsUsedByTest = class_uses_recursive(static::class);
         $app->afterBootstrapping(LoadConfiguration::class, function ($app) {
             $app['config']->set([
-                'ticket_purchase.local_enabled' => false,
-                'database.default' => 'sqlite',
-                'database.connections.sqlite.url' => null,
-                'database.connections.sqlite.database' => ':memory:',
+                'ticket_purchase.master_enabled' => false,
                 'session.driver' => 'array',
                 'cache.default' => 'array',
             ]);
@@ -28,12 +26,20 @@ class TicketRoutesIsolationTest extends TestCase
         return $app;
     }
 
-    public function test_dummy_routes_are_not_registered_without_explicit_local_mode(): void
+    public function test_purchase_routes_are_not_registered_when_master_mode_is_disabled(): void
     {
         $this->assertFalse(Route::has('ticket-local.index'));
         $this->assertFalse(Route::has('ticket-local.store'));
         $this->assertFalse(Route::has('ticket-local.show'));
+        $this->assertFalse(Route::has('ticket-purchase.index'));
+        $this->assertFalse(Route::has('ticket-purchase.store'));
+        $this->assertFalse(Route::has('ticket-purchase.show'));
         $this->assertFalse(Route::has('tiket.index'));
         $this->getJson('/wisatawan/pembelian-tiket')->assertNotFound();
+    }
+
+    public function test_retired_demo_command_is_not_available(): void
+    {
+        $this->assertArrayNotHasKey('ticket:local-setup', Artisan::all());
     }
 }

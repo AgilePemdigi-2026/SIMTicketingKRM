@@ -3,7 +3,10 @@
 .env
 .env.backup
 .env.production
+# Keep retired demo secrets/data ignored on other members' laptops.
 .env.ticket-local
+.env.postgres.local
+.env.supabase.backup.*
 /database/simticketingkrm_local.sqlite*
 /storage/framework/ticket-local/
 .phpactor.json

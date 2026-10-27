@@ -14,14 +14,14 @@ class TicketPurchaseController extends Controller
 {
     public function index(TicketCatalogProvider $catalog): JsonResponse
     {
-        return response()->json(['is_dummy' => true, 'currency' => 'IDR', 'tickets' => $catalog->activeTickets()]);
+        return response()->json(['is_dummy' => false, 'currency' => 'IDR', 'tickets' => $catalog->activeTickets()]);
     }
 
     public function store(CheckoutTicketPurchaseRequest $request, TicketPurchaseService $service): JsonResponse
     {
         $order = $service->create($request->user(), $request->validated());
 
-        return response()->json(['is_dummy' => true, 'currency' => 'IDR', 'order' => $order], 201);
+        return response()->json(['is_dummy' => false, 'currency' => 'IDR', 'order' => $order], 201);
     }
 
     public function show(Request $request, string $code): JsonResponse
@@ -29,6 +29,6 @@ class TicketPurchaseController extends Controller
         $order = TicketOrder::where('user_id', $request->user()->getKey())
             ->where('code', $code)->with('items.visitors')->firstOrFail();
 
-        return response()->json(['is_dummy' => true, 'currency' => 'IDR', 'order' => $order]);
+        return response()->json(['is_dummy' => false, 'currency' => 'IDR', 'order' => $order]);
     }
 }
