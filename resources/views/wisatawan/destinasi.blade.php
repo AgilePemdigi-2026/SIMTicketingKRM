@@ -50,21 +50,33 @@
                 @endforeach
             </div>
 
-            {{-- Galeri enam foto seperti desain. --}}
+
+            {{-- GALERI DESTINASI DARI POSTGRESQL --}}
             <section class="mt-8" aria-labelledby="galeri-destinasi-title">
-                <h2 id="galeri-destinasi-title"
-                    class="mb-3 text-sm font-extrabold uppercase tracking-[0.09em] text-[#193B31]">
+                <h2
+                    id="galeri-destinasi-title"
+                    class="mb-3 text-sm font-extrabold uppercase tracking-[0.09em] text-[#193B31]"
+                >
                     Galeri
                 </h2>
                 <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5">
-                    @foreach ($galeri as $foto)
+                    @forelse ($galeri as $foto)
                         <div class="overflow-hidden bg-[#E4ECE6]">
-                            <img src="{{ asset($foto['gambar']) }}"
-                                 alt="{{ $foto['alt'] }}"
-                                 class="h-28 w-full object-cover transition-transform duration-300 hover:scale-[1.04] sm:h-36 lg:h-[156px]"
-                                 loading="lazy">
+                            <img
+                                src="{{ asset($foto['gambar']) }}"
+                                alt="{{ $foto['alt'] }}"
+                                class="h-28 w-full object-cover transition-transform duration-300 hover:scale-[1.04] sm:h-36 lg:h-[156px]"
+                                loading="lazy"
+                            >
                         </div>
-                    @endforeach
+                    @empty
+                        <div class="col-span-full border border-[#D6E1DA] bg-white px-6 py-10 text-center">
+
+                            <p class="text-sm text-[#718079]">
+                                Belum ada foto galeri yang dipublikasikan.
+                            </p>
+                        </div>
+                    @endforelse
                 </div>
             </section>
         </div>

@@ -62,6 +62,11 @@
                         'route' => 'admin.fasilitas.index',
                         'active' => 'admin.fasilitas.*',
                     ],
+                    [
+                        'label' => 'Manajemen Konten',
+                        'route' => 'admin.konten-berita.index',
+                        'active' => 'admin.konten-berita.*',
+                    ],
                 ];
             @endphp
 
@@ -87,7 +92,6 @@
                     'Transaksi',
                     'Monitoring Pendapatan',
                     'Manajemen Reservasi',
-                    'Manajemen Konten',
                     'Manajemen Pengguna',
                     'Laporan',
                     'Audit Log',

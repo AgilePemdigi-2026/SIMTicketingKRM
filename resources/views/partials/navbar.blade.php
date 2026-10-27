@@ -51,7 +51,7 @@
         ],
         [
             'label' => 'Kontak',
-            'href' => null,
+            'href' => $berandaUrl . '#kontak',
             'active' => false,
         ],
     ];

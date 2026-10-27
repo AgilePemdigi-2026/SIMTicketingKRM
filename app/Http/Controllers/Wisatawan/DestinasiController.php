@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Wisatawan;
 use App\Http\Controllers\Controller;
 use Illuminate\View\View;
 use App\Models\DaftarTiket;
+use App\Models\Konten;
+use Illuminate\Support\Facades\Storage;
+use App\Models\InfoDestinasi;
 
 class DestinasiController extends Controller
 {
@@ -15,29 +18,53 @@ class DestinasiController extends Controller
      * Ganti sumber data setelah tabel master Dana siap dan struktur kolom disepakati.
      */
     public function index(): View
-    {
+    {   
+        // Mengambil profil destinasi dari PostgreSQL.
+        $profil = InfoDestinasi::query()
+            ->orderBy('id_destinasi')
+            ->first();
+
+        // Informasi tambahan berdasarkan data dari Admin.
+        $informasi = [];
+
+        if ($profil?->jam_buka && $profil?->jam_tutup) {
+            $informasi[] = [
+                'judul' => 'Jam Operasional',
+                'isi' => substr((string) $profil->jam_buka, 0, 5)
+                    . ' - '
+                    . substr((string) $profil->jam_tutup, 0, 5)
+                    . ' WIB',
+            ];
+        }
+
+        if ($profil?->alamat) {
+            $informasi[] = [
+                'judul' => 'Alamat',
+                'isi' => $profil->alamat,
+            ];
+        }
+
+        // Rincian harga tetap diambil dari Master Data Tiket.
+        $informasi[] = [
+            'judul' => 'Informasi Tiket',
+            'isi' => 'Lihat rincian jenis tiket dan harga pada panel Harga Tiket.',
+        ];
+
+        // Format array dipertahankan agar cocok dengan Blade.
         $destinasi = [
-            'nama' => 'Kebun Raya Mangrove Surabaya',
-            'gambar' => 'images/destinasi/boardwalk-hero.jpg',
-            'deskripsi' => 'Kebun Raya Mangrove Surabaya adalah kawasan konservasi mangrove yang menjadi salah satu destinasi wisata alam unggulan di Kota Surabaya. Terletak di tepi pantai timur Surabaya, kawasan ini menawarkan pengalaman wisata alam yang unik sekaligus edukasi mengenai ekosistem mangrove.',
-            'informasi' => [
-                [
-                    'judul' => 'Sejarah',
-                    'isi' => 'Kebun Raya Mangrove Surabaya didirikan pada tahun 1998 sebagai upaya pelestarian hutan mangrove di kawasan pesisir Surabaya.',
-                ],
-                [
-                    'judul' => 'Fasilitas',
-                    'isi' => 'Area parkir, toilet umum, musala, warung makan, pusat informasi, jalur boardwalk, menara pandang, dan area bermain anak.',
-                ],
-                [
-                    'judul' => 'Jam Operasional',
-                    'isi' => 'Setiap hari: 07.00 – 17.00 WIB',
-                ],
-                [
-                    'judul' => 'Informasi Tiket',
-                    'isi' => 'Harga tiket mengikuti master data tiket yang aktif pada aplikasi. Lihat rincian jenis tiket dan harga pada panel Harga Tiket.',
-                ],
-            ],
+            'nama' => $profil?->nama_destinasi
+                ?: 'Kebun Raya Mangrove Surabaya',
+
+            'gambar' => $profil?->foto_utama
+                && Storage::disk('public')->exists($profil->foto_utama)
+                    ? 'storage/' . $profil->foto_utama
+                    : 'images/destinasi/boardwalk-hero.jpg',
+
+            'deskripsi' => $profil?->deskripsi_lengkap
+                ?: ($profil?->deskripsi_singkat
+                    ?: 'Informasi destinasi belum tersedia.'),
+
+            'informasi' => $informasi,
         ];
 
         $hargaTiket = DaftarTiket::query()
@@ -65,15 +92,30 @@ class DestinasiController extends Controller
             ->all();
 
 
-        // Foto hasil cuplikan mockup. Ganti foto asli saat aset disediakan tim.
-        $galeri = [
-            ['gambar' => 'images/destinasi/boardwalk-hero.jpg', 'alt' => 'Jalur kayu di tengah hutan mangrove'],
-            ['gambar' => 'images/destinasi/gunung-mangrove.jpg', 'alt' => 'Lanskap pepohonan dan kawasan hijau'],
-            ['gambar' => 'images/destinasi/sungai-mangrove.jpg', 'alt' => 'Pepohonan mangrove di tepi perairan'],
-            ['gambar' => 'images/destinasi/danau-mangrove.jpg', 'alt' => 'Danau dan pohon mangrove'],
-            ['gambar' => 'images/destinasi/gunung-mangrove.jpg', 'alt' => 'Pemandangan hijau di kawasan wisata'],
-            ['gambar' => 'images/destinasi/boardwalk-hero.jpg', 'alt' => 'Jembatan kayu di dalam kawasan mangrove'],
-        ];
+        // Galeri destinasi dari database.
+        // Hanya foto berstatus Published yang ditampilkan.
+        $galeri = Konten::query()
+            ->where('jenis_konten', 'galeri')
+            ->where('status_publikasi', 'published')
+            ->whereNotNull('gambar')
+            ->whereNotNull('waktu_publikasi')
+            ->where('waktu_publikasi', '<=', now())
+            ->orderByDesc('waktu_publikasi')
+            ->orderByDesc('id_konten')
+            ->get()
+            ->filter(function (Konten $item) {
+                return Storage::disk('public')
+                    ->exists($item->gambar);
+            })
+            ->map(function (Konten $item) {
+                return [
+                    'gambar' => 'storage/' . $item->gambar,
+                    'alt' => $item->judul
+                        ?: 'Foto galeri Kebun Raya Mangrove Surabaya',
+                ];
+            })
+            ->values()
+            ->all();
 
         return view('wisatawan.destinasi', compact('destinasi', 'hargaTiket', 'galeri'));
     }
