@@ -14,9 +14,9 @@
         Berita &amp; Artikel
     </h1>
 
-    {{-- Data dummy dari mockup, belum berita resmi. --}}
-    <p class="mt-5 text-xs leading-6 text-[#718079]">
-        Konten berikut adalah contoh tampilan berdasarkan mockup, bukan publikasi resmi.
+    <p class="mt-5 text-sm leading-6 text-[#718079]">
+        Temukan berita, kegiatan, dan artikel edukasi
+        seputar Kebun Raya Mangrove Surabaya.
     </p>
 
     {{-- Cari dan filter, keduanya memakai query string agar hasilnya dapat dibagikan/direfresh. --}}
@@ -53,10 +53,21 @@
     <div class="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-live="polite">
         @forelse ($berita as $artikel)
             <article class="flex min-w-0 flex-col border border-[#D6E1DA] bg-white">
-                <a href="{{ route('wisatawan.berita.show', $artikel['slug']) }}" tabindex="-1" aria-hidden="true">
-                    <img src="{{ asset($artikel['gambar']) }}" alt=""
-                         class="h-[195px] w-full object-cover transition-opacity hover:opacity-90 sm:h-[200px]" loading="lazy">
-                </a>
+                @if (!empty($artikel['gambar']))
+                    <a href="{{ route('wisatawan.berita.show', $artikel['slug']) }}"
+                    tabindex="-1" aria-hidden="true">
+                        <img
+                            src="{{ asset($artikel['gambar']) }}"
+                            alt=""
+                            class="h-[195px] w-full object-cover transition-opacity hover:opacity-90 sm:h-[200px]"
+                            loading="lazy"
+                        >
+                    </a>
+                @else
+                    <div class="flex h-[195px] w-full items-center justify-center bg-[#E9F0EB] text-sm text-[#819187] sm:h-[200px]">
+                        Gambar belum tersedia
+                    </div>
+                @endif
                 <div class="flex flex-1 flex-col px-5 pb-5 pt-5">
                     <div class="flex flex-wrap items-center gap-3 text-xs text-[#718079]">
                         <span class="bg-[#E2EEE2] px-2 py-1 font-semibold text-[#367750]">{{ $artikel['kategori'] }}</span>
@@ -76,20 +87,38 @@
             </article>
         @empty
             <div class="col-span-full border border-[#D6E1DA] bg-white p-10 text-center">
-                <h2 class="text-base font-semibold text-[#193B31]">Artikel tidak ditemukan</h2>
-                <p class="mt-2 text-sm text-[#718079]">Coba kata kunci lain atau pilih kategori Semua.</p>
-                <a href="{{ route('wisatawan.berita.index') }}" class="mt-4 inline-block text-sm font-bold text-[#064631] underline">
-                    Reset pencarian
-                </a>
+
+                @if ($cari !== '' || $kategori !== 'semua')
+                    <h2 class="text-base font-semibold text-[#193B31]">
+                        Artikel tidak ditemukan
+                    </h2>
+
+                    <p class="mt-2 text-sm text-[#718079]">
+                        Coba kata kunci lain atau pilih kategori Semua.
+                    </p>
+
+                    <a href="{{ route('wisatawan.berita.index') }}"
+                    class="mt-4 inline-block text-sm font-bold text-[#064631] underline">
+                        Reset pencarian
+                    </a>
+                @else
+                    <h2 class="text-base font-semibold text-[#193B31]">
+                        Belum Ada Berita
+                    </h2>
+
+                    <p class="mt-2 text-sm text-[#718079]">
+                        Belum ada berita atau artikel yang dipublikasikan.
+                        Silakan kunjungi kembali nanti.
+                    </p>
+                @endif
             </div>
         @endforelse
     </div>
 
-    {{-- Tidak mengarang total 24 artikel: total saat ini adalah 6 contoh dari mockup. --}}
     <div class="mt-9 flex flex-col gap-4 border-t border-[#D6E1DA] pt-5 text-[13px] text-[#718079] sm:flex-row sm:items-center sm:justify-between">
         <p>
             @if ($berita->total() > 0)
-                Menampilkan {{ $berita->firstItem() }}–{{ $berita->lastItem() }} dari {{ $berita->total() }} artikel contoh
+                Menampilkan {{ $berita->firstItem() }}–{{ $berita->lastItem() }} dari {{ $berita->total() }} artikel
             @else
                 Menampilkan 0 artikel
             @endif

@@ -7,6 +7,10 @@ use App\Http\Controllers\Wisatawan\ProfileController;
 use App\Http\Controllers\Admin\WahanaController as AdminWahanaController;
 use App\Http\Controllers\Admin\DaftarTiketController;
 use App\Http\Controllers\Admin\FasilitasController;
+use App\Http\Controllers\Admin\KontenBeritaController;
+use App\Http\Controllers\Admin\KontenGaleriController;
+use App\Http\Controllers\Admin\InfoDestinasiController;
+use App\Http\Controllers\Admin\InfoKontakController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Wisatawan\WahanaController;
 use App\Http\Controllers\Wisatawan\BeritaController;
@@ -149,6 +153,47 @@ Route::middleware('auth')->group(function () {
         Route::resource('fasilitas', FasilitasController::class)
             ->parameters(['fasilitas' => 'fasilitas'])
             ->except(['show']);
+
+        // Manajemen Konten - Berita & Artikel
+        Route::resource('konten-berita', KontenBeritaController::class)
+            ->parameters(['konten-berita' => 'konten'])
+            ->except(['show']);
+        
+        // Manajemen Konten - Galeri Foto
+        Route::resource('konten-galeri', KontenGaleriController::class)
+            ->parameters(['konten-galeri' => 'konten'])
+            ->except(['show']);
+        
+        // ==========================================
+        // MANAJEMEN KONTEN - INFO DESTINASI
+        // ==========================================
+
+        // Menampilkan halaman pengelolaan Info Destinasi
+        Route::get(
+            'konten-destinasi',
+            [InfoDestinasiController::class, 'index']
+        )->name('konten-destinasi.index');
+
+        // Menyimpan dan memperbarui Info Destinasi
+        Route::put(
+            'konten-destinasi',
+            [InfoDestinasiController::class, 'update']
+        )->name('konten-destinasi.update');
+
+        // ==========================================
+        // MANAJEMEN KONTEN - INFO KONTAK
+        // ==========================================
+
+        Route::get(
+            'konten-kontak',
+            [InfoKontakController::class, 'index']
+        )->name('konten-kontak.index');
+
+        Route::put(
+            'konten-kontak',
+            [InfoKontakController::class, 'update']
+        )->name('konten-kontak.update');
+
     });
 
 });

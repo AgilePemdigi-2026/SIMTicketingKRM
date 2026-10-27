@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Wahana;
 use App\Models\Fasilitas;
+use App\Models\Konten;
+use App\Models\InfoKontak;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class HomeController extends Controller
 {
@@ -54,43 +58,72 @@ class HomeController extends Controller
             })
             ->all();
 
-        $galeri = [
-            'images/home/boardwalk.jpg',
-            'images/home/atv.jpg',
-            'images/home/river.jpg',
-            'images/home/water.jpg',
-            'images/home/atv.jpg',
-            'images/home/boardwalk.jpg',
-            'images/home/water.jpg',
-            'images/home/river.jpg',
-        ];
+        $galeri = Konten::query()
+            ->where('jenis_konten', 'galeri')
+            ->where('status_publikasi', 'published')
+            ->where('waktu_publikasi', '<=', now())
+            ->whereNotNull('gambar')
+            ->orderByDesc('waktu_publikasi')
+            ->orderByDesc('id_konten')
+            ->get()
+            ->filter(function (Konten $item) {
+                return Storage::disk('public')->exists($item->gambar);
+            })
+            ->map(function (Konten $item) {
+                return 'storage/' . $item->gambar;
+            })
+            ->values()
+            ->all();
 
-        // Judul, kategori, dan tanggal di bawah ini sekadar contoh dari mockup,
-        // bukan publikasi berita yang telah diverifikasi.
-        $berita = [
-            [
-                'judul' => 'Festival Mangrove 2026 Resmi Dibuka oleh Wali Kota Surabaya',
-                'kategori' => 'Event',
-                'tanggal' => '28 Agu 2026',
-                'ringkasan' => 'Informasi terbaru seputar Kebun Raya Mangrove Surabaya dan kegiatan konservasi.',
-                'gambar' => 'images/home/boardwalk.jpg',
-            ],
-            [
-                'judul' => 'Cara Menjaga dan Melestarikan Ekosistem Mangrove Surabaya',
-                'kategori' => 'Edukasi',
-                'tanggal' => '28 Agu 2026',
-                'ringkasan' => 'Informasi terbaru seputar Kebun Raya Mangrove Surabaya dan kegiatan konservasi.',
-                'gambar' => 'images/home/atv.jpg',
-            ],
-            [
-                'judul' => 'Wahana Baru: Sepeda Listrik Kini Tersedia di KRM Surabaya',
-                'kategori' => 'Info',
-                'tanggal' => '28 Agu 2026',
-                'ringkasan' => 'Informasi terbaru seputar Kebun Raya Mangrove Surabaya dan kegiatan konservasi.',
-                'gambar' => 'images/home/water.jpg',
-            ],
-        ];
 
-        return view('public.home', compact('wahana', 'fasilitas', 'galeri', 'berita'));
+        // Berita terbaru dari database.
+        // Hanya artikel Published yang ditampilkan di Beranda.
+        $berita = Konten::query()
+            ->where('jenis_konten', 'berita')
+            ->where('status_publikasi', 'published')
+            ->whereNotNull('slug')
+            ->where('waktu_publikasi', '<=', now())
+            ->orderByDesc('waktu_publikasi')
+            ->orderByDesc('id_konten')
+            ->limit(3)
+            ->get()
+            ->map(function (Konten $item) {
+                $gambar = $item->gambar
+                    && Storage::disk('public')->exists($item->gambar)
+                        ? 'storage/' . $item->gambar
+                        : null;
+
+                return [
+                    'slug' => $item->slug,
+                    'judul' => $item->judul,
+                    'kategori' => $item->kategori,
+                    'tanggal' => $item->waktu_publikasi
+                        ->locale('id')
+                        ->translatedFormat('d M Y'),
+                    'ringkasan' => Str::limit(
+                        strip_tags($item->isi ?? ''),
+                        130
+                    ),
+                    'gambar' => $gambar,
+                ];
+            })
+            ->all();
+
+            
+        // Informasi kontak utama dari database.
+        // Dikelola melalui Manajemen Konten oleh Admin.
+        $kontak = InfoKontak::query()
+            ->orderBy('id_kontak')
+            ->first();
+
+        
+        return view('public.home', compact(
+            'wahana',
+            'fasilitas',
+            'galeri',
+            'berita',
+            'kontak'
+        ));
+
     }
 }
