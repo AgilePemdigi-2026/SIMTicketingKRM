@@ -126,7 +126,9 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard Petugas
     Route::get('/petugas/dashboard', function () {
-        return 'Dashboard Petugas - SIMTicketingKRM';
+        return Route::has('ticket-payment.staff.index')
+            ? view('petugas.ticket-payment.dashboard')
+            : 'Dashboard Petugas - SIMTicketingKRM';
     })->middleware('role:petugas')
       ->name('petugas.dashboard');
 

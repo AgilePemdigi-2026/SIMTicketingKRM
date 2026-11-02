@@ -21,6 +21,7 @@ class TicketPurchaseServiceProvider extends ServiceProvider
         if ($this->masterMode()) {
             $this->app->make(TicketPurchaseDatabase::class)->assertMasterConfiguration();
             $this->loadRoutesFrom(base_path('routes/ticket-purchase.php'));
+            $this->loadRoutesFrom(base_path('routes/ticket-payment.php'));
         }
     }
 

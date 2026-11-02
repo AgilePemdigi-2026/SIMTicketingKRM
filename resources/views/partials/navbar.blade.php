@@ -60,7 +60,15 @@
         array_splice($navItems, 3, 0, [[
             'label' => 'Pesanan Saya',
             'href' => route('ticket-purchase.orders'),
-            'active' => request()->routeIs('ticket-purchase.orders', 'ticket-purchase.show'),
+            'active' => request()->routeIs('ticket-purchase.orders', 'ticket-purchase.show', 'ticket-payment.show'),
+        ]]);
+    }
+
+    if (auth()->user()?->role === 'petugas' && \Illuminate\Support\Facades\Route::has('ticket-payment.staff.index')) {
+        array_splice($navItems, 3, 0, [[
+            'label' => 'Pembayaran',
+            'href' => route('ticket-payment.staff.index'),
+            'active' => request()->routeIs('ticket-payment.staff.*'),
         ]]);
     }
 

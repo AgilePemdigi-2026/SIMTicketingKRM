@@ -5,10 +5,11 @@ serta pengunjung di PostgreSQL lokal. Lanjutan Pembelian Tiket **Sprint 1**
 meliputi pilihan tiket, data pengunjung, preview/perhitungan harga, peninjauan,
 dan penyimpanan transaksi. **Pesanan Saya/riwayat pesanan adalah bagian Sprint 2.**
 
-Sesuai pembagian modul, tahap ini berhenti pada pesanan `pending_payment`
-dan titik serah ke pembayaran melalui UUID pesanan. Dalam SRS, proses Membeli
-Tiket masih berlanjut ke pembayaran dan penerbitan E-Tiket; keduanya termasuk
-tahap integrasi terpisah.
+Batas tahap pembelian adalah pesanan `pending_payment` dan titik serah melalui
+UUID pesanan. Pembayaran manual QRIS/Cash Sprint 2 Naufal melanjutkannya hingga
+`paid`; kontraknya dijelaskan pada [ticket-payment.md](ticket-payment.md).
+Penerbitan/validasi E-Tiket tetap ditangani modul Dana. Penyelesaian tahap ini
+bukan berarti seluruh proses ticketing dalam SRS selesai.
 
 ## Kontrak pembelian yang dilanjutkan
 

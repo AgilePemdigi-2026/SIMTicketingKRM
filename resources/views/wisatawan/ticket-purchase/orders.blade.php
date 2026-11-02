@@ -13,7 +13,7 @@
     <div class="purchase-actions"><a class="krm-btn krm-btn-primary" href="{{ route('ticket-purchase.index') }}">Beli Tiket</a></div>
     @forelse ($orders as $order)
         <article class="krm-card purchase-order-card">
-            <div class="purchase-order-card-header"><h2>{{ $order->code }}</h2><span class="purchase-status">{{ $order->status === 'pending_payment' ? 'Menunggu pembayaran' : $order->status }}</span></div>
+            <div class="purchase-order-card-header"><h2>{{ $order->code }}</h2><span class="purchase-status">{{ $order->payment?->statusLabel() ?? ($order->status === 'paid' ? 'Lunas' : ($order->status === 'pending_payment' ? 'Menunggu pembayaran' : $order->status)) }}</span></div>
             <dl class="purchase-order-meta">
                 <div><dt>Tanggal kunjungan</dt><dd>{{ $order->visit_date->format('d/m/Y') }}</dd></div>
                 <div><dt>Total pesanan</dt><dd>Rp {{ number_format((float) $order->total, 2, ',', '.') }}</dd></div>

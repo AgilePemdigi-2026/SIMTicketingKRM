@@ -13,11 +13,11 @@
     @if(session('purchase_created'))
         <div class="purchase-success" role="status"><strong>Pesanan berhasil disimpan.</strong><br>Pesananmu menunggu pembayaran.</div>
     @endif
-    <div class="purchase-heading"><h1>Ringkasan Pesanan</h1><p>Pesanan tersimpan. Pembayaran tersedia pada tahap berikutnya.</p></div>
+    <div class="purchase-heading"><h1>Ringkasan Pesanan</h1><p>{{ $order->status === 'paid' ? 'Pembayaran terkonfirmasi. Data pesanan tersedia untuk penerbitan E-Tiket.' : 'Pesanan tersimpan. Lanjutkan pembayaran untuk proses berikutnya.' }}</p></div>
     <div class="krm-card">
         <dl class="purchase-order-meta">
             <div><dt>Kode pesanan</dt><dd>{{ $order->code }}</dd></div>
-            <div><dt>Status pesanan</dt><dd><span class="purchase-status">{{ $order->status === 'pending_payment' ? 'Menunggu pembayaran' : $order->status }}</span></dd></div>
+            <div><dt>Status pesanan</dt><dd><span class="purchase-status">{{ $order->payment?->statusLabel() ?? ($order->status === 'paid' ? 'Lunas' : ($order->status === 'pending_payment' ? 'Menunggu pembayaran' : $order->status)) }}</span></dd></div>
             <div><dt>Tanggal kunjungan</dt><dd>{{ $order->visit_date->format('d/m/Y') }}</dd></div>
             <div><dt>Jenis wisatawan</dt><dd>{{ $order->visitor_type === 'domestik' ? 'Domestik (WNI)' : 'Mancanegara (WNA)' }}</dd></div>
         </dl>
@@ -49,6 +49,6 @@
         @endforeach
         <div class="purchase-total"><strong>Total pesanan</strong><strong>Rp {{ number_format((float) $order->total, 2, ',', '.') }}</strong></div>
     </div>
-    <div class="purchase-actions"><a class="krm-btn" href="{{ route('ticket-purchase.orders') }}">Pesanan Saya</a><a class="krm-btn krm-btn-primary" href="{{ route('ticket-purchase.index') }}">Beli Tiket Lagi</a></div>
+    <div class="purchase-actions"><a class="krm-btn krm-btn-primary" href="{{ route('ticket-payment.show', $order->code) }}">{{ $order->status === 'paid' ? 'Lihat Pembayaran' : 'Lanjut ke Pembayaran' }}</a><a class="krm-btn" href="{{ route('ticket-purchase.orders') }}">Pesanan Saya</a><a class="krm-btn krm-btn-primary" href="{{ route('ticket-purchase.index') }}">Beli Tiket Lagi</a></div>
 </div>
 @endsection
