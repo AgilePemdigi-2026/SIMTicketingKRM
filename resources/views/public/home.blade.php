@@ -12,7 +12,7 @@
     {{-- Hero: bisa diakses semua pengunjung, termasuk yang belum login. --}}
     <section class="relative isolate flex min-h-[430px] items-center justify-center overflow-hidden bg-[#063A2B] px-4 py-16 text-center text-white sm:min-h-[490px]"
              aria-labelledby="hero-title">
-        <img src="{{ asset('images/home/boardwalk.jpg') }}"
+        <img src="{{ asset('images/figma/jembatan.jpg') }}"
              alt="Jalur wisata di antara pepohonan mangrove"
              class="absolute inset-0 -z-20 h-full w-full object-cover"
              fetchpriority="high">
@@ -138,7 +138,7 @@
 
                 {{-- EMPAT FOTO PERTAMA --}}
                 <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    @foreach (array_slice($galeri, 0, 4) as $foto)
+                    @foreach (array_slice($galeri, 0, 8) as $foto)
                         <img
                             src="{{ asset($foto) }}"
                             alt="Galeri wisata mangrove {{ $loop->iteration }}"
@@ -149,7 +149,7 @@
                 </div>
 
                 {{-- FOTO TAMBAHAN --}}
-                @if (count($galeri) > 4)
+                @if (count($galeri) > 8)
                     <details class="group mt-3">
 
                         <summary
@@ -165,7 +165,7 @@
                         </summary>
 
                         <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            @foreach (array_slice($galeri, 4) as $foto)
+                            @foreach (array_slice($galeri, 8) as $foto)
                                 <img
                                     src="{{ asset($foto) }}"
                                     alt="Galeri wisata mangrove tambahan {{ $loop->iteration }}"

@@ -336,3 +336,10 @@ tests/Unit/TicketPurchaseServiceTest.php
   tambahan pada authentication, CRUD Dana, frontend, atau modul anggota lain.
 
 File .env aktif dan cadangannya merupakan konfigurasi privat, bukan file commit.
+
+
+## Pembaruan Sprint 2 Naufal dan aset Figma
+
+Pembelian Sprint 1 dilanjutkan dengan pembayaran manual Sprint 2 dan titik serah pembayaran `paid` ke modul E-Tiket. Kontrak status, endpoint, event setelah commit, penyimpanan bukti privat, serta sumber foto Figma dijelaskan pada [ticket-payment.md](ticket-payment.md). Riwayat pesanan yang sudah tersedia tetap dipertahankan.
+
+Konten contoh lokal memakai `FIGMA_DEMO_CONTENT=true` bersama `APP_ENV=local`: hanya mengisi galeri/artikel kosong, tanpa seed artikel atau perubahan master. Gambar Admin yang tersedia tetap diprioritaskan. Perbaikan foto terbaru mencakup dua belas path yang dahulu dihapus; keterangan penghapusan pada bagian historis di atas menggambarkan keadaan saat verifikasi tersebut.

@@ -7,6 +7,9 @@ use App\Models\Konten;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use App\Support\FigmaDemoContent;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Storage;
 
 class BeritaController extends Controller
 {
@@ -29,9 +32,9 @@ class BeritaController extends Controller
                 strip_tags($artikel->isi ?? ''),
                 150
             ),
-            'gambar' => $artikel->gambar
+            'gambar' => $artikel->gambar && Storage::disk('public')->exists($artikel->gambar)
                 ? 'storage/' . $artikel->gambar
-                : null,
+                : 'images/figma/lanskap.jpg',
             'isi' => $artikel->isi,
             'penulis' => $artikel->penulis,
         ];
@@ -101,6 +104,16 @@ class BeritaController extends Controller
             fn (Konten $artikel) => $this->formatArtikel($artikel)
         );
 
+        if (FigmaDemoContent::enabled() && ! $this->publishedArticlesExist()) {
+            $demo = FigmaDemoContent::article();
+            $matches = in_array($kategori, ['semua', 'edukasi'], true)
+                && ($cari === '' || str_contains(mb_strtolower($demo['judul'].' '.$demo['isi']), mb_strtolower($cari)));
+            $page = LengthAwarePaginator::resolveCurrentPage();
+            $items = $matches && $page === 1 ? [$demo] : [];
+            $berita = new LengthAwarePaginator($items, $matches ? 1 : 0, 6, $page,
+                ['path' => $request->url(), 'query' => $request->query()]);
+        }
+
         return view(
             'wisatawan.berita.index',
             compact('berita', 'cari', 'kategori')
@@ -110,8 +123,18 @@ class BeritaController extends Controller
     /**
      * Menampilkan detail artikel berdasarkan slug.
      */
+    private function publishedArticlesExist(): bool
+    {
+        return Konten::where('jenis_konten', 'berita')->where('status_publikasi', 'published')
+            ->whereNotNull('slug')->where('waktu_publikasi', '<=', now())->exists();
+    }
+
     public function show(string $slug): View
     {
+        if ($slug === FigmaDemoContent::ARTICLE_SLUG && FigmaDemoContent::enabled() && ! $this->publishedArticlesExist()) {
+            return view('wisatawan.berita.show', ['artikel' => FigmaDemoContent::article()]);
+        }
+
         $konten = Konten::query()
             ->where('jenis_konten', 'berita')
             ->where('status_publikasi', 'published')

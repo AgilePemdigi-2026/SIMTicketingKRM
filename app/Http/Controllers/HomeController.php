@@ -8,6 +8,7 @@ use App\Models\Konten;
 use App\Models\InfoKontak;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Support\FigmaDemoContent;
 
 class HomeController extends Controller
 {
@@ -25,9 +26,9 @@ class HomeController extends Controller
             ->map(function (Wahana $item) {
                 $foto = $item->foto;
 
-                $gambar = $foto && is_file(public_path('storage/' . $foto))
+                $gambar = $foto && Storage::disk('public')->exists($foto)
                     ? 'storage/' . $foto
-                    : 'images/home/boardwalk.jpg';
+                    : 'images/figma/jembatan.jpg';
 
                 return [
                     'slug' => (string) $item->id_wahana,
@@ -46,9 +47,9 @@ class HomeController extends Controller
             ->map(function (Fasilitas $item) {
                 $foto = $item->foto_fasilitas;
 
-                $gambar = $foto && is_file(public_path('storage/' . $foto))
+                $gambar = $foto && Storage::disk('public')->exists($foto)
                     ? 'storage/' . $foto
-                    : 'images/home/boardwalk.jpg';
+                    : 'images/figma/jembatan.jpg';
 
                 return [
                     'nama' => $item->nama_fasilitas,
@@ -75,6 +76,9 @@ class HomeController extends Controller
             ->values()
             ->all();
 
+        if ($galeri === [] && FigmaDemoContent::enabled()) {
+            $galeri = FigmaDemoContent::gallery();
+        }
 
         // Berita terbaru dari database.
         // Hanya artikel Published yang ditampilkan di Beranda.
@@ -91,7 +95,7 @@ class HomeController extends Controller
                 $gambar = $item->gambar
                     && Storage::disk('public')->exists($item->gambar)
                         ? 'storage/' . $item->gambar
-                        : null;
+                        : 'images/figma/lanskap.jpg';
 
                 return [
                     'slug' => $item->slug,
@@ -109,14 +113,16 @@ class HomeController extends Controller
             })
             ->all();
 
-            
+        if ($berita === [] && FigmaDemoContent::enabled()) {
+            $berita = [FigmaDemoContent::article()];
+        }
+
         // Informasi kontak utama dari database.
         // Dikelola melalui Manajemen Konten oleh Admin.
         $kontak = InfoKontak::query()
             ->orderBy('id_kontak')
             ->first();
 
-        
         return view('public.home', compact(
             'wahana',
             'fasilitas',

@@ -63,3 +63,29 @@ vendor/bin/phpunit --do-not-cache-result tests/Feature/TicketPaymentTest.php tes
 ```
 
 Tes transaksi dibatasi ke PostgreSQL `simticketingkrm_purchase_test`, termasuk persaingan dua konfirmasi, rollback, event sesudah commit, ownership, berkas privat, nominal server, penolakan dan pengajuan ulang. Browser memakai fixture terpisah pada database itu; tidak melakukan transaksi percobaan pada akun aplikasi atau pembayaran uang sungguhan.
+
+## Foto Figma dan konten contoh lokal
+
+Aset diekspor dari layer gambar asli file `PPL Prak`, halaman **Revisi Final & High Fidelity**, bukan screenshot halaman atau foto internet:
+
+| Aset | Layer sumber |
+| --- | --- |
+| `public/images/figma/jembatan.jpg` | `172:944`, Image (Kebun Raya Mangrove) |
+| `public/images/figma/danau.jpg` | `172:957`, Image (Sepeda Air) |
+| `public/images/figma/lanskap.jpg` | `172:970`, Image (ATV) |
+| `public/images/figma/sungai.jpg` | `172:996`, Image (Perahu Air) |
+
+Acuan Beranda `172:857`, pembelian `173:1688` dan `173:2067`, QRIS `173:2392`, dan Cash `173:2723`. MCP menolak akses editor; pemeriksaan dan ekspor menggunakan Figma Desktop secara baca saja. Susunan utama diikuti dengan penyesuaian status pembayaran manual; kesamaan piksel seluruh desain tidak diklaim.
+
+`FIGMA_DEMO_CONTENT=true` hanya aktif jika `APP_ENV=local`. Ketika bagian kosong, delapan posisi galeri mengikuti urutan jembatan, lanskap, sungai, danau, lanskap, jembatan, danau, sungai; satu artikel berlabel **Demo Proyek** memakai thumbnail lanskap. Konten Admin terbit tetap diprioritaskan dan unggahan yang berkasnya tersedia dipertahankan. Referensi berkas rusak memakai ilustrasi tanpa mengubah master. Artikel dan galeri contoh tidak ditulis ke database dan tidak aktif di production. Dua belas path foto lama dipulihkan menggunakan empat foto Figma yang sama.
+
+
+## Hasil verifikasi lokal 2 November 2026
+
+- Tes terarah pembelian, pembayaran, dan konten Figma: **147 tes / 1.029 assertions lulus**.
+- Regresi penuh sesudah pembersihan dependency: **163 dari 164 tes lulus / 1.066 assertions**. Satu kegagalan tetap pada `Tests\Feature\ExampleTest`: konfigurasi SQLite in-memory bawaan tes tidak mempunyai tabel `wahana`. Ini bukan koneksi aplikasi utama, yang telah diperiksa memakai PostgreSQL.
+- Build Vite dan kompilasi Blade berhasil; `git diff --check` bersih. Peringatan build tentang paket fontaine opsional tidak menggagalkan build.
+- Browser desktop 1280 piksel dan ponsel 390 piksel: pembelian hingga pesanan, pilihan QRIS, unggah dan penolakan/pengajuan ulang, persetujuan QRIS, konfirmasi cash, serta pembukaan ulang pembayaran lunas diperiksa dengan akun sintetis. Tidak ada pembayaran bank sungguhan dilakukan. Foto Beranda termuat, galeri delapan posisi tersedia, dan tidak ada overflow horizontal pada ukuran tersebut. Detail artikel serta prioritas konten Admin/lingkungan produksi diverifikasi melalui feature tests.
+- Database aplikasi sesudah uji tetap 1 pengguna, 1 pesanan, 0 pembayaran, 0 konten artikel/galeri; kuota master id 1/4/5 tetap 100/10/10. Seluruh migration berstatus Ran.
+- Fixture browser dan transaksi pada `simticketingkrm_purchase_test` dibersihkan; pesanan dan pembayaran pengujian kembali kosong. Server uji port 8002 dihentikan; aplikasi utama tetap tersedia di port 8000.
+- Composer/lock dan panduan bootstrap dikembalikan ke keadaan sebelum pemasangan Boost sementara. Tidak ada commit, push, pull, atau reset database dalam penyelesaian ini.

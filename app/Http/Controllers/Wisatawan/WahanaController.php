@@ -7,6 +7,7 @@ use App\Models\Wahana;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Storage;
 
 class WahanaController extends Controller
 {
@@ -43,7 +44,7 @@ class WahanaController extends Controller
 
         $foto = $item->foto;
 
-        $gambar = $foto && is_file(public_path('storage/' . $foto))
+        $gambar = $foto && Storage::disk('public')->exists($foto)
             ? 'storage/' . $foto
             : 'images/wahana/boardwalk-mangrove.jpg';
 

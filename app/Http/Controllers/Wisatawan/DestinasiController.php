@@ -8,6 +8,7 @@ use App\Models\DaftarTiket;
 use App\Models\Konten;
 use Illuminate\Support\Facades\Storage;
 use App\Models\InfoDestinasi;
+use App\Support\FigmaDemoContent;
 
 class DestinasiController extends Controller
 {
@@ -18,7 +19,7 @@ class DestinasiController extends Controller
      * Ganti sumber data setelah tabel master Dana siap dan struktur kolom disepakati.
      */
     public function index(): View
-    {   
+    {
         // Mengambil profil destinasi dari PostgreSQL.
         $profil = InfoDestinasi::query()
             ->orderBy('id_destinasi')
@@ -91,7 +92,6 @@ class DestinasiController extends Controller
             })
             ->all();
 
-
         // Galeri destinasi dari database.
         // Hanya foto berstatus Published yang ditampilkan.
         $galeri = Konten::query()
@@ -116,6 +116,10 @@ class DestinasiController extends Controller
             })
             ->values()
             ->all();
+
+        if ($galeri === [] && FigmaDemoContent::enabled()) {
+            $galeri = array_map(fn (string $image): array => ['gambar' => $image, 'alt' => 'Ilustrasi kawasan mangrove dari desain Figma'], FigmaDemoContent::gallery());
+        }
 
         return view('wisatawan.destinasi', compact('destinasi', 'hargaTiket', 'galeri'));
     }

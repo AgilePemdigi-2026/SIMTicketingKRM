@@ -28,6 +28,10 @@
 
     </nav>
 
+    @if($artikel['is_demo'] ?? false)
+        <p role="note" class="mb-6 border border-[#D6E1DA] bg-[#EEF4EE] px-5 py-4 text-sm text-[#345D47]">Demo Proyek — contoh artikel dari rancangan Figma, bukan publikasi resmi pengelola.</p>
+    @endif
+
     {{-- DETAIL ARTIKEL --}}
     <article>
 
