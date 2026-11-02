@@ -72,23 +72,15 @@
         ]]);
     }
 
-    if ($isPublicHome) {
-        // Di "/" selalu tampil sebagai halaman publik
-        $accountRoute = 'login';
-        $accountLabel = 'Masuk';
-    } else {
-        // Di halaman lain ikuti autentikasi pengguna
-        $accountRoute = match (auth()->user()?->role) {
-            'wisatawan' => 'wisatawan.profil',
-            'petugas' => 'petugas.dashboard',
-            'admin' => 'admin.dashboard',
-            default => 'login',
-        };
+    $accountRoute = match (auth()->user()?->role) {
+        'wisatawan' => 'wisatawan.profil',
+        'petugas' => 'petugas.dashboard',
+        'admin' => 'admin.dashboard',
+        default => 'login',
+    };
 
-        $accountLabel = auth()->check()
-            ? 'Profil / Akun'
-            : 'Masuk';
-    }
+    $accountLabel = auth()->check() ? 'Profil / Akun' : 'Masuk';
+
 @endphp
 
 <header class="relative z-30">
@@ -161,6 +153,12 @@
                     <span class="hidden sm:inline">{{ $accountLabel }}</span>
                 </a>
 
+                @auth
+                    <form method="POST" action="{{ route('logout') }}" class="hidden xl:block">
+                        @csrf
+                        <button type="submit" class="rounded border border-[#D7E3DA] px-3 py-2 text-xs font-semibold text-[#064631] hover:bg-[#EEF4EE]">Keluar</button>
+                    </form>
+                @endauth
 
                 <!-- Menu mobile tanpa JavaScript -->
                 <details class="relative xl:hidden">
@@ -196,6 +194,12 @@
                         @endif
 
                     @endforeach
+                    @auth
+                        <form method="POST" action="{{ route('logout') }}" class="mt-2 border-t border-[#D7E3DA] pt-2">
+                            @csrf
+                            <button type="submit" class="block w-full px-4 py-2 text-left text-sm font-semibold text-[#064631] hover:bg-[#EEF4EE]">Keluar</button>
+                        </form>
+                    @endauth
                     </nav>
                 </details>
             </div>
