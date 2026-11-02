@@ -29,8 +29,8 @@
         ],
         [
             'label' => 'Tiket',
-            'href' => null,
-            'active' => false,
+            'href' => \Illuminate\Support\Facades\Route::has('ticket-purchase.index') ? route('ticket-purchase.index') : null,
+            'active' => request()->routeIs('ticket-purchase.index'),
         ],
         [
             'label' => 'Reservasi',
@@ -55,6 +55,14 @@
             'active' => false,
         ],
     ];
+
+    if (auth()->user()?->role === 'wisatawan' && \Illuminate\Support\Facades\Route::has('ticket-purchase.orders')) {
+        array_splice($navItems, 3, 0, [[
+            'label' => 'Pesanan Saya',
+            'href' => route('ticket-purchase.orders'),
+            'active' => request()->routeIs('ticket-purchase.orders', 'ticket-purchase.show'),
+        ]]);
+    }
 
     if ($isPublicHome) {
         // Di "/" selalu tampil sebagai halaman publik
@@ -101,7 +109,7 @@
             </a>
 
             <!-- Menu desktop -->
-            <nav class="hidden items-center gap-5 lg:flex"
+            <nav class="hidden items-center gap-5 xl:flex"
                 aria-label="Navigasi utama">
 
                 @foreach ($navItems as $item)
@@ -136,17 +144,18 @@
 
             <div class="flex shrink-0 items-center gap-3">
                 <!-- Menu akun: login untuk tamu, profil/dashboard untuk pengguna login -->
-                <a href="{{ route($accountRoute) }}"
+                <a href="{{ route($accountRoute) }}" aria-label="{{ $accountLabel }}"
                    class="inline-flex items-center gap-2 text-xs font-semibold text-[#064631] hover:text-[#2F795B] sm:text-[13px]">
                     <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="12" cy="7.5" r="3.5"/>
                         <path d="M5 20v-1.5a7 7 0 0 1 14 0V20"/>
                     </svg>
-                    <span>{{ $accountLabel }}</span>
+                    <span class="hidden sm:inline">{{ $accountLabel }}</span>
                 </a>
 
+
                 <!-- Menu mobile tanpa JavaScript -->
-                <details class="relative lg:hidden">
+                <details class="relative xl:hidden">
                     <summary class="flex cursor-pointer list-none items-center gap-1 rounded border border-[#D7E3DA] px-3 py-2 text-xs font-semibold text-[#064631] [&::-webkit-details-marker]:hidden">
                         Menu
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">

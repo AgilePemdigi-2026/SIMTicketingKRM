@@ -103,8 +103,8 @@
                 @endforelse
             </dl>
 
-            @if (\Illuminate\Support\Facades\Route::has('tiket.index'))
-                <a href="{{ route('tiket.index') }}"
+            @if (\Illuminate\Support\Facades\Route::has('ticket-purchase.index'))
+                <a href="{{ route('ticket-purchase.index') }}"
                    class="mt-4 flex min-h-11 w-full items-center justify-center bg-[#064631] px-3 py-3 text-center text-[13px] font-bold text-white transition hover:bg-[#2F795B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F795B]">
                     Beli Tiket
                 </a>

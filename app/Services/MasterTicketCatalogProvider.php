@@ -22,6 +22,9 @@ class MasterTicketCatalogProvider implements TicketCatalogProvider
                     'reference' => 'master:'.$ticket->id_tiket,
                     'name' => $ticket->nama_tiket,
                     'category' => $ticket->kategori_tiket,
+                    'group' => $this->purchaseGroup($ticket->kategori_tiket),
+                    'available_quota' => (int) $ticket->kuota,
+                    'terms' => $ticket->ketentuan,
                     'rates' => $type === null ? [] : [[
                         'visitor_type' => $type, 'adult_price' => $ticket->harga_dewasa,
                         'child_price' => $ticket->harga_anak,
@@ -50,16 +53,28 @@ class MasterTicketCatalogProvider implements TicketCatalogProvider
         return [
             'reference' => 'master:'.$ticket->id_tiket,
             'name' => $ticket->nama_tiket, 'category' => $ticket->kategori_tiket,
+            'group' => $this->purchaseGroup($ticket->kategori_tiket),
+            'available_quota' => (int) $ticket->kuota,
+            'terms' => $ticket->ketentuan,
             'is_active' => (int) $ticket->status_aktif === 1,
             'adult_price' => $ticket->harga_dewasa, 'child_price' => $ticket->harga_anak,
         ];
+    }
+
+    private function purchaseGroup(string $category): string
+    {
+        return match (mb_strtolower(trim($category))) {
+            'tiket masuk', 'reguler' => 'masuk',
+            'tiket wahana', 'wahana' => 'wahana',
+            default => 'lainnya',
+        };
     }
 
     private function visitorType(string $label): ?string
     {
         return match (mb_strtolower(trim($label))) {
             'domestik', 'domestik (wni)' => 'domestik',
-            'mancanegara (wna)' => 'mancanegara',
+            'mancanegara', 'mancanegara (wna)' => 'mancanegara',
             default => null,
         };
     }

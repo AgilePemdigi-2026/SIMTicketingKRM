@@ -8,6 +8,8 @@ Route::middleware([EnsureMasterTicketDatabase::class, 'web', 'auth', 'role:wisat
     ->prefix('wisatawan/pembelian-tiket')->name('ticket-purchase.')
     ->group(function () {
         Route::get('/', [TicketPurchaseController::class, 'index'])->name('index');
+        Route::post('/preview', [TicketPurchaseController::class, 'preview'])->name('preview');
+        Route::get('/pesanan', [TicketPurchaseController::class, 'orders'])->name('orders');
         Route::post('/', [TicketPurchaseController::class, 'store'])->name('store');
         Route::get('/{code}', [TicketPurchaseController::class, 'show'])->whereUuid('code')->name('show');
     });

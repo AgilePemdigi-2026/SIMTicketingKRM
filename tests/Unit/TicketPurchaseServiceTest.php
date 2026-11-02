@@ -16,7 +16,7 @@ class TicketPurchaseServiceTest extends TestCase
     {
         return [
             'reference' => 'master:5', 'name' => 'Tiket uji kalkulasi', 'category' => 'Tiket Masuk',
-            'is_active' => true, 'adult_price' => 25000, 'child_price' => 15000,
+            'available_quota' => 10, 'is_active' => true, 'adult_price' => 25000, 'child_price' => 15000,
         ];
     }
 

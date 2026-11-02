@@ -1,8 +1,43 @@
 # Pembelian Tiket dengan Master Dana dan PostgreSQL Lokal
 
-Backend ini menggunakan master `daftar_tiket` dan menyimpan pesanan, detail,
-serta pengunjung di PostgreSQL lokal. Frontend pembelian, pembayaran, E-Tiket,
-QR, reservasi kuota, dan deployment aplikasi belum termasuk tahap ini.
+Modul menggunakan master `daftar_tiket` Dana dan menyimpan pesanan, item,
+serta pengunjung di PostgreSQL lokal. Lanjutan Pembelian Tiket **Sprint 1**
+meliputi pilihan tiket, data pengunjung, preview/perhitungan harga, peninjauan,
+dan penyimpanan transaksi. **Pesanan Saya/riwayat pesanan adalah bagian Sprint 2.**
+
+Sesuai pembagian modul, tahap ini berhenti pada pesanan `pending_payment`
+dan titik serah ke pembayaran melalui UUID pesanan. Dalam SRS, proses Membeli
+Tiket masih berlanjut ke pembayaran dan penerbitan E-Tiket; keduanya termasuk
+tahap integrasi terpisah.
+
+## Kontrak pembelian yang dilanjutkan
+
+- Mengikuti kontrak kuota master Dana: jumlah yang diminta dibandingkan dengan
+  nilai `daftar_tiket.kuota`. Referensi tiket yang sama dijumlahkan sebelum
+  dibandingkan. Penghitungan pemakaian per tanggal, reservasi, dan pengurangan
+  kuota belum diterapkan. Pemeriksaan ini bukan jaminan reservasi kuota.
+- Katalog menambahkan `group`, `available_quota`, dan `terms`. Pemetaan kategori
+  eksplisit: Tiket Masuk/Reguler → `masuk`, Tiket Wahana/Wahana → `wahana`, lainnya
+  → `lainnya`. Tidak ada tiket pengganti atau tarif dummy.
+- `POST /wisatawan/pembelian-tiket/preview` menerima tanggal, jenis wisatawan,
+  serta item/referensi/jumlah. Respons JSON memuat `quote.items`, `quote.total`,
+  dan `quota_reserved=false`; tidak membuat transaksi. Harga dan kuota diperiksa
+  ulang ketika checkout disimpan.
+- `GET /wisatawan/pembelian-tiket/pesanan` menampilkan pesanan pengguna sendiri,
+  terbaru lebih dahulu, 20 per halaman; mendukung HTML maupun JSON.
+- Endpoint katalog, checkout, dan detail existing tetap mendukung HTML/JSON.
+  Klien JSON lama boleh tidak mengirim token. Form Blade wajib memakai
+  `checkout_token` UUID. Klien JSON disarankan mengirim token agar retry aman.
+- Token unik per pengguna dengan sidik payload disimpan lewat migration tambahan.
+  Retry identik mengembalikan snapshot pesanan yang sama (JSON 201 atau redirect
+  HTML); token sama dengan data berbeda ditolak 409. Harga/kuota master yang
+  berubah tidak mengubah pesanan yang sudah tersimpan.
+- `booker_is_visitor` opsional. Jika aktif, pemesan harus sesuai dengan pengunjung
+  dewasa pertama; tidak menambah jumlah pengunjung. Pesanan anak saja memakai
+  pemesan terpisah.
+- Semua endpoint memerlukan wisatawan terautentikasi. Pesanan pengguna lain 404.
+  Field internal token/sidik payload tidak diekspos melalui JSON pesanan.
+
 
 ## Menjalankan lokal
 
@@ -32,7 +67,8 @@ Compose dapat menggunakan `--env-file .env.postgres.local`. Pilihan ini hanya
 mengatur Compose, bukan otomatis mengubah environment Laravel.
 
 Untuk menampilkan halaman Blade existing, jalankan Vite jika build asset belum ada.
-Tidak ada perubahan pada frontend pada implementasi ini.
+Halaman Blade pembelian terhubung ke navbar, tombol Beli Tiket, dan footer.
+Pesanan tersimpan dapat dibuka kembali dari Pesanan Saya.
 
 ## Akun testing
 

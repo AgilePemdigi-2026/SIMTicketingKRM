@@ -11,6 +11,7 @@ use Illuminate\Database\Connection;
 use Illuminate\Foundation\Bootstrap\LoadConfiguration;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 abstract class PostgresTicketTestCase extends TestCase
@@ -101,6 +102,7 @@ abstract class PostgresTicketTestCase extends TestCase
     protected function payload(): array
     {
         return [
+            'checkout_token' => (string) Str::uuid(),
             'visit_date' => now('Asia/Jakarta')->addDay()->toDateString(), 'visitor_type' => 'domestik',
             'booker' => ['name' => 'Pemesan Tes', 'identity_number' => 'TES-PEMESAN',
                 'phone' => '080000009999', 'email' => 'pemesan@example.com'],

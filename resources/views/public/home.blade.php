@@ -29,9 +29,9 @@
                 Nikmati wisata alam mangrove yang unik, hijau, dan edukatif di Kebun Raya Mangrove Surabaya.
             </p>
             <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-                {{-- Belum membuka pembelian tiket selama route Naufal belum tersedia. --}}
-                @if (\Illuminate\Support\Facades\Route::has('tiket.index'))
-                    <a href="{{ route('tiket.index') }}"
+                {{-- Pembelian mengikuti ketersediaan route katalog master. --}}
+                @if (\Illuminate\Support\Facades\Route::has('ticket-purchase.index'))
+                    <a href="{{ route('ticket-purchase.index') }}"
                        class="inline-flex min-h-11 items-center justify-center bg-[#064631] px-7 py-3 text-sm font-semibold text-white transition hover:bg-[#0a674a]">
                         Beli Tiket
                     </a>

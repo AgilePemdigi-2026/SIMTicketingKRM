@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\TicketOrder;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -9,7 +11,16 @@ class CheckoutTicketPurchaseRequest extends StoreTicketPurchaseRequest
 {
     public function rules(): array
     {
-        return array_merge(parent::rules(), [
+        $rules = parent::rules();
+        $token = $this->input('checkout_token');
+        if ($this->user() !== null && is_string($token) && Str::isUuid($token)
+            && TicketOrder::where('user_id', $this->user()->getKey())->where('checkout_token', $token)->exists()) {
+            $rules['visit_date'] = ['bail', 'required', 'date_format:Y-m-d'];
+        }
+
+        return array_merge($rules, [
+            'checkout_token' => [$this->expectsJson() ? 'nullable' : 'required', 'uuid'],
+            'booker_is_visitor' => ['sometimes', 'boolean'],
             'visitor_type' => ['required', Rule::in(['domestik', 'mancanegara'])],
             'booker' => ['required', 'array'],
             'booker.name' => ['required', 'string', 'max:255'],
@@ -34,6 +45,14 @@ class CheckoutTicketPurchaseRequest extends StoreTicketPurchaseRequest
                     return;
                 }
 
+                if ($this->boolean('booker_is_visitor')) {
+                    $firstAdult = collect($this->input('items'))->flatMap(fn ($item) => $item['visitors'])
+                        ->firstWhere('age_category', 'adult');
+                    if ($firstAdult === null || $firstAdult['name'] !== $this->input('booker.name')
+                        || $firstAdult['identity_number'] !== $this->input('booker.identity_number')) {
+                        $validator->errors()->add('booker_is_visitor', 'Pemesan yang ikut berkunjung harus tercatat sebagai pengunjung dewasa pertama.');
+                    }
+                }
                 foreach ($this->input('items') as $index => $item) {
                     $visitors = collect($item['visitors']);
                     if ($visitors->where('age_category', 'adult')->count() !== (int) $item['adult_quantity']
@@ -66,6 +85,7 @@ class CheckoutTicketPurchaseRequest extends StoreTicketPurchaseRequest
     public function attributes(): array
     {
         return [
+            'checkout_token' => 'token checkout',
             'visitor_type' => 'jenis wisatawan',
             'booker' => 'identitas pemesan',
             'booker.name' => 'nama pemesan',
