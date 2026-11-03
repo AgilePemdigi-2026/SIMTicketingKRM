@@ -250,6 +250,45 @@
             </div>
             {{-- AKHIR DATA PENGUNJUNG --}}
 
+            {{-- METODE PEMBAYARAN --}}
+            <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                <h3 style="font-weight: 600; margin-bottom: 8px;">
+                    Metode Pembayaran
+                </h3>
+
+                <p style="margin-bottom: 16px; color: #64748b;">
+                    Pilih metode pembayaran untuk pembelian tiket langsung.
+                </p>
+
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input
+                            type="radio"
+                            name="payment_method"
+                            value="cash"
+                            @checked(old('payment_method', request()->input('payment_method', 'cash')) === 'cash')
+                        >
+                        Cash (Tunai)
+                    </label>
+
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input
+                            type="radio"
+                            name="payment_method"
+                            value="qris"
+                            @checked(old('payment_method', request()->input('payment_method', 'cash')) === 'qris')
+                        >
+                        QRIS
+                    </label>
+                </div>
+
+                <p style="margin-top: 12px; font-size: 13px; color: #64748b;">
+                    Pembayaran belum diproses. Tombol Cek Harga Tiket
+                    hanya menghitung estimasi biaya.
+                </p>
+            </div>
+            {{-- AKHIR METODE PEMBAYARAN --}}
+
             <button type="submit" class="krm-btn krm-btn-primary">
                 Cek Harga Tiket
             </button>
@@ -294,6 +333,78 @@
             </p>
 
         </section>
+        @if (old('payment_method', request()->input('payment_method', 'cash')) === 'cash')
+            <section class="krm-card payment-card mt-6" id="cash-preview">
+                <h2>Simulasi Pembayaran Cash</h2>
+
+                <p class="mt-3">Total Tagihan</p>
+                <h3 class="text-xl font-semibold">
+                    Rp {{ number_format((float) $quote['total'], 0, ',', '.') }}
+                </h3>
+
+                <div class="mt-5">
+                    <label for="cash-received" class="block font-semibold">
+                        Uang yang Diterima (Rp)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="cash-received"
+                        min="0"
+                        step="1000"
+                        placeholder="Masukkan nominal uang"
+                        class="mt-2 w-full rounded border p-3"
+                    >
+                </div>
+
+                <div class="mt-5">
+                    <p>Kembalian</p>
+                    <h3 id="cash-change" class="text-xl font-semibold">
+                        Rp 0
+                    </h3>
+
+                    <p id="cash-warning" class="mt-2 text-sm" style="color: #b91c1c;"></p>
+                </div>
+
+                <p class="mt-4 text-sm text-gray-600">
+                    Ini hanya simulasi. Pembayaran belum dicatat
+                    atau dikonfirmasi.
+                </p>
+            </section>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const total = @json((float) $quote['total']);
+                    const receivedInput = document.getElementById('cash-received');
+                    const changeOutput = document.getElementById('cash-change');
+                    const warningOutput = document.getElementById('cash-warning');
+
+                    receivedInput.addEventListener('input', function () {
+                        const received = Number(receivedInput.value);
+
+                        if (!receivedInput.value) {
+                            changeOutput.textContent = 'Rp 0';
+                            warningOutput.textContent = '';
+                            return;
+                        }
+
+                        if (received < total) {
+                            changeOutput.textContent = 'Rp 0';
+                            warningOutput.textContent =
+                                'Uang yang diterima belum mencukupi.';
+                            return;
+                        }
+
+                        const change = received - total;
+
+                        changeOutput.textContent =
+                            'Rp ' + change.toLocaleString('id-ID');
+
+                        warningOutput.textContent = '';
+                    });
+                });
+            </script>
+        @endif
     @endif
 
     <div class="purchase-actions">
