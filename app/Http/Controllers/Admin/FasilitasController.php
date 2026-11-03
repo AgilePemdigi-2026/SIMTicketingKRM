@@ -114,6 +114,7 @@ class FasilitasController extends Controller
                 $fasilitas,
                 $sesiDikirim,
                 $idSesiDikirim,
+                $idSesiMilikFasilitas,
                 $fotoBaru
             ) {
                 $fasilitas->update([
@@ -150,6 +151,10 @@ class FasilitasController extends Controller
                 // aturan penghapusan perlu diperketat.
                 $fasilitas->sesiFasilitas()
                     ->whereNotIn('id_sesi', $idSesiDikirim->all())
+                    ->whereIn(
+                        'id_sesi',
+                        $idSesiMilikFasilitas->all()
+                    )
                     ->delete();
             });
         } catch (\Throwable $e) {
