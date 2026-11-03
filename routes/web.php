@@ -132,6 +132,22 @@ Route::middleware('auth')->group(function () {
     })->middleware('role:petugas')
       ->name('petugas.dashboard');
 
+    // Loket pembelian tiket Petugas
+    Route::get('/petugas/loket', [\App\Http\Controllers\Petugas\TicketCounterController::class, 'index'])
+        ->middleware([
+            'auth',
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class])
+        ->name('petugas.loket.index');
+
+    Route::post('/petugas/loket/preview', [\App\Http\Controllers\Petugas\TicketCounterController::class, 'preview'])
+        ->middleware([
+            'auth',
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->name('petugas.loket.preview');
+
     // Dashboard Admin
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
