@@ -58,6 +58,7 @@ abstract class PostgresTicketTestCase extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->withoutVite();
         $this->testConnection = app(TicketPurchaseDatabase::class)->connection();
         // Guard confirms this exact test database before any migration or write.
         $this->assertSame('simticketingkrm_purchase_test', $this->testConnection->getDatabaseName());

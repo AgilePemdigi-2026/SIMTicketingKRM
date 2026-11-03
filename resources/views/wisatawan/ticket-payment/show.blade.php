@@ -1,87 +1,1098 @@
 @extends('layouts.app')
+
 @section('title', 'Pembayaran Tiket - Kebun Raya Mangrove Surabaya')
-@push('styles') @include('partials.ticket-payment-styles') @endpush
+
+@push('styles')
+    @include('partials.ticket-payment-styles')
+
+    <style>
+        .qr-cash-code {
+            margin: 0 0 12px;
+            color: var(--color-primary);
+            font-size: clamp(27px, 3.5vw, 36px);
+            font-weight: 500;
+            letter-spacing: 0.16em;
+            text-align: center;
+            overflow-wrap: anywhere;
+        }
+
+        .qr-cash-description {
+            max-width: 620px;
+            margin: 0 auto 20px;
+            line-height: 1.8;
+        }
+
+        .qr-cash-temporary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            min-height: 100px;
+            width: 100%;
+            margin: 18px auto 24px;
+            background: #eaf2e8;
+            color: #183d32;
+            font-size: 17px;
+            font-weight: 500;
+        }
+
+        .qr-cash-temporary span:first-child {
+            font-size: 25px;
+        }
+
+        .qr-cash-view {
+            margin: 0 auto 8px;
+        }
+
+        .qr-cash-payment-status {
+            margin-top: 15px;
+        }
+
+        .qr-cash-full-code {
+            overflow-wrap: anywhere;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        /* ===== HALAMAN PEMBAYARAN SPRINT 2 ===== */
+
+        .qr-page {
+            max-width: 1100px;
+            padding-top: 70px;
+            padding-bottom: 65px;
+        }
+
+        .qr-page .purchase-steps {
+            margin-bottom: 52px;
+        }
+
+        .qr-page .purchase-heading {
+            margin-bottom: 38px;
+        }
+
+        .qr-page .purchase-heading h1 {
+            font-size: 27px;
+        }
+
+        .qr-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 2.2fr) minmax(280px, 1fr);
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        .qr-main {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 0;
+        }
+
+        .qr-box {
+            padding: 24px;
+            background: white;
+            border: 1px solid var(--color-border);
+            min-width: 0;
+        }
+
+        .qr-box-title {
+            margin: 0 0 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        /* ===== PILIHAN METODE ===== */
+
+        .qr-method-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            width: 100%;
+        }
+
+        .qr-method-tab {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            min-height: 52px;
+            border: 1px solid var(--color-border);
+            color: var(--color-primary);
+            font-size: 15px;
+            font-weight: 700;
+            text-align: center;
+            background: white;
+        }
+
+        .qr-method-tab + .qr-method-tab {
+            border-left: 0;
+        }
+
+        .qr-method-tab.is-active,
+        .qr-method-tab:has(input:checked) {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .qr-method-tab.is-choice {
+            cursor: pointer;
+        }
+
+        .qr-method-tab input {
+            position: absolute;
+            width: 1px !important;
+            height: 1px !important;
+            min-height: 0 !important;
+            opacity: 0;
+        }
+
+        .qr-method-tab:focus-within {
+            outline: 2px solid var(--color-secondary);
+            outline-offset: 3px;
+        }
+
+        .qr-method-help {
+            margin-top: 12px;
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--color-muted);
+        }
+
+        .qr-method-submit {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
+        /* ===== BAGIAN QRIS ===== */
+
+        .qr-payment-box {
+            flex: 1;
+            text-align: center;
+        }
+
+        .qr-payment-title {
+            margin: 4px 0 24px;
+            font-size: 15px;
+            font-weight: 700;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .qr-image-frame {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 190px;
+            height: 190px;
+            padding: 10px;
+            margin: 0 auto 24px;
+            background: white;
+            border: 1px solid var(--color-border);
+        }
+
+        .qr-image-frame img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .qr-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background: #f3f7f3;
+            color: var(--color-muted);
+            font-size: 12px;
+            line-height: 1.6;
+            text-align: center;
+            padding: 15px;
+        }
+
+        .qr-expiry-label {
+            font-size: 13px;
+            color: var(--color-text);
+        }
+
+        .qr-countdown {
+            display: block;
+            margin: 8px 0;
+            font-size: 17px;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .qr-status {
+            display: inline-block;
+            padding: 7px 12px;
+            margin-top: 6px;
+            background: #fff3d8;
+            color: #967126;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .qr-status.is-paid {
+            background: #e9f4e9;
+            color: #32764b;
+        }
+
+        .qr-info {
+            margin-top: 17px;
+            color: var(--color-muted);
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .qr-test-notice {
+            max-width: 450px;
+            margin: 16px auto;
+            padding: 12px;
+            border: 1px solid #eadfbd;
+            background: #fff9e9;
+            color: #795e2d;
+            font-size: 12px;
+            line-height: 1.7;
+            text-align: center;
+        }
+
+        .qr-pay-button {
+            margin: 18px auto 0;
+        }
+
+        .qr-simulator-tools {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        .qr-simulator-details {
+            margin: 14px auto;
+            max-width: 470px;
+            text-align: left;
+            font-size: 12px;
+        }
+
+        .qr-simulator-details summary {
+            cursor: pointer;
+            color: var(--color-primary);
+            font-weight: 600;
+        }
+
+        .qr-simulator-details input {
+            margin-top: 10px;
+            width: 100%;
+            font-size: 11px;
+        }
+
+        /* ===== RINGKASAN PEMBAYARAN ===== */
+
+        .qr-summary {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .qr-summary-meta {
+            display: grid;
+            gap: 18px;
+        }
+
+        .qr-summary-meta dt {
+            margin-bottom: 5px;
+            color: var(--color-muted);
+            font-size: 11px;
+            font-weight: 400;
+        }
+
+        .qr-summary-meta dd {
+            margin: 0;
+            color: var(--color-text);
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        .qr-summary-total {
+            margin-top: 20px;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .qr-summary-total span {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--color-muted);
+            font-size: 11px;
+        }
+
+        .qr-summary-total strong {
+            display: block;
+            color: var(--color-primary);
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .qr-summary-history {
+            margin-top: 25px;
+            border-top: 1px solid var(--color-border);
+            padding-top: 18px;
+        }
+
+        .qr-summary-history h3 {
+            margin-bottom: 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .qr-summary-history a {
+            text-decoration: underline;
+            font-size: 12px;
+        }
+
+        /* ===== TOMBOL BAWAH ===== */
+
+        .qr-bottom-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .qr-bottom-actions .krm-btn {
+            min-height: 44px;
+        }
+
+        .qr-footer-note {
+            margin-top: 10px;
+            color: var(--color-muted);
+            font-size: 11px;
+            text-align: right;
+            line-height: 1.6;
+        }
+
+        /* ===== RESPONSIVE ===== */
+
+        @media (max-width: 800px) {
+            .qr-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .qr-page {
+                padding-top: 35px;
+            }
+
+            .qr-summary {
+                min-height: 0;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .qr-page {
+                width: calc(100% - 32px);
+            }
+
+            .qr-box {
+                padding: 18px;
+            }
+
+            .qr-page .purchase-steps {
+                gap: 10px;
+            }
+
+            .qr-method-tab {
+                min-height: 48px;
+                font-size: 13px;
+            }
+
+            .qr-bottom-actions {
+                flex-direction: column;
+            }
+
+            .qr-bottom-actions .krm-btn {
+                width: 100%;
+            }
+
+            .qr-footer-note {
+                text-align: center;
+            }
+        }
+    </style>
+@endpush
+
 @section('content')
-@php($payment = $order->payment)
-<div class="purchase-page krm-container">
-    <nav class="purchase-breadcrumb" aria-label="Breadcrumb"><a href="{{ route('ticket-purchase.orders') }}">Pesanan Saya</a><span>/</span><a href="{{ route('ticket-purchase.show', $order->code) }}">Detail Pesanan</a><span>/</span><span>Pembayaran</span></nav>
-    <ol class="purchase-steps" aria-label="Tahapan pembelian"><li class="completed"><span>✓</span>Pilih Tiket</li><li class="completed"><span>✓</span>Data Pengunjung</li><li aria-current="step"><span>3</span>Pembayaran</li></ol>
-    <div class="purchase-heading"><h1>Pembayaran</h1><p>Selesaikan pembayaran dan pantau hasil pemeriksaan Petugas.</p></div>
-    @include('partials.ticket-payment-feedback')
-    <div class="payment-grid">
-        <div class="payment-main">
-        <section class="krm-card payment-card payment-method-card" aria-labelledby="method-title">
-            @if(!$payment && $order->status === 'pending_payment')
-                <h2 id="method-title">Pilih metode pembayaran</h2>
-                <p>Metode tidak dapat diganti setelah disimpan. Pastikan pilihanmu sudah sesuai.</p>
-                <form method="POST" action="{{ route('ticket-payment.select', $order->code) }}" data-payment-form>
-                    @csrf
-                    <fieldset><legend class="sr-only">Metode pembayaran</legend><div class="payment-methods payment-method-choice">
-                        <label><input type="radio" name="method" value="qris" required @checked(old('method') === 'qris')>QRIS<br><small>Bayar dengan aplikasi bank atau e-wallet.</small></label>
-                        <label><input type="radio" name="method" value="cash" required @checked(old('method') === 'cash')>Cash<br><small>Bayar tunai kepada Petugas loket.</small></label>
-                    </div></fieldset>
-                    @error('method')<p class="payment-error">{{ $message }}</p>@enderror
-                    <div class="purchase-actions"><button type="submit" class="krm-btn krm-btn-primary">Simpan Metode Pembayaran</button></div>
-                </form>
-            @elseif($payment)
-                <h2 id="method-title">Metode pembayaran</h2>
-                <div class="payment-methods payment-method-tabs" role="group" aria-label="Metode pembayaran tersimpan"><span class="{{ $payment?->method === 'qris' ? 'selected' : '' }}">QRIS</span><span class="{{ $payment?->method === 'cash' ? 'selected' : '' }}">CASH</span></div>
-                <p class="payment-status-note">Metode sudah tersimpan dan tidak dapat diganti.</p>
-            @else
-                <h2 id="method-title">Metode belum dipilih</h2>
-            @endif
-        </section>
-        <section class="krm-card payment-card payment-instructions" aria-labelledby="payment-title">
-            @if(!$payment && $order->status === 'pending_payment')
-                <h2 id="payment-title">Petunjuk pembayaran</h2><p>Pilih QRIS atau cash, lalu simpan metode pembayaran untuk melihat petunjuk berikutnya.</p>
-            @elseif($payment?->status === 'paid')
-                <h2 id="payment-title">Pembayaran terkonfirmasi</h2>
-                <span class="payment-label">Lunas</span>
-                <p>Petugas telah mengonfirmasi pembayaranmu. Data pembayaran tersedia untuk proses penerbitan E-Tiket.</p>
-                <p class="payment-status-note">E-Tiket ditangani melalui modul penerbitan tiket.</p>
-            @elseif($payment?->method === 'qris')
-                <h2 id="payment-title">Bayar dengan QRIS</h2>
-                <span class="payment-label">{{ $payment->statusLabel() }}</span>
-                <div class="payment-notice" style="margin-top:20px">QRIS ini disediakan untuk demonstrasi proyek, bukan rekening resmi pengelola destinasi.</div>
-                @if($payment->status !== 'under_review')
-                    <img class="payment-qr" src="{{ asset('images/pembayaran/qris-code.png') }}" alt="Kode QRIS untuk demonstrasi proyek" width="814" height="823">
-                    <ol class="purchase-visitors"><li>Pindai atau impor gambar QRIS melalui aplikasi bank/e-wallet.</li><li>Periksa nama penerima, lalu masukkan tepat <strong>Rp {{ number_format((float)$payment->amount, 2, ',', '.') }}</strong>.</li><li>Setelah pembayaran berhasil, unggah bukti di bawah.</li></ol>
-                    <a class="krm-btn" href="{{ asset('images/pembayaran/qris-code.png') }}" download="QRIS-Merchant.png">Unduh Gambar QRIS</a>
-                    @if($payment->status === 'rejected')
-                        <p class="payment-issue"><strong>Alasan penolakan:</strong> {{ $payment->submissions->first()?->rejection_reason }}<br>Periksa alasan sebelum mengajukan ulang. Jangan membayar ulang jika dana sudah terkirim; cocokkan dahulu dengan Petugas.</p>
-                    @endif
-                    <form method="POST" enctype="multipart/form-data" action="{{ route('ticket-payment.submit', $order->code) }}" data-payment-form>
-                        @csrf
-                        <label for="proof">Bukti pembayaran</label><input id="proof" name="proof" type="file" accept="image/jpeg,image/png" required aria-describedby="proof-help proof-error">
-                        <p id="proof-help" class="payment-status-note">JPG atau PNG, maksimal 5 MB. Bukti hanya dapat dilihat olehmu dan Petugas.</p>
-                        @error('proof')<p class="payment-error" id="proof-error">{{ $message }}</p>@enderror
-                        <button type="submit" class="krm-btn krm-btn-primary">Kirim Bukti Pembayaran</button>
-                    </form>
-                @else
-                    <p>Bukti sudah dikirim. Petugas akan mencocokkan penerimaan melalui riwayat merchant. Mengunggah bukti tidak langsung membuat pesanan lunas.</p>
-                @endif
-            @elseif($payment?->method === 'cash')
-                <h2 id="payment-title">Pembayaran cash di loket</h2><span class="payment-label">{{ $payment->statusLabel() }}</span>
-                <p>Tunjukkan kode pesanan kepada Petugas dan bayarkan <strong>Rp {{ number_format((float)$payment->amount, 2, ',', '.') }}</strong> di loket.</p>
-                <p>Pesanan akan menjadi lunas setelah Petugas menerima uang dan mengonfirmasinya.</p>
-            @else
-                <h2 id="payment-title">Pembayaran tidak tersedia</h2><p>Status pesanan saat ini tidak menerima pembayaran baru.</p>
-            @endif
-        </section>
-        </div>
-        <aside class="krm-card payment-card payment-summary"><h2>Ringkasan pembayaran</h2>
-            @foreach($order->items as $item)
-                <div class="payment-summary-item"><strong>{{ $item->ticket_name }}</strong><p>{{ $item->adult_quantity }} dewasa · {{ $item->child_quantity }} anak</p></div>
-            @endforeach
-            <dl class="payment-meta"><div><dt>Kategori wisatawan</dt><dd>{{ $order->visitor_type === 'domestik' ? 'Domestik (WNI)' : 'Mancanegara (WNA)' }}</dd></div><div><dt>Jumlah tiket</dt><dd>{{ $order->items->sum(fn ($item) => $item->adult_quantity + $item->child_quantity) }} tiket</dd></div><div><dt>Pemesan</dt><dd>{{ $order->booker_name }}</dd></div></dl>
-            <dl class="payment-meta"><div><dt>Kode pesanan</dt><dd>{{ $order->code }}</dd></div><div><dt>Tanggal kunjungan</dt><dd>{{ $order->visit_date->format('d/m/Y') }}</dd></div><div><dt>Metode</dt><dd>{{ $payment ? strtoupper($payment->method) : 'Belum dipilih' }}</dd></div><div><dt>Total pembayaran</dt><dd class="payment-amount">Rp {{ number_format((float)$order->total, 2, ',', '.') }}</dd></div>
-            @if($payment?->paid_at)<div><dt>Dikonfirmasi pada</dt><dd>{{ $payment->paid_at->timezone('Asia/Jakarta')->format('d/m/Y H:i') }} WIB</dd></div>@endif</dl>
-            @if($payment && $payment->submissions->isNotEmpty())
-                <h2>Pengajuan bukti</h2><ul class="payment-history">@foreach($payment->submissions as $submission)<li><a class="payment-proof-link" href="{{ route('ticket-payment.proof', $submission) }}" target="_blank" rel="noopener">Lihat bukti #{{ $submission->id }}</a><time>{{ $submission->created_at->timezone('Asia/Jakarta')->format('d/m/Y H:i') }} WIB</time><p>{{ match($submission->status) { 'approved' => 'Disetujui', 'rejected' => 'Ditolak', default => 'Menunggu verifikasi' } }}</p>@if($submission->rejection_reason)<p class="payment-error">{{ $submission->rejection_reason }}</p>@endif</li>@endforeach</ul>
-            @endif
-            <a class="krm-btn" href="{{ route('ticket-purchase.show', $order->code) }}">Kembali ke Detail Pesanan</a>
-        </aside>
+
+@php
+    $payment = $order->payment;
+
+    $attempt = $payment?->gatewayAttempts?->first();
+
+    $isPaid = $order->status === 'paid'
+        && $payment?->status === 'paid';
+
+    $ticketCount = $order->items->sum('adult_quantity')
+        + $order->items->sum('child_quantity');
+
+    $adultCount = $order->items->sum('adult_quantity');
+    $childCount = $order->items->sum('child_quantity');
+
+    $visitorType = $order->visitor_type === 'domestik'
+        ? 'Domestik'
+        : 'Mancanegara';
+
+    $ageType = $adultCount > 0 && $childCount > 0
+        ? 'Dewasa & Anak'
+        : ($adultCount > 0 ? 'Dewasa' : 'Anak');
+
+    $ticketNames = $order->items
+        ->pluck('ticket_name')
+        ->filter()
+        ->unique()
+        ->implode(', ');
+
+    $totalFormatted = number_format(
+        (float) $order->total,
+        0,
+        ',',
+        '.'
+    );
+@endphp
+
+<div class="purchase-page krm-container qr-page">
+
+    {{-- ===== TAHAPAN PEMBELIAN ===== --}}
+    <ol class="purchase-steps" aria-label="Tahapan pembelian">
+
+        <li class="completed">
+            <span aria-hidden="true">&#10003;</span>
+            Pilih Tiket
+        </li>
+
+        <li class="completed">
+            <span aria-hidden="true">&#10003;</span>
+            Data Pengunjung
+        </li>
+
+        <li aria-current="step">
+            <span>3</span>
+            Pembayaran
+        </li>
+
+    </ol>
+
+    {{-- ===== JUDUL ===== --}}
+    <div class="purchase-heading">
+        <h1>Pembayaran</h1>
     </div>
+
+    @include('partials.ticket-payment-feedback')
+
+    <div class="qr-layout">
+
+        {{-- ===== KOLOM KIRI ===== --}}
+        <div class="qr-main">
+
+            {{-- PILIH METODE --}}
+            <section class="qr-box" aria-labelledby="method-title">
+
+                <h2 id="method-title" class="qr-box-title">
+                    Metode Pembayaran
+                </h2>
+
+                @if(!$payment && $order->status === 'pending_payment')
+
+                    <form
+                        method="POST"
+                        action="{{ route('ticket-payment.select', $order->code) }}"
+                        data-payment-form
+                    >
+                        @csrf
+
+                        <fieldset>
+                            <legend class="sr-only">
+                                Pilih metode pembayaran
+                            </legend>
+
+                            <div class="qr-method-tabs">
+
+                                <label class="qr-method-tab is-choice">
+                                    <input
+                                        type="radio"
+                                        name="method"
+                                        value="qris"
+                                        required
+                                        @checked(old('method') === 'qris')
+                                    >
+                                    QRIS
+                                </label>
+
+                                <label class="qr-method-tab is-choice">
+                                    <input
+                                        type="radio"
+                                        name="method"
+                                        value="cash"
+                                        required
+                                        @checked(old('method') === 'cash')
+                                    >
+                                    CASH
+                                </label>
+
+                            </div>
+                        </fieldset>
+
+                        @error('method')
+                            <p class="payment-error">
+                                {{ $message }}
+                            </p>
+                        @enderror
+
+                        <p class="qr-method-help">
+                            Pilih metode pembayaran.
+                            Metode tidak dapat diubah setelah disimpan.
+                        </p>
+
+                        <div class="qr-method-submit">
+                            <button
+                                type="submit"
+                                class="krm-btn krm-btn-primary"
+                            >
+                                Simpan Metode Pembayaran
+                            </button>
+                        </div>
+
+                    </form>
+
+                @elseif($payment)
+
+                    <div class="qr-method-tabs" role="group"
+                         aria-label="Metode pembayaran tersimpan">
+
+                        <span class="qr-method-tab
+                            {{ $payment->method === 'qris' ? 'is-active' : '' }}">
+                            QRIS
+                        </span>
+
+                        <span class="qr-method-tab
+                            {{ $payment->method === 'cash' ? 'is-active' : '' }}">
+                            CASH
+                        </span>
+
+                    </div>
+
+                    <p class="qr-method-help">
+                        Metode pembayaran sudah tersimpan.
+                    </p>
+
+                @else
+
+                    <p class="qr-method-help">
+                        Metode pembayaran tidak tersedia
+                        untuk status pesanan saat ini.
+                    </p>
+
+                @endif
+
+            </section>
+
+            {{-- ===== INSTRUKSI PEMBAYARAN ===== --}}
+            <section class="qr-box qr-payment-box"
+                     aria-labelledby="payment-title">
+
+                {{-- PESANAN SUDAH LUNAS --}}
+                @if($isPaid)
+
+                    <h2 id="payment-title" class="qr-payment-title">
+                        PEMBAYARAN BERHASIL
+                    </h2>
+
+                    <div class="qr-image-frame">
+                        <div class="qr-placeholder">
+                            Pembayaran sudah dikonfirmasi
+                        </div>
+                    </div>
+
+                    <span class="qr-status is-paid">
+                        Lunas
+                    </span>
+
+                    <p class="qr-info">
+                        Pembayaran telah dikonfirmasi.
+                        Pesananmu siap diproses oleh
+                        modul penerbitan E-Tiket.
+                    </p>
+
+                    @if($payment->paid_at)
+                        <p class="qr-info">
+                            Dikonfirmasi:
+                            {{ $payment->paid_at->timezone('Asia/Jakarta')->format('d/m/Y H:i') }}
+                            WIB
+                        </p>
+                    @endif
+
+                {{-- QRIS MIDTRANS --}}
+                @elseif($payment?->method === 'qris')
+
+                    <h2 id="payment-title" class="qr-payment-title">
+                        SCAN QR UNTUK MEMBAYAR
+                    </h2>
+
+                    <div class="qr-test-notice">
+                        <strong>MIDTRANS SANDBOX — MODE PENGUJIAN</strong>
+                        <div>
+                            Tidak menggunakan uang sungguhan.
+                            Gunakan simulator Midtrans,
+                            bukan aplikasi bank atau e-wallet asli.
+                        </div>
+                    </div>
+
+                    {{-- QRIS BELUM DIBUAT --}}
+                    @if(!$attempt && $payment->status === 'pending')
+
+                        <div class="qr-image-frame">
+                            <div class="qr-placeholder">
+                                QRIS belum dibuat
+                            </div>
+                        </div>
+
+                        <p class="qr-info">
+                            Buat QRIS sebesar
+                            <strong>Rp {{ $totalFormatted }}</strong>
+                            melalui Midtrans Sandbox.
+                        </p>
+
+                        <form
+                            method="POST"
+                            action="{{ route('ticket-payment.qris.create', $order->code) }}"
+                            data-payment-form
+                        >
+                            @csrf
+
+                            <button
+                                type="submit"
+                                class="krm-btn krm-btn-primary qr-pay-button"
+                            >
+                                Buat QRIS Midtrans Sandbox
+                            </button>
+                        </form>
+
+                    {{-- QRIS SUDAH BERHASIL DIBUAT --}}
+                    @elseif(
+                        $attempt
+                        && $attempt->status === 'pending'
+                        && $attempt->qr_image_url
+                    )
+
+                        <div class="qr-image-frame">
+                            <img
+                                src="{{ $attempt->qr_image_url }}"
+                                alt="QRIS pengujian dari Midtrans Sandbox"
+                                referrerpolicy="no-referrer"
+                                width="168"
+                                height="168"
+                            >
+                        </div>
+
+                        @if($attempt->expires_at)
+
+                            <p class="qr-expiry-label">
+                                Batas waktu pembayaran
+                            </p>
+
+                            <strong
+                                class="qr-countdown"
+                                data-midtrans-expiry="{{ $attempt->expires_at->toIso8601String() }}"
+                                role="timer"
+                            >
+                                --:--
+                            </strong>
+
+                        @else
+
+                            <p class="qr-expiry-label">
+                                Batas waktu pembayaran
+                            </p>
+
+                            <p class="qr-info">
+                                Belum tersedia dari gateway.
+                                Periksa status transaksi sebelum
+                                melakukan pembayaran.
+                            </p>
+
+                        @endif
+
+                        <span class="qr-status">
+                            Menunggu pembayaran
+                        </span>
+
+                        <p class="qr-info">
+                            Untuk pengujian, buka simulator Midtrans
+                            dan masukkan URL gambar QRIS.
+                        </p>
+
+                        <div class="qr-simulator-tools">
+
+                            <a
+                                href="https://simulator.sandbox.midtrans.com/v2/qris/index"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="krm-btn"
+                            >
+                                Buka Simulator
+                            </a>
+
+                            <form
+                                method="POST"
+                                action="{{ route('ticket-payment.qris.sync', $order->code) }}"
+                                data-payment-form
+                                style="margin: 0;"
+                            >
+                                @csrf
+
+                                <button
+                                    type="submit"
+                                    class="krm-btn"
+                                >
+                                    Perbarui Status
+                                </button>
+                            </form>
+
+                        </div>
+
+                        <details class="qr-simulator-details">
+                            <summary>
+                                Lihat URL QRIS untuk simulator
+                            </summary>
+
+                            <input
+                                type="text"
+                                readonly
+                                value="{{ $attempt->qr_image_url }}"
+                                aria-label="URL gambar QRIS"
+                                onclick="this.select()"
+                            >
+                        </details>
+
+                        <p class="qr-info">
+                            Status Lunas hanya akan diberikan setelah
+                            pembayaran terverifikasi oleh backend.
+                        </p>
+
+                        {{-- QRIS KEDALUWARSA / GAGAL --}}
+                        @elseif(
+                            $attempt &&
+                            in_array(
+                                $attempt->status,
+                                ['expired', 'failed', 'cancelled'],
+                                true
+                            )
+                        )
+
+                            <div class="qr-image-frame">
+                                <div class="qr-placeholder">
+                                    QRIS sudah tidak berlaku
+                                </div>
+                            </div>
+
+                            <span
+                                class="qr-status"
+                                style="background:#fff0ec;color:#9e3220"
+                            >
+                                {{ match($attempt->status) {
+                                    'expired' => 'Pembayaran Kedaluwarsa',
+                                    'failed' => 'Pembayaran Gagal',
+                                    'cancelled' => 'Pembayaran Dibatalkan',
+                                } }}
+                            </span>
+
+                            <p class="qr-info">
+                                Transaksi QRIS ini sudah tidak aktif.
+                                Jangan menggunakan QR Code sebelumnya.
+                            </p>
+
+                            <p class="qr-info">
+                                Pesanan belum dinyatakan Lunas.
+                                Pembuatan QRIS ulang akan tersedia setelah
+                                mekanisme percobaan ulang pembayaran disiapkan.
+                            </p>
+
+                        {{-- STATUS TRANSAKSI BELUM PASTI --}}
+                        @else
+
+                        <div class="qr-image-frame">
+                            <div class="qr-placeholder">
+                                Transaksi QRIS sedang diperiksa
+                            </div>
+                        </div>
+
+                        <span class="qr-status">
+                            {{ $payment->statusLabel() }}
+                        </span>
+
+                        <p class="qr-info">
+                            Permintaan pembayaran belum memiliki QRIS
+                            yang siap digunakan, atau status gateway
+                            masih perlu diverifikasi.
+                        </p>
+
+                        <a
+                            href="{{ route('ticket-payment.show', $order->code) }}"
+                            class="krm-btn qr-pay-button"
+                        >
+                            Perbarui Halaman
+                        </a>
+
+                    @endif
+
+                    {{-- CASH --}}
+                    @elseif($payment?->method === 'cash')
+
+                        @php
+                            // Kode tampilan yang unik berdasarkan ID pesanan.
+                            // Kode UUID asli tetap tersedia untuk verifikasi Petugas.
+                            $cashDisplayCode = 'CASH-' . str_pad(
+                                (string) $order->id,
+                                4,
+                                '0',
+                                STR_PAD_LEFT
+                            );
+                        @endphp
+
+                        <h2 id="payment-title" class="qr-payment-title">
+                            KODE PEMBAYARAN CASH
+                        </h2>
+
+                        <div class="qr-cash-code">
+                            {{ $cashDisplayCode }}
+                        </div>
+
+                        <p class="qr-info qr-cash-description">
+                            Tunjukkan kode pembayaran kepada petugas saat tiba
+                            di lokasi pada tanggal kunjungan. Lakukan pembayaran
+                            secara tunai kepada petugas.
+                        </p>
+
+                        <div class="qr-cash-temporary">
+                            <span aria-hidden="true">🎟</span>
+                            <span>E-Tiket Sementara</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="krm-btn qr-cash-view"
+                            disabled
+                            title="Modul E-Tiket sementara belum diintegrasikan"
+                        >
+                            Lihat E-Tiket Sementara
+                        </button>
+
+                        <p class="qr-info">
+                            E-Tiket sementara belum tersedia.
+                            Pesanan tetap tersimpan dan dapat dilihat di Pesanan Saya.
+                        </p>
+
+                        <div class="qr-cash-payment-status">
+                            <span class="qr-status">
+                                {{ $payment->statusLabel() }}
+                            </span>
+                        </div>
+
+                        <details class="qr-simulator-details">
+                            <summary>Kode pesanan lengkap untuk verifikasi Petugas</summary>
+                            <p class="qr-cash-full-code">{{ $order->code }}</p>
+                        </details>
+
+                {{-- METODE BELUM DIPILIH --}}
+                @else
+
+                    <h2 id="payment-title" class="qr-payment-title">
+                        PETUNJUK PEMBAYARAN
+                    </h2>
+
+                    <div class="qr-image-frame">
+                        <div class="qr-placeholder">
+                            Pilih QRIS atau Cash
+                        </div>
+                    </div>
+
+                    <p class="qr-info">
+                        Pilih dan simpan metode pembayaran
+                        terlebih dahulu untuk melanjutkan.
+                    </p>
+
+                @endif
+
+            </section>
+
+        </div>
+
+        {{-- ===== KOLOM KANAN: RINGKASAN ===== --}}
+        <aside class="qr-box qr-summary"
+               aria-labelledby="summary-title">
+
+            <h2 id="summary-title" class="qr-box-title">
+                Ringkasan
+            </h2>
+
+            <dl class="qr-summary-meta">
+
+                <div>
+                    <dt>Tiket</dt>
+                    <dd>{{ $ticketNames ?: 'Tiket' }}</dd>
+                </div>
+
+                <div>
+                    <dt>Kategori</dt>
+                    <dd>{{ $ageType }} {{ $visitorType }}</dd>
+                </div>
+
+                <div>
+                    <dt>Jumlah</dt>
+                    <dd>{{ $ticketCount }} Tiket</dd>
+                </div>
+
+                <div>
+                    <dt>Tanggal Kunjungan</dt>
+                    <dd>
+                        {{ $order->visit_date->locale('id')->translatedFormat('d M Y') }}
+                    </dd>
+                </div>
+
+                <div>
+                    <dt>Pemesan</dt>
+                    <dd>{{ $order->booker_name }}</dd>
+                </div>
+
+            </dl>
+
+            <div class="qr-summary-total">
+                <span>Total Pembayaran</span>
+
+                <strong>
+                    Rp {{ $totalFormatted }}
+                </strong>
+            </div>
+
+            {{-- RIWAYAT BUKTI DARI ALUR MANUAL LAMA --}}
+            @if($payment && $payment->submissions->isNotEmpty())
+
+                <div class="qr-summary-history">
+
+                    <h3>Riwayat Bukti Pembayaran</h3>
+
+                    <ul class="payment-history">
+                        @foreach($payment->submissions as $submission)
+                            <li>
+                                <a
+                                    href="{{ route('ticket-payment.proof', $submission) }}"
+                                    target="_blank"
+                                    rel="noopener"
+                                >
+                                    Lihat bukti #{{ $submission->id }}
+                                </a>
+
+                                <p>
+                                    {{ match($submission->status) {
+                                        'approved' => 'Disetujui',
+                                        'rejected' => 'Ditolak',
+                                        default => 'Menunggu verifikasi'
+                                    } }}
+                                </p>
+                            </li>
+                        @endforeach
+                    </ul>
+
+                </div>
+
+            @endif
+
+        </aside>
+
+    </div>
+
+    {{-- ===== TOMBOL NAVIGASI ===== --}}
+    <div class="qr-bottom-actions">
+
+        <a
+            href="{{ route('ticket-purchase.show', $order->code) }}"
+            class="krm-btn"
+        >
+            &larr; Kembali
+        </a>
+
+        <a
+            href="{{ $isPaid
+                ? route('ticket-payment.e-ticket-placeholder', $order->code)
+                : route('ticket-purchase.orders') }}"
+            class="krm-btn krm-btn-primary"
+        >
+            @if($isPaid)
+                Selesai — Lihat E-Tiket
+            @elseif($payment?->method === 'cash')
+                Simpan Pesanan
+            @else
+                Lihat Pesanan Saya
+            @endif
+        </a>
+
+    </div>
+
+    <p class="qr-footer-note">
+        E-Tiket dapat diunduh setelah pembayaran terkonfirmasi
+        dan tiket selesai diterbitkan.
+    </p>
+
 </div>
+
 @endsection
-@push('scripts') @include('partials.ticket-payment-script') @endpush
+
+@push('scripts')
+    @include('partials.ticket-payment-script')
+
+    <script>
+        document.querySelectorAll('[data-midtrans-expiry]').forEach(
+            function (element) {
+
+                const expiry = new Date(
+                    element.dataset.midtransExpiry
+                ).getTime();
+
+                if (Number.isNaN(expiry)) {
+                    element.textContent = 'Tidak tersedia';
+                    return;
+                }
+
+                function updateCountdown() {
+                    const remaining = Math.max(
+                        0,
+                        Math.floor((expiry - Date.now()) / 1000)
+                    );
+
+                    const minutes = Math.floor(remaining / 60);
+                    const seconds = remaining % 60;
+
+                    element.textContent =
+                        String(minutes).padStart(2, '0') +
+                        ':' +
+                        String(seconds).padStart(2, '0');
+
+                    if (remaining === 0) {
+                        element.textContent = 'Waktu habis';
+                    }
+                }
+
+                updateCountdown();
+                setInterval(updateCountdown, 1000);
+            }
+        );
+    </script>
+@endpush

@@ -49,6 +49,11 @@ class TicketPaymentService
                 abort_unless($user->role === 'wisatawan', 403);
                 $order = TicketOrder::where('code', $orderCode)->where('user_id', $user->id)->lockForUpdate()->firstOrFail();
                 $payment = TicketPayment::where('ticket_order_id', $order->id)->lockForUpdate()->firstOrFail();
+                abort_if(
+                    $payment->method === 'qris',
+                    409,
+                    'Pembayaran QRIS diproses otomatis melalui Midtrans Sandbox. Unggah bukti manual tidak diperlukan.'
+                );
                 abort_unless($order->status === 'pending_payment' && $payment->method === 'qris', 409, 'Pesanan tidak menerima bukti QRIS.');
                 $hash = hash_file('sha256', $proof->getRealPath());
                 $latest = $payment->submissions()->latest('id')->first();
@@ -85,6 +90,11 @@ class TicketPaymentService
                 $orderId = TicketPayment::findOrFail($paymentId)->ticket_order_id;
                 $order = TicketOrder::whereKey($orderId)->lockForUpdate()->firstOrFail();
                 $payment = TicketPayment::whereKey($paymentId)->lockForUpdate()->firstOrFail();
+                abort_if(
+                    $payment->method === 'qris',
+                    409,
+                    'Pembayaran QRIS hanya dikonfirmasi melalui Midtrans. Petugas tidak dapat mengonfirmasi QRIS secara manual.'
+                );
                 $reference = strtoupper(trim($data['merchant_reference'] ?? ''));
                 $submission = $payment->submissions()->latest('id')->first();
                 if ($payment->method === 'qris') {

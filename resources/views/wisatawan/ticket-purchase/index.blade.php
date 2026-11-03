@@ -18,7 +18,7 @@
     <ol class="purchase-steps" aria-label="Tahapan pembelian">
         <li data-step="1" aria-current="step"><span>1</span>Pilih Tiket</li>
         <li data-step="2"><span>2</span>Data Pengunjung</li>
-        <li data-step="3"><span>3</span>Tinjau Pesanan</li>
+        <li data-step="3"><span>3</span>Pembayaran</li>
     </ol>
 
     @if ($errors->any())
@@ -72,11 +72,6 @@
             <p class="purchase-muted">Nomor identitas anak dapat menggunakan nomor pada Kartu Keluarga atau paspor.</p>
         </section>
 
-        <section id="review-step" aria-labelledby="review-heading" hidden>
-            <div class="purchase-heading"><h1 id="review-heading" tabindex="-1">Tinjau Pesanan</h1><p>Periksa data kunjungan dan pengunjung sebelum menyimpan pesanan.</p></div>
-            <div class="krm-card" id="review-details"></div>
-        </section>
-
         <section class="krm-card purchase-summary" aria-labelledby="summary-heading">
             <h2 id="summary-heading">Ringkasan Pesanan</h2>
             <div id="summary-items" aria-live="polite"></div>
@@ -88,7 +83,7 @@
             <a class="krm-btn" id="cancel-purchase" href="{{ route('wisatawan.beranda') }}">Kembali</a>
             <button class="krm-btn" type="button" id="previous-step" hidden>Kembali</button>
             <button class="krm-btn krm-btn-primary" type="button" id="next-step">Lanjut →</button>
-            <button class="krm-btn krm-btn-primary" type="submit" id="submit-purchase" hidden>Simpan Pesanan</button>
+            <button class="krm-btn krm-btn-primary" type="submit" id="submit-purchase" hidden>Lanjut ke Pembayaran →</button>
         </div>
         <p class="purchase-muted purchase-submit-note" id="submit-note" hidden>Pesanan yang disimpan berstatus menunggu pembayaran.</p>
     </form>

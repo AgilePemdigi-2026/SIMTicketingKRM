@@ -9,6 +9,8 @@ use App\Models\TicketOrder;
 use App\Models\TicketPayment;
 use App\Models\TicketPaymentSubmission;
 use App\Services\TicketPaymentService;
+use App\Services\TicketQrisPaymentService;
+use App\Services\TicketQrisStatusSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +23,13 @@ class TicketPaymentController extends Controller
     public function show(Request $request, string $code): JsonResponse|View
     {
         $order = TicketOrder::where('code', $code)->where('user_id', $request->user()->id)
-            ->with(['items', 'payment.submissions' => fn ($query) => $query->orderByDesc('id'), 'payment.events'])->firstOrFail();
+        ->with([
+            'items',
+            'payment.submissions' => fn ($query) => $query->orderByDesc('id'),
+            'payment.events',
+            'payment.gatewayAttempts' => fn ($query) => $query->orderByDesc('id'),
+        ])->firstOrFail();
+
         if ($request->expectsJson()) {
             return response()->json(['order_code' => $order->code, 'order_status' => $order->status,
                 'currency' => 'IDR', 'total' => $order->total, 'payment' => $order->payment]);
@@ -30,9 +38,102 @@ class TicketPaymentController extends Controller
         return view('wisatawan.ticket-payment.show', compact('order'));
     }
 
+    public function eTicketPlaceholder(
+        Request $request,
+        string $code
+    ): View|RedirectResponse {
+        // Hanya ambil pesanan milik Wisatawan yang login.
+        $order = TicketOrder::query()
+            ->where('code', $code)
+            ->where('user_id', $request->user()->getKey())
+            ->with(['items', 'payment'])
+            ->firstOrFail();
+
+        // E-Tiket sementara hanya untuk pembayaran Lunas.
+        if (
+            $order->status !== 'paid'
+            || $order->payment?->status !== 'paid'
+        ) {
+            return redirect()
+                ->route('ticket-payment.show', $order->code)
+                ->with(
+                    'payment_updated',
+                    'Halaman E-Tiket tersedia setelah pembayaran Lunas.'
+                );
+        }
+
+        // Halaman placeholder, tanpa QR Code.
+        return view(
+            'wisatawan.ticket-payment.e-ticket-placeholder',
+            compact('order')
+        );
+    }
+
     public function select(SelectTicketPaymentRequest $request, string $code, TicketPaymentService $service): JsonResponse|RedirectResponse
     {
         return $this->result($request, $service->select($request->user(), $code, $request->validated('method')));
+    }
+
+    public function createQris(
+        Request $request,
+        string $code,
+        TicketQrisPaymentService $service
+    ): JsonResponse|RedirectResponse
+    {
+        // Membuat atau mengambil kembali transaksi QRIS.
+        $attempt = $service->createFor(
+            $request->user(),
+            $code
+        );
+
+        // Respons untuk pengujian API.
+        if ($request->expectsJson()) {
+            return response()->json([
+                'order_code' => $code,
+                'status' => $attempt->status,
+                'qr_image_url' => $attempt->qr_image_url,
+                'expires_at' => $attempt->expires_at?->toIso8601String(),
+            ]);
+        }
+
+        // Kembali ke halaman pembayaran Wisatawan.
+        return redirect()
+            ->route('ticket-payment.show', $code)
+            ->with(
+                'payment_updated',
+                'QRIS Midtrans Sandbox berhasil disiapkan.'
+            );
+    }
+
+    public function syncQris(
+        Request $request,
+        string $code,
+        TicketQrisStatusSyncService $service
+    ): JsonResponse|RedirectResponse
+    {
+        // Ambil status terbaru langsung dari Midtrans Sandbox.
+        // Service memverifikasi bahwa pesanan milik Wisatawan.
+        $attempt = $service->syncFor(
+            $request->user(),
+            $code
+        );
+
+        // Respons untuk API / automated testing.
+        if ($request->expectsJson()) {
+            return response()->json([
+                'order_code' => $code,
+                'status' => $attempt->status,
+                'expires_at' => $attempt->expires_at?->toIso8601String(),
+            ]);
+        }
+
+        // Kembali ke halaman pembayaran dengan status terbaru.
+        return redirect()
+            ->route('ticket-payment.show', $code)
+            ->with(
+                'payment_updated',
+                'Status pembayaran QRIS berhasil diperbarui dari Midtrans.'
+            );
     }
 
     public function submit(SubmitTicketPaymentProofRequest $request, string $code, TicketPaymentService $service): JsonResponse|RedirectResponse

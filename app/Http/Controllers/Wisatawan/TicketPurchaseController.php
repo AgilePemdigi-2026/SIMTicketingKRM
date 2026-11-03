@@ -44,8 +44,10 @@ class TicketPurchaseController extends Controller
 
     public function orders(Request $request): JsonResponse|View
     {
-        $orders = TicketOrder::with('payment')->where('user_id', $request->user()->getKey())
-            ->orderByDesc('created_at')->orderByDesc('id')->paginate(20);
+        $orders = TicketOrder::with([
+            'items',
+            'payment.gatewayAttempts' => fn ($query) => $query->orderByDesc('id'),
+        ])->where('user_id', $request->user()->getKey())->orderByDesc('created_at')->orderByDesc('id')->paginate(20);
 
         if ($request->expectsJson()) {
             return response()->json(['is_dummy' => false, 'currency' => 'IDR', 'orders' => $orders]);
@@ -54,15 +56,31 @@ class TicketPurchaseController extends Controller
         return view('wisatawan.ticket-purchase.orders', compact('orders'));
     }
 
-    public function store(CheckoutTicketPurchaseRequest $request, TicketPurchaseService $service): JsonResponse|RedirectResponse
-    {
-        $order = $service->create($request->user(), $request->validated());
+    public function store(
+        CheckoutTicketPurchaseRequest $request,
+        TicketPurchaseService $service
+    ): JsonResponse|RedirectResponse {
+        // Simpan pesanan melalui service yang sudah ada.
+        // Validasi, harga, dan data pengunjung tetap diproses backend.
+        $order = $service->create(
+            $request->user(),
+            $request->validated()
+        );
 
+        // Setelah pesanan dibuat, langsung masuk ke
+        // tahap 3: Pembayaran QRIS atau Cash.
         if (! $request->expectsJson()) {
-            return redirect()->route('ticket-purchase.show', $order->code)->with('purchase_created', true);
+            return redirect()
+                ->route('ticket-payment.show', $order->code)
+                ->with('purchase_created', true);
         }
 
-        return response()->json(['is_dummy' => false, 'currency' => 'IDR', 'order' => $order], 201);
+        // Respons API tetap dipertahankan.
+        return response()->json([
+            'is_dummy' => false,
+            'currency' => 'IDR',
+            'order' => $order,
+        ], 201);
     }
 
     public function show(Request $request, string $code): JsonResponse|View

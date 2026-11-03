@@ -39,8 +39,6 @@ class TicketPaymentTest extends PostgresTicketTestCase
     private function qris(TicketOrder $order): TicketPayment
     {
         $this->postJson($this->endpoint($order), ['method' => 'qris'])->assertOk();
-        $this->postJson($this->endpoint($order).'/bukti', ['proof' => $this->image()])->assertOk();
-
         return $order->payment()->firstOrFail();
     }
 
@@ -56,98 +54,126 @@ class TicketPaymentTest extends PostgresTicketTestCase
         $this->assertSame('pending_payment', $order->fresh()->status);
         $this->assertDatabaseCount('ticket_payments', 1);
         $this->assertDatabaseCount('ticket_payment_events', 1);
-        $this->get($url)->assertSee('QRIS ini disediakan untuk demonstrasi proyek')->assertDontSee('MUHAMMAD NAUFAL ZAKI, SOFTWARE')->assertSee('qris-code.png')->assertSee('30.000,00');
+        $this->get($url)->assertOk()
+            ->assertSee('MIDTRANS SANDBOX')
+            ->assertSee('Buat QRIS Midtrans Sandbox')
+            ->assertDontSee('qris-code.png')
+            ->assertDontSee('MUHAMMAD NAUFAL ZAKI, SOFTWARE')
+            ->assertSee('30.000');
         $this->get('/wisatawan/pembelian-tiket/'.$order->code)->assertSee('Lanjut ke Pembayaran');
     }
 
-    public function test_upload_is_private_and_does_not_mark_order_paid(): void
+    public function test_qris_manual_upload_ditolak_dan_bukti_lama_tetap_privat(): void
     {
         Storage::fake('local');
         $order = $this->order();
         $payment = $this->qris($order);
-        $proof = $payment->submissions()->firstOrFail();
-        Storage::disk('local')->assertExists($proof->file_path);
-        $this->assertSame('under_review', $payment->status);
+
+        // QRIS Midtrans tidak lagi menerima unggahan bukti manual.
+        $this->postJson($this->endpoint($order).'/bukti', ['proof' => $this->image()])
+            ->assertConflict();
+        $this->assertDatabaseCount('ticket_payment_submissions', 0);
+        $this->assertSame('pending', $payment->fresh()->status);
         $this->assertSame('pending_payment', $order->fresh()->status);
-        $this->getJson($this->endpoint($order))->assertJsonMissingPath('payment.submissions.0.file_path')
+
+        // Bukti historis dari alur lama tetap harus terlindungi.
+        $content = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=');
+        $path = 'ticket-payment-proofs/legacy.png';
+        Storage::disk('local')->put($path, $content);
+        $proof = $payment->submissions()->create([
+            'file_path' => $path,
+            'file_hash' => hash('sha256', $content),
+        ]);
+
+        $this->getJson($this->endpoint($order))
+            ->assertJsonMissingPath('payment.submissions.0.file_path')
             ->assertJsonMissingPath('payment.submissions.0.file_hash');
-        $this->get('/pembayaran/bukti/'.$proof->id)->assertOk()->assertHeader('X-Content-Type-Options', 'nosniff');
-        $this->actingAs($this->account())->get('/pembayaran/bukti/'.$proof->id)->assertNotFound();
-        $this->actingAs($this->account('admin'))->get('/pembayaran/bukti/'.$proof->id)->assertNotFound();
-        $this->actingAs($this->account('petugas'))->get('/pembayaran/bukti/'.$proof->id)->assertOk();
+        $this->get('/pembayaran/bukti/'.$proof->id)
+            ->assertOk()
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->actingAs($this->account())
+            ->get('/pembayaran/bukti/'.$proof->id)->assertNotFound();
+        $this->actingAs($this->account('admin'))
+            ->get('/pembayaran/bukti/'.$proof->id)->assertNotFound();
+        $this->actingAs($this->account('petugas'))
+            ->get('/pembayaran/bukti/'.$proof->id)->assertOk();
     }
 
-    public function test_identical_proof_retry_is_idempotent_and_different_proof_cannot_replace_under_review(): void
+    public function test_semua_percobaan_upload_bukti_qris_manual_ditolak(): void
     {
         Storage::fake('local');
         $order = $this->order();
         $payment = $this->qris($order);
-        $this->postJson($this->endpoint($order).'/bukti', ['proof' => $this->image()])->assertOk();
-        $other = UploadedFile::fake()->createWithContent('different.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=').'extra');
-        $this->postJson($this->endpoint($order).'/bukti', ['proof' => $other])->assertConflict();
-        $this->assertDatabaseCount('ticket_payment_submissions', 1);
-        $this->assertCount(1, Storage::disk('local')->allFiles());
+
+        $this->postJson($this->endpoint($order).'/bukti', ['proof' => $this->image()])
+            ->assertConflict();
+        $this->postJson($this->endpoint($order).'/bukti', ['proof' => $this->image()])
+            ->assertConflict();
+        $different = UploadedFile::fake()->createWithContent(
+            'different.png',
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=').'extra'
+        );
+        $this->postJson($this->endpoint($order).'/bukti', ['proof' => $different])
+            ->assertConflict();
+
+        $this->assertDatabaseCount('ticket_payment_submissions', 0);
+        $this->assertCount(0, Storage::disk('local')->allFiles());
+        $this->assertSame('pending', $payment->fresh()->status);
     }
 
-    public function test_rejection_requires_reason_and_allows_new_submission_without_erasing_history(): void
+    public function test_petugas_tidak_dapat_menolak_qris_midtrans_secara_manual(): void
     {
-        Storage::fake('local');
         $order = $this->order();
-        $owner = $order->user;
         $payment = $this->qris($order);
-        $submission = $payment->submissions()->first();
-        $staff = $this->account('petugas');
-        $url = '/petugas/pembayaran/'.$payment->id.'/tolak';
-        $data = ['submission_id' => $submission->id, 'receipt_checked' => 1];
-        $this->actingAs($staff)->postJson($url, $data)->assertUnprocessable()->assertJsonValidationErrors('reason');
-        $data['reason'] = '<script>Bukti tidak cocok</script>';
-        $this->postJson($url, $data)->assertOk()->assertJsonPath('payment.status', 'rejected');
-        $this->postJson($url, $data)->assertOk();
-        $this->get('/petugas/pembayaran/'.$payment->id)->assertDontSee($data['reason'], false)->assertSee(e($data['reason']), false);
-        $this->actingAs($owner)->postJson($this->endpoint($order).'/bukti', ['proof' => $this->image()])->assertOk();
-        $this->assertDatabaseCount('ticket_payment_submissions', 2);
-        $this->assertDatabaseHas('ticket_payment_submissions', ['id' => $submission->id, 'status' => 'rejected']);
-        $this->assertDatabaseCount('ticket_payment_events', 4);
-        $this->actingAs($staff)->postJson('/petugas/pembayaran/'.$payment->id.'/konfirmasi', [
-            'submission_id' => $submission->id, 'merchant_reference' => 'STALE', 'receipt_checked' => 1,
-        ])->assertConflict();
+
+        $this->actingAs($this->account('petugas'))
+            ->postJson('/petugas/pembayaran/'.$payment->id.'/tolak', [
+                'receipt_checked' => 1,
+                'reason' => 'Keputusan manual tidak diperbolehkan',
+            ])->assertConflict();
+
+        $this->assertSame('pending', $payment->fresh()->status);
         $this->assertSame('pending_payment', $order->fresh()->status);
+        $this->assertDatabaseCount('ticket_payment_submissions', 0);
     }
 
-    public function test_qris_confirmation_requires_reference_and_is_idempotent(): void
+    public function test_petugas_tidak_dapat_mengonfirmasi_qris_midtrans_secara_manual(): void
     {
-        Storage::fake('local');
         $order = $this->order();
         $payment = $this->qris($order);
-        $data = ['submission_id' => $payment->submissions()->first()->id, 'receipt_checked' => 1];
         $url = '/petugas/pembayaran/'.$payment->id.'/konfirmasi';
-        $this->actingAs($this->account('petugas'))->postJson($url, $data)->assertUnprocessable()->assertJsonValidationErrors('merchant_reference');
-        $data['merchant_reference'] = 'gopay-ref-001';
-        $this->postJson($url, $data)->assertOk()->assertJsonPath('payment.status', 'paid')->assertJsonPath('payment.merchant_reference', 'GOPAY-REF-001');
-        $this->postJson($url, $data)->assertOk();
-        $data['merchant_reference'] = 'DIFFERENT';
-        $this->postJson($url, $data)->assertConflict();
-        $this->assertSame('paid', $order->fresh()->status);
-        $this->assertNotNull($payment->fresh()->paid_at);
-        $this->assertSame(1, TicketPaymentEvent::where('action', 'payment_confirmed')->count());
+
+        $this->actingAs($this->account('petugas'))
+            ->postJson($url, [
+                'receipt_checked' => 1,
+                'merchant_reference' => 'GOPAY-REF-001',
+            ])->assertConflict();
+
+        $this->assertSame('pending', $payment->fresh()->status);
+        $this->assertSame('pending_payment', $order->fresh()->status);
+        $this->assertNull($payment->fresh()->merchant_reference);
+        $this->assertSame(0, TicketPaymentEvent::where('action', 'payment_confirmed')->count());
     }
 
-    public function test_merchant_reference_cannot_pay_two_orders(): void
+    public function test_referensi_manual_tidak_bisa_membayar_pesanan_qris_manapun(): void
     {
-        Storage::fake('local');
         $one = $this->order();
         $first = $this->qris($one);
         $two = $this->order();
         $second = $this->qris($two);
+
         $this->actingAs($this->account('petugas'));
-        foreach ([$first, $second] as $index => $payment) {
-            $response = $this->postJson('/petugas/pembayaran/'.$payment->id.'/konfirmasi', [
-                'submission_id' => $payment->submissions()->first()->id, 'receipt_checked' => 1, 'merchant_reference' => 'DUPLICATE-REF',
-            ]);
-            $index === 0 ? $response->assertOk() : $response->assertConflict();
+        foreach ([$first, $second] as $payment) {
+            $this->postJson('/petugas/pembayaran/'.$payment->id.'/konfirmasi', [
+                'receipt_checked' => 1,
+                'merchant_reference' => 'DUPLICATE-REF',
+            ])->assertConflict();
         }
+
+        $this->assertSame('pending_payment', $one->fresh()->status);
         $this->assertSame('pending_payment', $two->fresh()->status);
-        $this->assertSame('under_review', $second->fresh()->status);
+        $this->assertNull($first->fresh()->merchant_reference);
+        $this->assertNull($second->fresh()->merchant_reference);
     }
 
     public function test_cash_only_staff_can_confirm_actual_receipt(): void
@@ -218,18 +244,22 @@ class TicketPaymentTest extends PostgresTicketTestCase
         return ['missing' => ['missing'], 'over 5MB' => ['oversized'], 'fake image' => ['spoofed'], 'PHP extension' => ['extension']];
     }
 
-    public function test_failed_submission_rolls_back_and_cleans_new_file(): void
+    public function test_qris_manual_upload_ditolak_sebelum_file_dan_event_tercipta(): void
     {
         Storage::fake('local');
         $order = $this->order();
-        $this->postJson($this->endpoint($order), ['method' => 'qris'])->assertOk();
+        $this->qris($order);
+
+        // Listener ini tidak boleh terpanggil karena upload ditolak sebelum menyimpan.
         TicketPaymentEvent::creating(function ($event) {
             if ($event->action === 'proof_submitted') {
-                throw new \RuntimeException('Test rollback');
+                throw new \RuntimeException('Upload QRIS manual seharusnya diblokir');
             }
         });
         try {
-            $this->postJson($this->endpoint($order).'/bukti', ['proof' => $this->image()])->assertStatus(500);
+            $this->postJson($this->endpoint($order).'/bukti', [
+                'proof' => $this->image(),
+            ])->assertConflict();
             $this->assertDatabaseCount('ticket_payment_submissions', 0);
             $this->assertSame('pending', $order->payment()->first()->status);
             $this->assertCount(0, Storage::disk('local')->allFiles());
@@ -238,28 +268,22 @@ class TicketPaymentTest extends PostgresTicketTestCase
         }
     }
 
-    public function test_failed_confirmation_rolls_back_payment_order_and_proof(): void
+    public function test_qris_manual_confirmation_ditolak_tanpa_memicu_event_tiket(): void
     {
-        Storage::fake('local');
         $order = $this->order();
         $payment = $this->qris($order);
         Event::fake([TicketPaymentConfirmed::class]);
-        TicketPaymentEvent::creating(function ($event) {
-            if ($event->action === 'payment_confirmed') {
-                throw new \RuntimeException('Test rollback');
-            }
-        });
-        try {
-            $this->actingAs($this->account('petugas'))->postJson('/petugas/pembayaran/'.$payment->id.'/konfirmasi', [
-                'submission_id' => $payment->submissions()->first()->id, 'merchant_reference' => 'ROLLBACK', 'receipt_checked' => 1,
-            ])->assertStatus(500);
-            $this->assertSame('pending_payment', $order->fresh()->status);
-            $this->assertSame('under_review', $payment->fresh()->status);
-            $this->assertSame('under_review', $payment->submissions()->first()->status);
-            Event::assertNotDispatched(TicketPaymentConfirmed::class);
-        } finally {
-            TicketPaymentEvent::flushEventListeners();
-        }
+
+        $this->actingAs($this->account('petugas'))
+            ->postJson('/petugas/pembayaran/'.$payment->id.'/konfirmasi', [
+                'receipt_checked' => 1,
+                'merchant_reference' => 'ROLLBACK',
+            ])->assertConflict();
+
+        $this->assertSame('pending_payment', $order->fresh()->status);
+        $this->assertSame('pending', $payment->fresh()->status);
+        $this->assertDatabaseCount('ticket_payment_submissions', 0);
+        Event::assertNotDispatched(TicketPaymentConfirmed::class);
     }
 
     public function test_staff_list_is_newest_first_paginated_and_has_dashboard_entrypoint(): void
