@@ -44,9 +44,11 @@ class TicketPurchaseController extends Controller
 
     public function orders(Request $request): JsonResponse|View
     {
-        $orders = TicketOrder::with('payment')->where('user_id', $request->user()->getKey())
-            ->orderByDesc('created_at')->orderByDesc('id')->paginate(20);
-
+        $orders = TicketOrder::with(['payment', 'items'])
+            ->where('user_id', $request->user()->getKey())
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(20);
         if ($request->expectsJson()) {
             return response()->json(['is_dummy' => false, 'currency' => 'IDR', 'orders' => $orders]);
         }
