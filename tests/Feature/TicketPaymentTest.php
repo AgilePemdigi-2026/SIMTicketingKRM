@@ -181,7 +181,10 @@ class TicketPaymentTest extends PostgresTicketTestCase
         $order = $this->order();
         $this->postJson($this->endpoint($order), ['method' => 'cash'])->assertOk();
         $payment = $order->payment()->first();
-        $this->get($this->endpoint($order))->assertOk()->assertSee('Pembayaran cash di loket');
+        $this->get($this->endpoint($order))
+            ->assertOk()
+            ->assertSee('KODE PEMBAYARAN CASH')
+            ->assertSee('Menunggu pembayaran');
         $this->postJson($this->endpoint($order).'/bukti', ['proof' => $this->image()])->assertConflict();
         $url = '/petugas/pembayaran/'.$payment->id.'/konfirmasi';
         $this->postJson($url, ['receipt_checked' => 1])->assertForbidden();
