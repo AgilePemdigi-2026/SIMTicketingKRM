@@ -9,7 +9,7 @@
     const byId = id => document.getElementById(id);
     const type = byId('visitor-type');
     const visitDate = byId('visit-date');
-    const sections = [null, byId('ticket-step'), byId('visitor-step'), byId('review-step')];
+    const sections = [null, byId('ticket-step'), byId('visitor-step')];
     const itemList = byId('ticket-items');
     const visitorList = byId('visitor-fields');
     const errorBox = byId('purchase-error');
@@ -20,6 +20,7 @@
     const bookerVisits = byId('booker-is-visitor');
     const money = new Intl.NumberFormat('id-ID', {style:'currency',currency:'IDR',minimumFractionDigits:0,maximumFractionDigits:2});
     let step = 1, busy = false, submitting = false, revision = 0, quote = null;
+    let readyToSubmit = false;
     let selectedGroup = 'masuk';
     form.noValidate = true;
 
@@ -136,7 +137,7 @@
         } catch {
             return fail('Tidak dapat terhubung ke aplikasi. Periksa koneksi lalu coba lagi.');
         } finally {
-            busy = false; updateSummary(); next.textContent = step===2 ? 'Tinjau Pesanan →' : 'Lanjut →';
+            busy = false; updateSummary(); next.textContent = 'Lanjut →';
         }
     }
     function updateSummary() {
@@ -264,45 +265,35 @@
             }
         });
     }
-    function renderReview() {
-        const target=byId('review-details');target.replaceChildren();
-        const booker=el('div',undefined,'purchase-review-line');
-        booker.append(el('h2','Identitas Pemesan'),el('p',bookerValue('name')),el('p',`Identitas: ${bookerValue('identity_number')}`),el('p',`${bookerValue('email')} · ${bookerValue('phone')}`));target.append(booker);
-        items.forEach((item,index)=>{
-            const block=el('div',undefined,'purchase-review-line');block.append(el('h2',ticketFor(item).name));
-            const inputs=visitorList.querySelectorAll(`[name^="items[${index}][visitors]"]`);
-            const visitors={};inputs.forEach(input=>{
-                const parts=dotName(input.name).split('.');(visitors[parts[3]]??={})[parts[4]]=input.value;
-            });
-            Object.values(visitors).forEach(visitor=>block.append(el('p',`${visitor.name} · ${visitor.age_category==='adult'?'Dewasa':'Anak'} · ${visitor.identity_number}`)));
-            target.append(block);
+    function setStep(value, focus = true) {
+        step = value;
+        for (let n = 1; n <= 2; n++) sections[n].hidden = n !== step;
+
+        // Tahap 3 adalah halaman Pembayaran setelah POST berhasil.
+        // Tidak ada lagi tahap Tinjau Pesanan di halaman ini.
+        next.hidden = step !== 1;
+        previous.hidden = step === 1;
+        submit.hidden = step !== 2;
+        byId('submit-note').hidden = true;
+        byId('cancel-purchase').hidden = step !== 1;
+        next.textContent = 'Lanjut →';
+
+        document.querySelectorAll('[data-step]').forEach(node => {
+            const number = Number(node.dataset.step);
+            node.classList.toggle('completed', number < step);
+            if (number === step) node.setAttribute('aria-current', 'step');
+            else node.removeAttribute('aria-current');
         });
+
+        if (focus) byId(['', 'ticket-heading', 'visitor-heading'][step]).focus();
     }
-    function setStep(value,focus=true) {
-        step=value;
-        for (let n=1;n<=3;n++) sections[n].hidden=n!==step;
-        next.hidden=step===3;previous.hidden=step===1;submit.hidden=step!==3;
-        byId('submit-note').hidden=step!==3;byId('cancel-purchase').hidden=step!==1;
-        next.textContent=step===2?'Tinjau Pesanan →':'Lanjut →';
-        form.querySelectorAll('input[name^="booker["],#booker-is-visitor').forEach(input=>input.readOnly=step===3);
-        document.querySelectorAll('[data-step]').forEach(node=>{
-            const number=Number(node.dataset.step);node.classList.toggle('completed',number<step);
-            if(number===step)node.setAttribute('aria-current','step');else node.removeAttribute('aria-current');
-        });
-        if(focus) byId(['','ticket-heading','visitor-heading','review-heading'][step]).focus();
-    }
+
     async function advance() {
-        if(busy||submitting)return;
+        if (busy || submitting || step !== 1) return;
         clearErrors();
-        if(step===1) {
-            if(!validateTickets()||!await refreshQuote())return;
-            renderVisitors();setStep(2);
-        } else if(step===2) {
-            syncBooker();
-            if(!validateSection(sections[2]))return;
-            if(!await refreshQuote())return;
-            renderReview();setStep(3);
-        }
+        if (!validateTickets() || !await refreshQuote()) return;
+        renderVisitors();
+        setStep(2);
     }
     next.addEventListener('click',advance);
     previous.addEventListener('click',()=>{clearErrors();setStep(step-1);});
@@ -318,16 +309,47 @@
     add.addEventListener('click',()=>{if(items.length<4){items.push(normalize());changed();renderItems();}});
     bookerVisits.addEventListener('change',renderVisitors);
     form.querySelectorAll('[name^="booker["]').forEach(input=>input.addEventListener('input',syncBooker));
-    form.addEventListener('submit',event=>{
-        if(submitting){event.preventDefault();return;}
-        if(step!==3){event.preventDefault();advance();return;}
-        clearErrors();
-        if(!validateTickets()){event.preventDefault();setStep(1,false);return;}
-        syncBooker();
-        if(!validateSection(sections[2])){event.preventDefault();setStep(2,false);return;}
-        submitting=true;submit.disabled=true;submit.textContent='Menyimpan…';form.setAttribute('aria-busy','true');
+    form.addEventListener('submit', async event => {
+        if (busy || submitting) {
+            event.preventDefault();
+            return;
+        }
+
+        if (step !== 2) {
+            event.preventDefault();
+            await advance();
+            return;
+        }
+
+        // requestSubmit() akan memicu event submit sekali lagi setelah
+        // validasi dan preview harga selesai. Hanya panggilan kedua
+        // yang mengirim formulir ke backend.
+        if (!readyToSubmit) {
+            event.preventDefault();
+            clearErrors();
+            if (!validateTickets()) { setStep(1, false); return; }
+            syncBooker();
+            if (!validateSection(sections[2])) return;
+            if (!await refreshQuote()) return;
+            readyToSubmit = true;
+            form.requestSubmit(submit);
+            return;
+        }
+
+        readyToSubmit = false;
+        submitting = true;
+        submit.disabled = true;
+        submit.textContent = 'Menyimpan…';
+        form.setAttribute('aria-busy', 'true');
     });
-    window.addEventListener('pageshow',()=>{submitting=false;submit.disabled=false;submit.textContent='Simpan Pesanan';form.removeAttribute('aria-busy');});
+
+    window.addEventListener('pageshow', () => {
+        submitting = false;
+        readyToSubmit = false;
+        submit.disabled = false;
+        submit.textContent = 'Lanjut ke Pembayaran →';
+        form.removeAttribute('aria-busy');
+    });
     const initial=ticketFor(items[0]);if(initial) selectedGroup=initial.group;
     renderItems();
     const keys=Object.keys(serverErrors);

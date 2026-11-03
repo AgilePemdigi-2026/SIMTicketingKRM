@@ -4,15 +4,26 @@ namespace App\Providers;
 
 use App\Contracts\TicketCatalogProvider;
 use App\Services\MasterTicketCatalogProvider;
+use App\Contracts\TicketQrisGateway;
+use App\Services\MidtransQrisGateway;
 use App\Support\TicketPurchaseDatabase;
 use Illuminate\Support\ServiceProvider;
 
 class TicketPurchaseServiceProvider extends ServiceProvider
 {
+
     public function register(): void
     {
         if ($this->masterMode()) {
-            $this->app->bind(TicketCatalogProvider::class, MasterTicketCatalogProvider::class);
+            $this->app->bind(
+                TicketCatalogProvider::class,
+                MasterTicketCatalogProvider::class
+            );
+
+            $this->app->bind(
+                TicketQrisGateway::class,
+                MidtransQrisGateway::class
+            );
         }
     }
 

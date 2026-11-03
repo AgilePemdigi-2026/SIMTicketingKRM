@@ -30,6 +30,14 @@ class TicketPayment extends Model
         return $this->hasMany(TicketPaymentEvent::class);
     }
 
+    public function gatewayAttempts(): HasMany
+    {
+        return $this->hasMany(
+            TicketPaymentGatewayAttempt::class,
+            'ticket_payment_id'
+        );
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {

@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
+
+        // Khusus notifikasi server-to-server Midtrans.
+        // Route lain tetap dilindungi CSRF.
+        $middleware->preventRequestForgery(except: [
+            'webhooks/midtrans/ticket',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
