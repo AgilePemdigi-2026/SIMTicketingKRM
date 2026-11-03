@@ -134,6 +134,121 @@
                 Maksimal 4 tiket per transaksi.
                 Jumlah dewasa dan anak tidak boleh keduanya nol.
             </p>
+            
+            <div class="mt-6 mb-6 border-t border-gray-200 pt-5">
+
+                <h3 class="mb-2 font-semibold">
+                    Identitas Pemesan
+                </h3>
+
+                <p class="mb-5 text-sm text-gray-600">
+                    Isi identitas pengunjung yang melakukan pembelian
+                    tiket secara langsung di loket.
+                </p>
+
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+                    <div>
+                        <label for="booker_name" class="mb-2 block font-semibold">
+                            Nama Lengkap
+                        </label>
+
+                        <input
+                            type="text"
+                            id="booker_name"
+                            name="booker[name]"
+                            maxlength="255"
+                            value="{{ old('booker.name', request()->input('booker.name', '')) }}"
+                            placeholder="Masukkan nama lengkap"
+                            class="w-full rounded border p-3"
+                        >
+                    </div>
+
+                    <div>
+                        <label for="booker_identity" class="mb-2 block font-semibold">
+                            Nomor Identitas (KTP/Paspor)
+                        </label>
+
+                        <input
+                            type="text"
+                            id="booker_identity"
+                            name="booker[identity_number]"
+                            maxlength="50"
+                            value="{{ old('booker.identity_number', request()->input('booker.identity_number', '')) }}"
+                            placeholder="Masukkan nomor identitas"
+                            class="w-full rounded border p-3"
+                        >
+                    </div>
+
+                    <div>
+                        <label for="booker_phone" class="mb-2 block font-semibold">
+                            Nomor Telepon
+                        </label>
+
+                        <input
+                            type="tel"
+                            id="booker_phone"
+                            name="booker[phone]"
+                            maxlength="25"
+                            value="{{ old('booker.phone', request()->input('booker.phone', '')) }}"
+                            placeholder="Contoh: 081234567890"
+                            class="w-full rounded border p-3"
+                        >
+                    </div>
+
+                    <div>
+                        <label for="booker_email" class="mb-2 block font-semibold">
+                            Email
+                        </label>
+
+                        <input
+                            type="email"
+                            id="booker_email"
+                            name="booker[email]"
+                            maxlength="255"
+                            value="{{ old('booker.email', request()->input('booker.email', '')) }}"
+                            placeholder="Contoh: pengunjung@example.com"
+                            class="w-full rounded border p-3"
+                        >
+                    </div>
+
+                </div>
+
+            </div>
+            
+            {{-- DATA PENGUNJUNG --}}
+            <div class="mt-6 mb-6 border-t border-gray-200 pt-5">
+
+                <h3 class="mb-2 font-semibold">
+                    Data Pengunjung
+                </h3>
+
+                <p class="mb-4 text-sm text-gray-600">
+                    Lengkapi identitas setiap pengunjung sesuai
+                    jumlah tiket dewasa dan anak.
+                </p>
+
+                <input type="hidden" name="booker_is_visitor" value="0">
+
+                <label class="mb-5 flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        id="booker_is_visitor"
+                        name="booker_is_visitor"
+                        value="1"
+                        @checked((string) old('booker_is_visitor', request()->input('booker_is_visitor', '1')) === '1')
+                    >
+                    <span>Pemesan ikut berkunjung</span>
+                </label>
+
+                <div id="visitor-fields" class="space-y-4"></div>
+
+                <p id="visitor-info" class="mt-4 text-sm text-gray-600">
+                    Form pengunjung akan menyesuaikan jumlah tiket.
+                </p>
+
+            </div>
+            {{-- AKHIR DATA PENGUNJUNG --}}
 
             <button type="submit" class="krm-btn krm-btn-primary">
                 Cek Harga Tiket
@@ -219,6 +334,191 @@ document.addEventListener('DOMContentLoaded', function () {
 
     visitorType.addEventListener('change', updateTicketOptions);
     updateTicketOptions();
+});
+</script>
+@endpush
+
+
+@php
+    $savedVisitors = old(
+        'items.0.visitors',
+        request()->input('items.0.visitors', [])
+    );
+@endphp
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const adultInput = document.getElementById('adult_quantity');
+    const childInput = document.getElementById('child_quantity');
+    const visitorContainer = document.getElementById('visitor-fields');
+    const visitorInfo = document.getElementById('visitor-info');
+    const bookerCheckbox = document.getElementById('booker_is_visitor');
+
+    const bookerName = document.getElementById('booker_name');
+    const bookerIdentity = document.getElementById('booker_identity');
+
+    const savedVisitors = @json($savedVisitors);
+    let visitorDraft = Array.isArray(savedVisitors)
+        ? savedVisitors
+        : [];
+
+    function makeField(labelText, name, value, maxLength) {
+        const wrapper = document.createElement('div');
+
+        const label = document.createElement('label');
+        label.className = 'mb-2 block font-semibold';
+        label.textContent = labelText;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = name;
+        input.value = value || '';
+        input.maxLength = maxLength;
+        input.className = 'w-full rounded border p-3';
+
+        label.appendChild(input);
+        wrapper.appendChild(label);
+
+        return input;
+    }
+
+    function readCurrentVisitors() {
+        const fields = visitorContainer.querySelectorAll(
+            '[data-visitor]'
+        );
+
+        return Array.from(fields).map(function (element) {
+            return {
+                name: element.querySelector('[data-name]').value,
+                identity_number: element.querySelector(
+                    '[data-identity]'
+                ).value,
+                age_category: element.dataset.age
+            };
+        });
+    }
+
+    function syncBooker() {
+        if (!bookerCheckbox.checked) return;
+
+        const firstAdult = visitorContainer.querySelector(
+            '[data-age="adult"]'
+        );
+
+        if (!firstAdult) return;
+
+        firstAdult.querySelector('[data-name]').value =
+            bookerName.value;
+
+        firstAdult.querySelector('[data-identity]').value =
+            bookerIdentity.value;
+    }
+
+    function renderVisitors() {
+        if (visitorContainer.children.length > 0) {
+            visitorDraft = readCurrentVisitors();
+        }
+
+        const adults = Math.max(
+            0, Math.min(4, Number(adultInput.value) || 0)
+        );
+
+        const children = Math.max(
+            0, Math.min(4, Number(childInput.value) || 0)
+        );
+
+        const categories = [
+            ...Array(adults).fill('adult'),
+            ...Array(children).fill('child')
+        ];
+
+        visitorContainer.replaceChildren();
+
+        categories.forEach(function (age, index) {
+            const previous = visitorDraft[index];
+
+            const sameCategory = previous &&
+                previous.age_category === age;
+
+            const data = sameCategory ? previous : {};
+
+            const card = document.createElement('div');
+            card.className = 'rounded border border-gray-200 p-4';
+            card.dataset.visitor = '1';
+            card.dataset.age = age;
+
+            const heading = document.createElement('h4');
+            heading.className = 'mb-4 font-semibold';
+            heading.textContent =
+                'Pengunjung ' + (index + 1) +
+                ' — ' + (age === 'adult' ? 'Dewasa' : 'Anak');
+
+            card.appendChild(heading);
+
+            const grid = document.createElement('div');
+            grid.className =
+                'grid grid-cols-1 gap-4 md:grid-cols-2';
+
+            const prefix = 'items[0][visitors][' + index + ']';
+
+            const nameInput = makeField(
+                'Nama Lengkap',
+                prefix + '[name]',
+                data.name,
+                255
+            );
+            nameInput.dataset.name = '1';
+
+            const identityInput = makeField(
+                'Nomor Identitas (KTP/Paspor/KK)',
+                prefix + '[identity_number]',
+                data.identity_number,
+                50
+            );
+            identityInput.dataset.identity = '1';
+
+            grid.appendChild(nameInput.parentElement);
+            grid.appendChild(identityInput.parentElement);
+
+            card.appendChild(grid);
+
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = prefix + '[age_category]';
+            hidden.value = age;
+
+            card.appendChild(hidden);
+            visitorContainer.appendChild(card);
+        });
+
+        bookerCheckbox.disabled = adults === 0;
+
+        if (adults === 0) {
+            bookerCheckbox.checked = false;
+        }
+
+        syncBooker();
+
+        const total = adults + children;
+
+        visitorInfo.textContent = total > 4
+            ? 'Maksimal 4 pengunjung per transaksi.'
+            : 'Total pengunjung: ' + total +
+              '. Jumlah identitas harus sesuai jumlah tiket.';
+    }
+
+    adultInput.addEventListener('change', renderVisitors);
+    childInput.addEventListener('change', renderVisitors);
+
+    bookerCheckbox.addEventListener('change', function () {
+        syncBooker();
+    });
+
+    bookerName.addEventListener('input', syncBooker);
+    bookerIdentity.addEventListener('input', syncBooker);
+
+    renderVisitors();
 });
 </script>
 @endpush
