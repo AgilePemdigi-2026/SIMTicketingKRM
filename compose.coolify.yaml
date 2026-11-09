@@ -1,0 +1,59 @@
+services:
+  web:
+    build:
+      context: .
+    command: ["sh", "-ec", "php artisan migrate --force --no-interaction && exec apache2-foreground"]
+    restart: unless-stopped
+    expose:
+      - "80"
+    environment:
+      APP_NAME: MangroTix
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?}
+      APP_URL: ${APP_URL:?}
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: info
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: mangrotix
+      DB_USERNAME: mangrotix
+      DB_PASSWORD: ${DB_PASSWORD:?}
+      SESSION_DRIVER: database
+      SESSION_SECURE_COOKIE: "true"
+      CACHE_STORE: database
+      TICKET_MASTER_ENABLED: "true"
+      TICKET_COMPOSE_DATABASE_ENABLED: "true"
+      MIDTRANS_IS_PRODUCTION: "false"
+      MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY:-}
+    volumes:
+      - uploads:/var/www/html/storage/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mangrotix
+      POSTGRES_USER: mangrotix
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "mangrotix", "-d", "mangrotix"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  uploads:
+  pgdata:

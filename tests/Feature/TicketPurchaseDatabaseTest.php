@@ -79,4 +79,46 @@ class TicketPurchaseDatabaseTest extends TestCase
         $this->expectException(RuntimeException::class);
         app(TicketPurchaseDatabase::class)->connection();
     }
+
+    public function test_opted_in_production_accepts_the_compose_database_configuration(): void
+    {
+        $this->configureComposeDatabase();
+        DB::shouldReceive('connection')->never();
+
+        app(TicketPurchaseDatabase::class)->assertMasterConfiguration();
+
+        $this->assertTrue(app(TicketPurchaseDatabase::class)->supportsEnvironment());
+    }
+
+    #[DataProvider('unsafeComposeTargets')]
+    public function test_unsafe_compose_target_is_rejected_before_opening_a_connection(array $overrides): void
+    {
+        $this->configureComposeDatabase();
+        config($overrides);
+        DB::shouldReceive('connection')->never();
+
+        $this->expectException(RuntimeException::class);
+        app(TicketPurchaseDatabase::class)->connection();
+    }
+
+    public static function unsafeComposeTargets(): array
+    {
+        return [
+            'missing opt-in' => [['ticket_purchase.compose_database_enabled' => false]],
+            'remote host' => [['database.connections.pgsql.host' => 'remote.example.invalid']],
+            'different port' => [['database.connections.pgsql.port' => '5433']],
+            'other database' => [['database.connections.pgsql.database' => 'simticketingkrm']],
+        ];
+    }
+
+    private function configureComposeDatabase(): void
+    {
+        $this->app->instance('env', 'production');
+        config([
+            'ticket_purchase.compose_database_enabled' => true,
+            'database.connections.pgsql.host' => 'postgres',
+            'database.connections.pgsql.port' => '5432',
+            'database.connections.pgsql.database' => 'mangrotix',
+        ]);
+    }
 }
