@@ -1,23 +1,86 @@
+
 @php
-    // Beranda sudah tersedia. Tambahkan URL untuk menu lain setelah route dibuat.
+    $isPublicHome = request()->routeIs('home');
+
+    $berandaUrl = $isPublicHome
+        ? route('home')
+        : (
+            auth()->user()?->role === 'wisatawan'
+                ? route('wisatawan.beranda')
+                : route('home')
+        );
+
     $navItems = [
-        ['label' => 'Beranda', 'href' => url('/')],
-        ['label' => 'Destinasi', 'href' => null],
-        ['label' => 'Tiket', 'href' => null],
-        ['label' => 'Reservasi', 'href' => null],
-        ['label' => 'Berita', 'href' => null],
-        ['label' => 'Tentang', 'href' => null],
-        ['label' => 'Kontak', 'href' => null],
+        [
+            'label' => 'Beranda',
+            'href' => $berandaUrl ?? url('/'),
+            'active' => request()->routeIs(
+                'home',
+                'wisatawan.beranda'
+            ),
+        ],
+        [
+            'label' => 'Destinasi',
+            'href' => route('wisatawan.destinasi'),
+            'active' => request()->routeIs(
+                'wisatawan.destinasi',
+                'wahana.show'
+            ),
+        ],
+        [
+            'label' => 'Tiket',
+            'href' => \Illuminate\Support\Facades\Route::has('ticket-purchase.index') ? route('ticket-purchase.index') : null,
+            'active' => request()->routeIs('ticket-purchase.index'),
+        ],
+        [
+            'label' => 'Reservasi',
+            'href' => null,
+            'active' => false,
+        ],
+        [
+            'label' => 'Berita',
+            'href' => route('wisatawan.berita.index'),
+            'active' => request()->routeIs(
+                'wisatawan.berita.*'
+            ),
+        ],
+        [
+            'label' => 'Tentang',
+            'href' => null,
+            'active' => false,
+        ],
+        [
+            'label' => 'Kontak',
+            'href' => $berandaUrl . '#kontak',
+            'active' => false,
+        ],
     ];
 
-    // Tautan akun diarahkan ke route yang memang sudah ada di project.
+    if (auth()->user()?->role === 'wisatawan' && \Illuminate\Support\Facades\Route::has('ticket-purchase.orders')) {
+        array_splice($navItems, 3, 0, [[
+            'label' => 'Pesanan Saya',
+            'href' => route('ticket-purchase.orders'),
+            'active' => request()->routeIs('ticket-purchase.orders', 'ticket-purchase.show', 'ticket-payment.show'),
+        ]]);
+    }
+
+    if (auth()->user()?->role === 'petugas' && \Illuminate\Support\Facades\Route::has('ticket-payment.staff.index')) {
+        array_splice($navItems, 3, 0, [[
+            'label' => 'Pembayaran',
+            'href' => route('ticket-payment.staff.index'),
+            'active' => request()->routeIs('ticket-payment.staff.*'),
+        ]]);
+    }
+
     $accountRoute = match (auth()->user()?->role) {
         'wisatawan' => 'wisatawan.profil',
         'petugas' => 'petugas.dashboard',
         'admin' => 'admin.dashboard',
         default => 'login',
     };
+
     $accountLabel = auth()->check() ? 'Profil / Akun' : 'Masuk';
+
 @endphp
 
 <header class="relative z-30">
@@ -46,35 +109,59 @@
             </a>
 
             <!-- Menu desktop -->
-            <nav class="hidden items-center gap-5 lg:flex" aria-label="Navigasi utama">
+            <nav class="hidden items-center gap-5 xl:flex"
+                aria-label="Navigasi utama">
+
                 @foreach ($navItems as $item)
+
                     @if ($item['href'])
                         <a href="{{ $item['href'] }}"
-                           class="text-[13px] font-semibold text-[#164B39] transition hover:text-[#2F795B] focus-visible:underline">
+                        @if($item['active'])
+                            aria-current="page"
+                        @endif
+                        class="text-[13px] transition-all duration-200
+                                hover:text-[#064631]
+                                {{ $item['active']
+                                    ? 'font-bold text-[#064631] underline decoration-2 underline-offset-[7px]'
+                                    : 'font-normal text-[#466459]' }}">
+
                             {{ $item['label'] }}
+
                         </a>
                     @else
-                        <span class="cursor-not-allowed text-[13px] text-[#64766C]"
-                              title="Halaman sedang dikembangkan">
+                        <span
+                            class="cursor-not-allowed text-[13px] font-normal text-[#64766C]"
+                            title="Halaman sedang dikembangkan">
+
                             {{ $item['label'] }}
+
                         </span>
                     @endif
+
                 @endforeach
+
             </nav>
 
             <div class="flex shrink-0 items-center gap-3">
                 <!-- Menu akun: login untuk tamu, profil/dashboard untuk pengguna login -->
-                <a href="{{ route($accountRoute) }}"
+                <a href="{{ route($accountRoute) }}" aria-label="{{ $accountLabel }}"
                    class="inline-flex items-center gap-2 text-xs font-semibold text-[#064631] hover:text-[#2F795B] sm:text-[13px]">
                     <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="12" cy="7.5" r="3.5"/>
                         <path d="M5 20v-1.5a7 7 0 0 1 14 0V20"/>
                     </svg>
-                    <span>{{ $accountLabel }}</span>
+                    <span class="hidden sm:inline">{{ $accountLabel }}</span>
                 </a>
 
+                @auth
+                    <form method="POST" action="{{ route('logout') }}" class="hidden xl:block">
+                        @csrf
+                        <button type="submit" class="rounded border border-[#D7E3DA] px-3 py-2 text-xs font-semibold text-[#064631] hover:bg-[#EEF4EE]">Keluar</button>
+                    </form>
+                @endauth
+
                 <!-- Menu mobile tanpa JavaScript -->
-                <details class="relative lg:hidden">
+                <details class="relative xl:hidden">
                     <summary class="flex cursor-pointer list-none items-center gap-1 rounded border border-[#D7E3DA] px-3 py-2 text-xs font-semibold text-[#064631] [&::-webkit-details-marker]:hidden">
                         Menu
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -84,16 +171,35 @@
                     <nav class="absolute right-0 top-full z-50 mt-2 w-52 rounded border border-[#D7E3DA] bg-white py-2 shadow-lg"
                          aria-label="Navigasi seluler">
                         @foreach ($navItems as $item)
-                            @if ($item['href'])
-                                <a href="{{ $item['href'] }}" class="block px-4 py-2 text-sm font-semibold text-[#064631] hover:bg-[#EEF4EE]">
-                                    {{ $item['label'] }}
-                                </a>
-                            @else
-                                <span class="block cursor-not-allowed px-4 py-2 text-sm text-[#77857D]" title="Halaman sedang dikembangkan">
-                                    {{ $item['label'] }}
-                                </span>
+                        @if ($item['href'])
+                            <a href="{{ $item['href'] }}"
+                            @if($item['active'])
+                                aria-current="page"
                             @endif
-                        @endforeach
+                            class="block px-4 py-2 text-sm
+                                    {{ $item['active']
+                                        ? 'bg-[#EEF4EE] font-bold text-[#064631] underline underline-offset-4'
+                                        : 'font-normal text-[#466459] hover:bg-[#EEF4EE]' }}">
+
+                                {{ $item['label'] }}
+
+                            </a>
+                        @else
+                            <span
+                                class="block cursor-not-allowed px-4 py-2 text-sm font-normal text-[#77857D]">
+
+                                {{ $item['label'] }}
+
+                            </span>
+                        @endif
+
+                    @endforeach
+                    @auth
+                        <form method="POST" action="{{ route('logout') }}" class="mt-2 border-t border-[#D7E3DA] pt-2">
+                            @csrf
+                            <button type="submit" class="block w-full px-4 py-2 text-left text-sm font-semibold text-[#064631] hover:bg-[#EEF4EE]">Keluar</button>
+                        </form>
+                    @endauth
                     </nav>
                 </details>
             </div>

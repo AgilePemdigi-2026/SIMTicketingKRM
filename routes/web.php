@@ -4,11 +4,20 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Wisatawan\ProfileController;
+use App\Http\Controllers\Admin\WahanaController as AdminWahanaController;
+use App\Http\Controllers\Admin\DaftarTiketController;
+use App\Http\Controllers\Admin\FasilitasController;
+use App\Http\Controllers\Admin\KontenBeritaController;
+use App\Http\Controllers\Admin\KontenGaleriController;
+use App\Http\Controllers\Admin\InfoDestinasiController;
+use App\Http\Controllers\Admin\InfoKontakController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Wisatawan\WahanaController;
+use App\Http\Controllers\Wisatawan\BeritaController;
 
-// Halaman utama
-Route::get('/', function () {
-    return view('welcome');
-});
+// Home Publik bagi Pengguna Publik (Tidak Login)
+Route::get('/', [HomeController::class, 'index'])
+    ->name('home');
 
 // Route untuk pengguna yang belum login
 Route::middleware('guest')->group(function () {
@@ -26,15 +35,15 @@ Route::middleware('guest')->group(function () {
 
     Route::post('/login', [LoginController::class, 'store'])
         ->name('login.store');
-        
-    // Halaman Login Admin
+
+    // Login Admin
     Route::get('/admin/login', function () {
         return view('auth.portal-login', [
             'portalRole' => 'admin',
         ]);
     })->name('admin.login');
 
-    // Halaman Login Petugas
+    // Login Petugas
     Route::get('/petugas/login', function () {
         return view('auth.portal-login', [
             'portalRole' => 'petugas',
@@ -49,24 +58,29 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])
         ->name('logout');
 
+    // Beranda Wisatawan — wajib login
+    Route::get('/beranda', [HomeController::class, 'index'])
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.beranda');
+
     // Dashboard Wisatawan
     Route::get('/wisatawan/dashboard', function () {
-        return view('wisatawan.dashboard');
+        return redirect()->route('wisatawan.beranda');
     })->middleware('role:wisatawan')
-      ->name('wisatawan.dashboard');
+    ->name('wisatawan.dashboard');
 
     // Profil Wisatawan
     Route::get('/wisatawan/profil', [
         ProfileController::class, 'show'
     ])->middleware('role:wisatawan')
       ->name('wisatawan.profil');
-    
+
     // Form Edit Profil Wisatawan
     Route::get('/wisatawan/profil/edit', [
         ProfileController::class, 'edit'
     ])->middleware('role:wisatawan')
       ->name('wisatawan.profil.edit');
-    
+
     // Halaman Ubah Password Wisatawan
     Route::get('/wisatawan/profil/password', [
         ProfileController::class, 'editPassword'
@@ -85,16 +99,119 @@ Route::middleware('auth')->group(function () {
     ])->middleware('role:wisatawan')
       ->name('wisatawan.profil.update');
 
+    // Halaman Destinasi
+    Route::get(
+        '/destinasi',
+        [\App\Http\Controllers\Wisatawan\DestinasiController::class, 'index']
+    )->middleware('role:wisatawan')
+    ->name('wisatawan.destinasi');
+
+    // Detail informasi wahana
+    Route::get('/wahana/{slug}', [
+        WahanaController::class, 'show'
+    ])->where('slug', '[a-z0-9-]+')
+    ->middleware('role:wisatawan')
+    ->name('wahana.show');
+
+    // Daftar Berita & Artikel
+    Route::get('/berita', [BeritaController::class, 'index'])
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.berita.index');
+
+    // Detail Artikel
+    Route::get('/berita/{slug}', [BeritaController::class, 'show'])
+        ->where('slug', '[a-z0-9-]+')
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.berita.show');
+
     // Dashboard Petugas
     Route::get('/petugas/dashboard', function () {
-        return 'Dashboard Petugas - SIMTicketingKRM';
+        return Route::has('ticket-payment.staff.index')
+            ? view('petugas.ticket-payment.dashboard')
+            : 'Dashboard Petugas - SIMTicketingKRM';
     })->middleware('role:petugas')
       ->name('petugas.dashboard');
 
+    // Loket pembelian tiket Petugas
+    Route::get('/petugas/loket', [\App\Http\Controllers\Petugas\TicketCounterController::class, 'index'])
+        ->middleware([
+            'auth',
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class])
+        ->name('petugas.loket.index');
+
+    Route::post('/petugas/loket/preview', [\App\Http\Controllers\Petugas\TicketCounterController::class, 'preview'])
+        ->middleware([
+            'auth',
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->name('petugas.loket.preview');
+
     // Dashboard Admin
     Route::get('/admin/dashboard', function () {
-        return 'Dashboard Admin - SIMTicketingKRM';
+        return view('admin.dashboard');
     })->middleware('role:admin')
-      ->name('admin.dashboard');
+    ->name('admin.dashboard');
+
+    // Master Data Admin
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::resource('wahana', AdminWahanaController::class)
+            ->except(['show']);
+
+        Route::resource('daftar-tiket', DaftarTiketController::class)
+            ->parameters(['daftar-tiket' => 'daftarTiket'])
+            ->except(['show']);
+
+        Route::patch('/fasilitas/{fasilitas}/toggle-status', [
+            FasilitasController::class,
+            'toggleStatus',
+        ])->name('fasilitas.toggle-status');
+
+        Route::resource('fasilitas', FasilitasController::class)
+            ->parameters(['fasilitas' => 'fasilitas'])
+            ->except(['show']);
+
+        // Manajemen Konten - Berita & Artikel
+        Route::resource('konten-berita', KontenBeritaController::class)
+            ->parameters(['konten-berita' => 'konten'])
+            ->except(['show']);
+        
+        // Manajemen Konten - Galeri Foto
+        Route::resource('konten-galeri', KontenGaleriController::class)
+            ->parameters(['konten-galeri' => 'konten'])
+            ->except(['show']);
+        
+        // ==========================================
+        // MANAJEMEN KONTEN - INFO DESTINASI
+        // ==========================================
+
+        // Menampilkan halaman pengelolaan Info Destinasi
+        Route::get(
+            'konten-destinasi',
+            [InfoDestinasiController::class, 'index']
+        )->name('konten-destinasi.index');
+
+        // Menyimpan dan memperbarui Info Destinasi
+        Route::put(
+            'konten-destinasi',
+            [InfoDestinasiController::class, 'update']
+        )->name('konten-destinasi.update');
+
+        // ==========================================
+        // MANAJEMEN KONTEN - INFO KONTAK
+        // ==========================================
+
+        Route::get(
+            'konten-kontak',
+            [InfoKontakController::class, 'index']
+        )->name('konten-kontak.index');
+
+        Route::put(
+            'konten-kontak',
+            [InfoKontakController::class, 'update']
+        )->name('konten-kontak.update');
+
+    });
 
 });

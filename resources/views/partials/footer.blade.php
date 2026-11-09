@@ -24,7 +24,13 @@
                 <h2 class="mb-4 text-xs font-semibold tracking-[0.2em] text-[#B2C8BA]">JELAJAHI</h2>
                 <ul class="space-y-3 text-[13px] text-[#D0DFD5]">
                     <li><a href="{{ url('/') }}" class="hover:text-white hover:underline">Kebun Raya Mangrove</a></li>
-                    <li><span title="Halaman sedang dikembangkan">Beli Tiket</span></li>
+                    <li>
+                        @if (\Illuminate\Support\Facades\Route::has('ticket-purchase.index'))
+                            <a href="{{ route('ticket-purchase.index') }}" class="hover:text-white hover:underline">Beli Tiket</a>
+                        @else
+                            <span title="Halaman sedang dikembangkan">Beli Tiket</span>
+                        @endif
+                    </li>
                     <li><span title="Halaman sedang dikembangkan">Reservasi Venue</span></li>
                     <li><span title="Halaman sedang dikembangkan">Berita</span></li>
                 </ul>

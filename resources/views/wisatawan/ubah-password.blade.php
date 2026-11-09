@@ -25,11 +25,29 @@
                     <label for="current_password" class="mb-2 block text-sm font-semibold text-[#193B31]">
                         Password Lama <span class="text-red-600">*</span>
                     </label>
-                    <input id="current_password" name="current_password" type="password"
+                    <div class="relative">
+                        <input id="current_password" name="current_password" type="password"
                            required autocomplete="current-password"
                            aria-invalid="{{ $errors->has('current_password') ? 'true' : 'false' }}"
                            @error('current_password') aria-describedby="current-password-error" @enderror
-                           class="w-full rounded-none border border-[#BDCFC2] bg-white px-4 py-3 text-sm text-[#193B31] outline-none transition focus:border-[#2F795B] focus:ring-2 focus:ring-[#C7E1CC]">
+                           class="w-full rounded-none border border-[#BDCFC2] bg-white py-3 pl-4 pr-12 text-sm text-[#193B31] outline-none transition focus:border-[#2F795B] focus:ring-2 focus:ring-[#C7E1CC]">
+                        <button type="button"
+                                data-password-toggle="current_password"
+                                aria-controls="current_password"
+                                aria-label="Tampilkan password"
+                                aria-pressed="false"
+                                class="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-[#718079] transition hover:text-[#064631] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#2F795B]">
+                            <svg data-eye-open class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg data-eye-closed class="hidden h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 3 21 21"/>
+                                <path d="M10.6 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a14 14 0 0 1-3.2 4.1M6.1 6.1C3.4 8 2 12 2 12s3.5 7 10 7a10.5 10.5 0 0 0 4.3-.9"/>
+                                <path d="M10.1 10.1a3 3 0 0 0 3.8 3.8"/>
+                            </svg>
+                        </button>
+                    </div>
                     @error('current_password')
                         <p id="current-password-error" class="mt-2 text-sm text-red-700">{{ $message }}</p>
                     @enderror
@@ -39,11 +57,29 @@
                     <label for="password" class="mb-2 block text-sm font-semibold text-[#193B31]">
                         Password Baru <span class="text-red-600">*</span>
                     </label>
-                    <input id="password" name="password" type="password"
+                    <div class="relative">
+                        <input id="password" name="password" type="password"
                            required minlength="8" autocomplete="new-password"
                            aria-invalid="{{ $errors->has('password') ? 'true' : 'false' }}"
                            @error('password') aria-describedby="password-error" @enderror
-                           class="w-full rounded-none border border-[#BDCFC2] bg-white px-4 py-3 text-sm text-[#193B31] outline-none transition focus:border-[#2F795B] focus:ring-2 focus:ring-[#C7E1CC]">
+                           class="w-full rounded-none border border-[#BDCFC2] bg-white py-3 pl-4 pr-12 text-sm text-[#193B31] outline-none transition focus:border-[#2F795B] focus:ring-2 focus:ring-[#C7E1CC]">
+                        <button type="button"
+                                data-password-toggle="password"
+                                aria-controls="password"
+                                aria-label="Tampilkan password"
+                                aria-pressed="false"
+                                class="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-[#718079] transition hover:text-[#064631] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#2F795B]">
+                            <svg data-eye-open class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg data-eye-closed class="hidden h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 3 21 21"/>
+                                <path d="M10.6 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a14 14 0 0 1-3.2 4.1M6.1 6.1C3.4 8 2 12 2 12s3.5 7 10 7a10.5 10.5 0 0 0 4.3-.9"/>
+                                <path d="M10.1 10.1a3 3 0 0 0 3.8 3.8"/>
+                            </svg>
+                        </button>
+                    </div>
                     @error('password')
                         <p id="password-error" class="mt-2 text-sm text-red-700">{{ $message }}</p>
                     @enderror
@@ -53,9 +89,27 @@
                     <label for="password_confirmation" class="mb-2 block text-sm font-semibold text-[#193B31]">
                         Konfirmasi Password Baru <span class="text-red-600">*</span>
                     </label>
-                    <input id="password_confirmation" name="password_confirmation" type="password"
+                    <div class="relative">
+                        <input id="password_confirmation" name="password_confirmation" type="password"
                            required minlength="8" autocomplete="new-password"
-                           class="w-full rounded-none border border-[#BDCFC2] bg-white px-4 py-3 text-sm text-[#193B31] outline-none transition focus:border-[#2F795B] focus:ring-2 focus:ring-[#C7E1CC]">
+                           class="w-full rounded-none border border-[#BDCFC2] bg-white py-3 pl-4 pr-12 text-sm text-[#193B31] outline-none transition focus:border-[#2F795B] focus:ring-2 focus:ring-[#C7E1CC]">
+                        <button type="button"
+                                data-password-toggle="password_confirmation"
+                                aria-controls="password_confirmation"
+                                aria-label="Tampilkan password"
+                                aria-pressed="false"
+                                class="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-[#718079] transition hover:text-[#064631] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#2F795B]">
+                            <svg data-eye-open class="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg data-eye-closed class="hidden h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 3 21 21"/>
+                                <path d="M10.6 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a14 14 0 0 1-3.2 4.1M6.1 6.1C3.4 8 2 12 2 12s3.5 7 10 7a10.5 10.5 0 0 0 4.3-.9"/>
+                                <path d="M10.1 10.1a3 3 0 0 0 3.8 3.8"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap gap-3 border-t border-[#E6ECE7] pt-6">
@@ -72,3 +126,22 @@
         </div>
     </div>
 @endsection
+
+
+@push('scripts')
+<script>
+    document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const input = document.getElementById(button.dataset.passwordToggle);
+            if (!input) return;
+
+            const isVisible = input.type === 'password';
+            input.type = isVisible ? 'text' : 'password';
+            button.setAttribute('aria-pressed', String(isVisible));
+            button.setAttribute('aria-label', isVisible ? 'Sembunyikan password' : 'Tampilkan password');
+            button.querySelector('[data-eye-open]').classList.toggle('hidden', isVisible);
+            button.querySelector('[data-eye-closed]').classList.toggle('hidden', !isVisible);
+        });
+    });
+</script>
+@endpush
