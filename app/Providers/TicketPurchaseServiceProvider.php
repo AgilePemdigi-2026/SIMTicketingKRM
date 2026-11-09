@@ -3,15 +3,14 @@
 namespace App\Providers;
 
 use App\Contracts\TicketCatalogProvider;
-use App\Services\MasterTicketCatalogProvider;
 use App\Contracts\TicketQrisGateway;
+use App\Services\MasterTicketCatalogProvider;
 use App\Services\MidtransQrisGateway;
 use App\Support\TicketPurchaseDatabase;
 use Illuminate\Support\ServiceProvider;
 
 class TicketPurchaseServiceProvider extends ServiceProvider
 {
-
     public function register(): void
     {
         if ($this->masterMode()) {
@@ -40,6 +39,6 @@ class TicketPurchaseServiceProvider extends ServiceProvider
     {
         return config('ticket_purchase.master_enabled')
             && config('database.default') === 'pgsql'
-            && $this->app->environment(['local', 'testing']);
+            && $this->app->make(TicketPurchaseDatabase::class)->supportsEnvironment();
     }
 }

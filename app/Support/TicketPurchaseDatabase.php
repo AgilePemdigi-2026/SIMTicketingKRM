@@ -9,17 +9,26 @@ use RuntimeException;
 
 class TicketPurchaseDatabase
 {
+    public function supportsEnvironment(): bool
+    {
+        return app()->environment(['local', 'testing']) || $this->usesComposeDatabase();
+    }
+
     public function assertMasterConfiguration(): void
     {
-        $name = app()->environment('testing') ? 'simticketingkrm_purchase_test' : 'simticketingkrm';
+        [$host, $port, $name] = match (true) {
+            $this->usesComposeDatabase() => ['postgres', '5432', 'mangrotix'],
+            app()->environment('testing') => ['127.0.0.1', '5433', 'simticketingkrm_purchase_test'],
+            default => ['127.0.0.1', '5433', 'simticketingkrm'],
+        };
         $config = config('database.connections.pgsql', []);
-        if (! app()->environment(['local', 'testing'])
+        if (! $this->supportsEnvironment()
             || app()->configurationIsCached() || app()->routesAreCached()
             || config('database.default') !== 'pgsql' || ($config['driver'] ?? null) !== 'pgsql'
-            || ($config['host'] ?? null) !== '127.0.0.1' || (string) ($config['port'] ?? '') !== '5433'
+            || ($config['host'] ?? null) !== $host || (string) ($config['port'] ?? '') !== $port
             || ($config['database'] ?? null) !== $name || ! empty($config['url'])
             || ! empty($config['read']) || ! empty($config['write']) || ! empty($config['prefix'])) {
-            throw new RuntimeException('Pembelian master hanya menerima PostgreSQL lokal yang terverifikasi.');
+            throw new RuntimeException('Pembelian master hanya menerima konfigurasi PostgreSQL yang terverifikasi.');
         }
     }
 
@@ -29,10 +38,10 @@ class TicketPurchaseDatabase
         $connection = DB::connection('pgsql');
         foreach (['driver', 'host', 'database'] as $key) {
             if ($connection->getConfig($key) !== config('database.connections.pgsql.'.$key)) {
-                throw new RuntimeException('Koneksi aktif tidak sesuai dengan konfigurasi PostgreSQL lokal.');
+                throw new RuntimeException('Koneksi aktif tidak sesuai dengan konfigurasi PostgreSQL.');
             }
         }
-        if ((string) $connection->getConfig('port') !== '5433'
+        if ((string) $connection->getConfig('port') !== (string) config('database.connections.pgsql.port')
             || ! empty($connection->getConfig('url')) || ! empty($connection->getConfig('read'))
             || ! empty($connection->getConfig('write')) || ! empty($connection->getConfig('prefix'))) {
             throw new RuntimeException('Koneksi aktif memiliki pengalihan atau port yang tidak sesuai.');
@@ -46,5 +55,10 @@ class TicketPurchaseDatabase
         }
 
         return $connection;
+    }
+
+    private function usesComposeDatabase(): bool
+    {
+        return app()->environment('production') && config('ticket_purchase.compose_database_enabled') === true;
     }
 }
