@@ -11,6 +11,8 @@ use App\Models\TicketPaymentSubmission;
 use App\Services\TicketPaymentService;
 use App\Services\TicketQrisPaymentService;
 use App\Services\TicketQrisStatusSyncService;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,7 +40,6 @@ class TicketPaymentController extends Controller
         return view('wisatawan.ticket-payment.show', compact('order'));
     }
 
-    
     public function eTicketPlaceholder(
         Request $request,
         string $code
@@ -64,6 +65,20 @@ class TicketPaymentController extends Controller
                     'payment_updated',
                     'Halaman E-Tiket tersedia setelah pembayaran Lunas.'
                 );
+        }
+
+        foreach ($order->issuedTickets as $ticket) {
+            $qrCode = (new Builder())->build(
+                writer: new SvgWriter(),
+                data: $ticket->qr_token,
+                size: 240,
+                margin: 10,
+            );
+
+            $ticket->setAttribute(
+                'qr_code_data_uri',
+                $qrCode->getDataUri()
+            );
         }
 
         return view(

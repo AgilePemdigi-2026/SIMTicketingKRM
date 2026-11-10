@@ -29,10 +29,9 @@ Route::middleware([EnsureMasterTicketDatabase::class, 'web', 'auth'])->name('tic
         ->middleware('throttle:5,1')
         ->name('qris.sync');
 
-    // Halaman sementara setelah pembayaran berhasil.
-    // QR E-Tiket asli akan diintegrasikan dengan modul Dana.
+    // Halaman E-Tiket asli setelah pembayaran berhasil.
     Route::get(
-        '/e-tiket-sementara',
+        '/e-tiket',
         [TicketPaymentController::class, 'eTicketPlaceholder']
     )->name('e-ticket-placeholder');
 
