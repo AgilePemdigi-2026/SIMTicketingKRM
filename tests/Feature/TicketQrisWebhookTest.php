@@ -353,4 +353,69 @@ class TicketQrisWebhookTest extends PostgresTicketTestCase
             $order->fresh()->status
         );
     }
+
+    public function test_signature_menggunakan_signature_key_khusus_diterima(): void
+    {
+        config()->set('midtrans.signature_key', 'custom-signature-secret-key');
+
+        [$order, $payment, $attempt] = $this->createQrisOrder();
+
+        $payload = [
+            'order_id' => (string) $attempt->reference_id,
+            'transaction_id' => (string) $attempt->provider_payment_id,
+            'transaction_status' => 'settlement',
+            'status_code' => '200',
+            'gross_amount' => (string) $payment->amount,
+            'payment_type' => 'qris',
+            'currency' => 'IDR',
+            'fraud_status' => 'accept',
+        ];
+
+        $payload['signature_key'] = hash(
+            'sha512',
+            $payload['order_id']
+                . $payload['status_code']
+                . $payload['gross_amount']
+                . 'custom-signature-secret-key'
+        );
+
+        $this->sendNotification($payload)->assertOk();
+
+        $this->assertSame('paid', $payment->fresh()->status);
+        $this->assertSame('paid', $order->fresh()->status);
+    }
+
+    public function test_fallback_status_api_memverifikasi_notifikasi_jika_signature_lokal_berbeda(): void
+    {
+        [$order, $payment, $attempt] = $this->createQrisOrder();
+
+        $payload = [
+            'order_id' => (string) $attempt->reference_id,
+            'transaction_id' => (string) $attempt->provider_payment_id,
+            'transaction_status' => 'settlement',
+            'status_code' => '200',
+            'gross_amount' => (string) $payment->amount,
+            'payment_type' => 'qris',
+            'currency' => 'IDR',
+            'fraud_status' => 'accept',
+            'signature_key' => 'signature-dari-map-yang-tidak-cocok-dengan-server-key',
+        ];
+
+        Http::fake([
+            'api.sandbox.midtrans.com/v2/' . rawurlencode($payload['order_id']) . '/status' => Http::response([
+                'order_id' => $payload['order_id'],
+                'transaction_id' => $payload['transaction_id'],
+                'transaction_status' => 'settlement',
+                'status_code' => '200',
+                'gross_amount' => $payload['gross_amount'],
+                'payment_type' => 'qris',
+                'currency' => 'IDR',
+            ], 200),
+        ]);
+
+        $this->sendNotification($payload)->assertOk();
+
+        $this->assertSame('paid', $payment->fresh()->status);
+        $this->assertSame('paid', $order->fresh()->status);
+    }
 }
