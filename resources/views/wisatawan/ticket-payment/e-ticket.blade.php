@@ -41,9 +41,17 @@
                 {{ ucfirst($ticket->visitor->age_category) }}
             </p>
 
-            <div class="mt-4">
-                <p class="text-sm text-gray-500">
-                    QR Code akan ditampilkan pada tahap integrasi QR.
+            <div class="mt-5 border-t pt-4 text-center">
+                <h3 class="font-semibold mb-3">QR Code Tiket</h3>
+
+                <img
+                    src="{{ $ticket->qr_code_data_uri }}"
+                    alt="QR Code Tiket {{ $ticket->ticket_code }}"
+                    class="w-60 h-60 mx-auto"
+                >
+
+                <p class="text-sm text-gray-500 mt-2">
+                    Tunjukkan QR Code ini kepada petugas saat memasuki lokasi wisata.
                 </p>
             </div>
         </div>
