@@ -32,4 +32,9 @@ class TicketOrder extends Model
     {
         return $this->hasMany(TicketOrderItem::class);
     }
+
+    public function issuedTickets(): HasMany
+    {
+        return $this->hasMany(IssuedTicket::class);
+    }
 }

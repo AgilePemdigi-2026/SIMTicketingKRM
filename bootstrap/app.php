@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function () {
-            require __DIR__.'/../routes/ticket-purchase.php';
+            if (config('ticket_purchase.master_enabled')) {
+                require __DIR__.'/../routes/ticket-purchase.php';
+            }
+
             require __DIR__.'/../routes/ticket-payment.php';
         },
     )

@@ -38,18 +38,22 @@ class TicketPaymentController extends Controller
         return view('wisatawan.ticket-payment.show', compact('order'));
     }
 
+    
     public function eTicketPlaceholder(
         Request $request,
         string $code
     ): View|RedirectResponse {
-        // Hanya ambil pesanan milik Wisatawan yang login.
         $order = TicketOrder::query()
             ->where('code', $code)
             ->where('user_id', $request->user()->getKey())
-            ->with(['items', 'payment'])
+            ->with([
+                'items.visitors',
+                'payment',
+                'issuedTickets.visitor',
+                'issuedTickets.item',
+            ])
             ->firstOrFail();
 
-        // E-Tiket sementara hanya untuk pembayaran Lunas.
         if (
             $order->status !== 'paid'
             || $order->payment?->status !== 'paid'
@@ -62,9 +66,8 @@ class TicketPaymentController extends Controller
                 );
         }
 
-        // Halaman placeholder, tanpa QR Code.
         return view(
-            'wisatawan.ticket-payment.e-ticket-placeholder',
+            'wisatawan.ticket-payment.e-ticket',
             compact('order')
         );
     }
