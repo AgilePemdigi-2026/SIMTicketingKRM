@@ -1,0 +1,38 @@
+@postgres_purchase @sprint2 @e_tiket
+Feature: Penerbitan dan akses E-Tiket wisatawan
+  Sebagai wisatawan
+  Saya ingin memperoleh E-Tiket setelah pembayaran lunas
+  Agar tiket dapat digunakan saat berkunjung
+
+  Scenario: E-Tiket tidak dapat diakses sebelum pembayaran lunas # features\e_tiket_sprint2.feature:7
+    Given saya sudah login sebagai wisatawan                     # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar           # FeatureContext::memilikiPesananSprint2()
+    When saya membuka E-Tiket pesanan                            # FeatureContext::membukaETiketSprint2()
+    Then saya diarahkan kembali ke halaman pembayaran            # FeatureContext::eTiketBelumBisaDiaksesSprint2()
+
+  Scenario: Pembayaran lunas menerbitkan E-Tiket pengunjung     # features\e_tiket_sprint2.feature:14
+    Given saya sudah login sebagai wisatawan                    # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar          # FeatureContext::memilikiPesananSprint2()
+    And pembayaran Cash pesanan saya telah dikonfirmasi petugas # FeatureContext::cashSudahDikonfirmasiUntukETiket()
+    When listener penerbitan memproses event pembayaran lunas   # FeatureContext::listenerMenerbitkanETiketSprint2()
+    Then satu E-Tiket aktif diterbitkan untuk setiap pengunjung # FeatureContext::satuETiketPerPengunjungSprint2()
+
+  Scenario: Pemrosesan ulang tidak menduplikasi E-Tiket                # features\e_tiket_sprint2.feature:21
+    Given saya sudah login sebagai wisatawan                           # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar                 # FeatureContext::memilikiPesananSprint2()
+    And pembayaran Cash pesanan saya telah dikonfirmasi petugas        # FeatureContext::cashSudahDikonfirmasiUntukETiket()
+    When listener penerbitan memproses event pembayaran lunas dua kali # FeatureContext::listenerDiprosesDuaKaliSprint2()
+    Then satu E-Tiket aktif diterbitkan untuk setiap pengunjung        # FeatureContext::satuETiketPerPengunjungSprint2()
+    And kode E-Tiket tidak berubah setelah pemrosesan ulang            # FeatureContext::kodeETiketTidakBerubahSprint2()
+
+  Scenario: Wisatawan melihat E-Tiket setelah pembayaran lunas  # features\e_tiket_sprint2.feature:29
+    Given saya sudah login sebagai wisatawan                    # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar          # FeatureContext::memilikiPesananSprint2()
+    And pembayaran Cash pesanan saya telah dikonfirmasi petugas # FeatureContext::cashSudahDikonfirmasiUntukETiket()
+    When listener penerbitan memproses event pembayaran lunas   # FeatureContext::listenerMenerbitkanETiketSprint2()
+    And saya membuka E-Tiket pesanan                            # FeatureContext::membukaETiketSprint2()
+    Then halaman E-Tiket menampilkan identitas dan kode tiket   # FeatureContext::halamanETiketMenampilkanDataSprint2()
+
+4 scenarios (4 passed)
+21 steps (21 passed)
+0m1.48s (47.04Mb)

@@ -1,0 +1,34 @@
+@postgres_purchase @sprint2
+Feature: Pembayaran tiket wisatawan
+  Sebagai wisatawan
+  Saya ingin melakukan pembayaran Cash atau QRIS
+  Agar transaksi pembelian tiket dapat diproses
+
+  Background:                                          # features\pembayaran_tiket_sprint2.feature:7
+    Given saya sudah login sebagai wisatawan           # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar # FeatureContext::memilikiPesananSprint2()
+
+  Scenario: Wisatawan memilih pembayaran Cash        # features\pembayaran_tiket_sprint2.feature:11
+    When saya memilih pembayaran Cash untuk pesanan  # FeatureContext::memilihCashSprint2()
+    Then pembayaran Cash menunggu konfirmasi petugas # FeatureContext::cashPendingSprint2()
+    And halaman pembayaran menampilkan kode Cash     # FeatureContext::halamanCashSprint2()
+
+  Scenario: Petugas mengonfirmasi pembayaran Cash      # features\pembayaran_tiket_sprint2.feature:16
+    When saya memilih pembayaran Cash untuk pesanan    # FeatureContext::memilihCashSprint2()
+    And saya login sebagai petugas pembayaran          # FeatureContext::loginPetugasSprint2()
+    And saya mengonfirmasi pembayaran Cash tersebut    # FeatureContext::konfirmasiCashSprint2()
+    Then transaksi dan pembayaran Cash berstatus lunas # FeatureContext::cashLunasSprint2()
+
+  Scenario: Wisatawan memilih pembayaran QRIS               # features\pembayaran_tiket_sprint2.feature:22
+    When saya memilih pembayaran QRIS untuk pesanan         # FeatureContext::memilihQrisSprint2()
+    Then pembayaran QRIS masih menunggu konfirmasi Midtrans # FeatureContext::qrisPendingSprint2()
+
+  Scenario: Petugas tidak dapat mengonfirmasi QRIS secara manual # features\pembayaran_tiket_sprint2.feature:26
+    When saya memilih pembayaran QRIS untuk pesanan              # FeatureContext::memilihQrisSprint2()
+    And saya login sebagai petugas pembayaran                    # FeatureContext::loginPetugasSprint2()
+    And petugas mencoba mengonfirmasi QRIS secara manual         # FeatureContext::konfirmasiManualQrisSprint2()
+    Then sistem menolak konfirmasi QRIS manual                   # FeatureContext::qrisManualDitolakSprint2()
+
+4 scenarios (4 passed)
+21 steps (21 passed)
+0m1.20s (47.29Mb)
