@@ -34,6 +34,12 @@
         <form method="POST" action="{{ route('petugas.loket.preview') }}">
             @csrf
 
+            <input
+                type="hidden"
+                name="checkout_token"
+                value="{{ old('checkout_token', request()->input('checkout_token', $checkoutToken)) }}"
+            >
+
             <div class="mb-5">
                 <label for="visitor_type" class="mb-2 block font-semibold">
                     Jenis Wisatawan
@@ -271,14 +277,14 @@
                         Cash (Tunai)
                     </label>
 
-                    <label style="display: flex; align-items: center; gap: 8px;">
+                    <label style="display: flex; align-items: center; gap: 8px; opacity: 0.6;">
                         <input
                             type="radio"
                             name="payment_method"
                             value="qris"
-                            @checked(old('payment_method', request()->input('payment_method', 'cash')) === 'qris')
+                            disabled
                         >
-                        QRIS
+                        QRIS (Belum tersedia untuk pembelian loket)
                     </label>
                 </div>
 
@@ -289,9 +295,31 @@
             </div>
             {{-- AKHIR METODE PEMBAYARAN --}}
 
-            <button type="submit" class="krm-btn krm-btn-primary">
-                Cek Harga Tiket
-            </button>
+            <div class="flex flex-wrap gap-3">
+                <button
+                    type="submit"
+                    class="krm-btn krm-btn-primary"
+                >
+                    Cek Harga Tiket
+                </button>
+
+                @if ($quote !== null)
+                    <button
+                        type="submit"
+                        class="krm-btn"
+                        onclick="
+                            if (!confirm('Pastikan data pemesan, tiket, dan metode pembayaran sudah benar. Lanjutkan pembelian?')) {
+                                return false;
+                            }
+
+                            this.form.action = '{{ route('petugas.loket.checkout') }}';
+                            this.form.method = 'POST';
+                        "
+                    >
+                        Selesaikan Pembelian
+                    </button>
+                @endif
+            </div>
 
         </form>
     </section>
