@@ -27,6 +27,8 @@ services:
       TICKET_COMPOSE_DATABASE_ENABLED: "true"
       MIDTRANS_IS_PRODUCTION: "false"
       MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY:-}
+      MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY:-}
+      MIDTRANS_SIGNATURE_KEY: ${MIDTRANS_SIGNATURE_KEY:-}
     volumes:
       - uploads:/var/www/html/storage/app
     depends_on:

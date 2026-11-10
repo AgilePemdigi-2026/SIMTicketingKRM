@@ -135,4 +135,35 @@ class MidtransQrisGatewayTest extends TestCase
             Http::assertNothingSent();
         }
     }
+
+    public function test_mengirimkan_header_override_notification_pada_domain_publik_https(): void
+    {
+        config()->set('app.url', 'https://mangrotix.caiis.ai.id');
+
+        Http::fake([
+            'api.sandbox.midtrans.com/v2/charge' =>
+                Http::response([
+                    'order_id' => 'TEST-ORDER-OVERRIDE',
+                    'transaction_id' => 'midtrans-transaction-999',
+                    'transaction_status' => 'pending',
+                    'actions' => [
+                        [
+                            'name' => 'generate-qr-code',
+                            'method' => 'GET',
+                            'url' => 'https://example.test/qr.png',
+                        ],
+                    ],
+                ], 201),
+        ]);
+
+        app(MidtransQrisGateway::class)
+            ->createQris('TEST-ORDER-OVERRIDE', 50000);
+
+        Http::assertSent(function ($request) {
+            return $request->hasHeader(
+                'X-Override-Notification',
+                'https://mangrotix.caiis.ai.id/webhooks/midtrans/ticket'
+            );
+        });
+    }
 }

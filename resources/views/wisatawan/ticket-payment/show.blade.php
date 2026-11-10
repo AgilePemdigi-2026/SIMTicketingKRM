@@ -427,6 +427,120 @@
                 text-align: center;
             }
         }
+
+        /* ===== POPUP MODAL PEMBAYARAN BERHASIL ===== */
+        .payment-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 30, 24, 0.68);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+
+        .payment-modal-backdrop.is-visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .payment-modal-dialog {
+            background: #ffffff;
+            border: 2px solid var(--color-primary, #183d32);
+            width: 100%;
+            max-width: 460px;
+            padding: 34px 28px 28px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.24);
+            text-align: center;
+            transform: translateY(20px) scale(0.96);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .payment-modal-backdrop.is-visible .payment-modal-dialog {
+            transform: translateY(0) scale(1);
+        }
+
+        .payment-modal-icon-wrap {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            background: #eaf2e8;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            color: var(--color-primary, #183d32);
+            animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .payment-modal-icon-wrap svg {
+            width: 36px;
+            height: 36px;
+        }
+
+        .payment-modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--color-primary, #183d32);
+            margin: 0 0 10px;
+        }
+
+        .payment-modal-desc {
+            font-size: 14px;
+            color: #526359;
+            line-height: 1.6;
+            margin: 0 0 20px;
+        }
+
+        .payment-modal-summary {
+            background: #f7faf8;
+            border: 1px solid #dce8e0;
+            padding: 14px 18px;
+            margin-bottom: 22px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .payment-modal-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            overflow-wrap: anywhere;
+        }
+
+        .payment-modal-row span:first-child {
+            color: #6a7c73;
+            font-size: 12px;
+        }
+
+        .payment-modal-row span:last-child {
+            font-weight: 600;
+            color: #183d32;
+        }
+
+        .payment-modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .payment-modal-actions .krm-btn {
+            flex: 1;
+            text-align: center;
+            padding: 12px 18px;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 @endpush
 
@@ -1051,6 +1165,68 @@
         dan tiket selesai diterbitkan.
     </p>
 
+    {{-- ===== MODAL POP-UP PEMBAYARAN BERHASIL ===== --}}
+    <div
+        id="payment-success-modal"
+        class="payment-modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="payment-modal-title"
+        aria-describedby="payment-modal-desc"
+        style="display: none;"
+    >
+        <div class="payment-modal-dialog">
+            <div class="payment-modal-icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+
+            <h3 id="payment-modal-title" class="payment-modal-title">
+                Pembayaran Berhasil!
+            </h3>
+
+            <p id="payment-modal-desc" class="payment-modal-desc">
+                Pembayaran tiket Anda telah terkonfirmasi. Status pesanan Anda kini telah berubah menjadi <strong>Lunas</strong>.
+            </p>
+
+            <div class="payment-modal-summary">
+                <div class="payment-modal-row">
+                    <span>Kode Pesanan</span>
+                    <span>{{ $order->code }}</span>
+                </div>
+                <div class="payment-modal-row">
+                    <span>Metode Pembayaran</span>
+                    <span>{{ strtoupper($payment?->method ?? 'QRIS') }}</span>
+                </div>
+                <div class="payment-modal-row">
+                    <span>Total Pembayaran</span>
+                    <span>Rp {{ $totalFormatted }}</span>
+                </div>
+                <div class="payment-modal-row">
+                    <span>Status</span>
+                    <span style="color: #1e704a;">LUNAS</span>
+                </div>
+            </div>
+
+            <div class="payment-modal-actions">
+                <button
+                    type="button"
+                    class="krm-btn"
+                    id="close-success-modal-btn"
+                >
+                    Tutup
+                </button>
+                <a
+                    href="{{ route('ticket-payment.e-ticket-placeholder', $order->code) }}"
+                    class="krm-btn krm-btn-primary"
+                >
+                    Lihat E-Tiket
+                </a>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 @endsection
@@ -1094,5 +1270,91 @@
                 setInterval(updateCountdown, 1000);
             }
         );
+
+        // Logika Pop-up Pembayaran Berhasil & Auto-Refresh
+        (function () {
+            const modal = document.getElementById('payment-success-modal');
+            const closeBtn = document.getElementById('close-success-modal-btn');
+            const isInitiallyPaid = {{ $isPaid ? 'true' : 'false' }};
+            const orderCode = @json($order->code);
+            const seenKey = 'krm_payment_success_seen_' + orderCode;
+
+            function openSuccessModal() {
+                if (!modal) return;
+                modal.style.display = 'flex';
+                void modal.offsetWidth;
+                modal.classList.add('is-visible');
+                try {
+                    sessionStorage.setItem(seenKey, '1');
+                } catch (e) {}
+            }
+
+            function closeSuccessModal() {
+                if (!modal) return;
+                modal.classList.remove('is-visible');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 250);
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeSuccessModal);
+            }
+
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeSuccessModal();
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && modal.classList.contains('is-visible')) {
+                        closeSuccessModal();
+                    }
+                });
+            }
+
+            // Jika pesanan sudah lunas:
+            // Tampilkan pop-up jika baru saja di-redirect dari proses sinkronisasi/update status,
+            // atau jika belum pernah dilihat pada sesi browser saat ini.
+            if (isInitiallyPaid) {
+                @if(session('payment_updated'))
+                    openSuccessModal();
+                @else
+                    try {
+                        if (sessionStorage.getItem(seenKey) !== '1') {
+                            openSuccessModal();
+                        }
+                    } catch (e) {
+                        openSuccessModal();
+                    }
+                @endif
+            } else {
+                // Jika pembayaran masih pending (menunggu scan QRIS):
+                // Lakukan pengecekan status secara berkala (setiap 4 detik).
+                let pollTimer = null;
+                const checkStatus = () => {
+                    fetch(window.location.href, {
+                        headers: { 'Accept': 'application/json' }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data && (data.order_status === 'paid' || data.payment?.status === 'paid')) {
+                            if (pollTimer) clearInterval(pollTimer);
+                            openSuccessModal();
+                            if (closeBtn) {
+                                closeBtn.onclick = () => {
+                                    window.location.reload();
+                                };
+                            }
+                        }
+                    })
+                    .catch(() => {});
+                };
+
+                pollTimer = setInterval(checkStatus, 4000);
+            }
+        })();
     </script>
 @endpush

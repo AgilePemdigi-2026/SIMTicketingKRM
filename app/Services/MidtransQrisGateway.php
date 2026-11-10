@@ -38,8 +38,27 @@ class MidtransQrisGateway implements TicketQrisGateway
             '/'
         );
 
+        $appUrl = (string) config('app.url');
+        $webhookUrl = rtrim($appUrl, '/') . '/webhooks/midtrans/ticket';
+        $headers = [
+            'Accept' => 'application/json',
+        ];
+
+        // Jika endpoint webhook menggunakan HTTPS publik, kirimkan header override notification
+        // agar notifikasi transaksi langsung diarahkan ke backend aplikasi ini.
+        if (
+            str_starts_with($webhookUrl, 'https://')
+            && !str_contains($webhookUrl, 'localhost')
+            && !str_contains($webhookUrl, '.test')
+            && !str_contains($webhookUrl, '.invalid')
+            && !str_contains($webhookUrl, '.example')
+        ) {
+            $headers['X-Override-Notification'] = $webhookUrl;
+        }
+
         // Mengirim permintaan QRIS ke Midtrans.
         $response = Http::withBasicAuth($serverKey, '')
+            ->withHeaders($headers)
             ->acceptJson()
             ->asJson()
             ->timeout((int) config('midtrans.timeout', 15))

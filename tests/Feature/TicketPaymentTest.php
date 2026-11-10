@@ -63,6 +63,21 @@ class TicketPaymentTest extends PostgresTicketTestCase
         $this->get('/wisatawan/pembelian-tiket/'.$order->code)->assertSee('Lanjut ke Pembayaran');
     }
 
+    public function test_halaman_pembayaran_menyediakan_modal_popup_pembayaran_berhasil(): void
+    {
+        $order = $this->order();
+        $this->qris($order);
+        $order->payment()->update(['status' => 'paid', 'paid_at' => now()]);
+        $order->update(['status' => 'paid']);
+
+        $this->get($this->endpoint($order))
+            ->assertOk()
+            ->assertSee('id="payment-success-modal"', false)
+            ->assertSee('Pembayaran Berhasil!')
+            ->assertSee('Lihat E-Tiket')
+            ->assertSee('LUNAS');
+    }
+
     public function test_qris_manual_upload_ditolak_dan_bukti_lama_tetap_privat(): void
     {
         Storage::fake('local');
