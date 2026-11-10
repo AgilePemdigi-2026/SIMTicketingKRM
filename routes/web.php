@@ -148,6 +148,22 @@ Route::middleware('auth')->group(function () {
         ])
         ->name('petugas.loket.preview');
 
+    Route::post('/petugas/loket/checkout', [\App\Http\Controllers\Petugas\TicketCounterController::class, 'checkout'])
+        ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
+        ->name('petugas.loket.checkout');
+
+    Route::get('/petugas/validasi-tiket', [\App\Http\Controllers\Petugas\TicketValidationController::class, 'index'])
+        ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
+        ->name('petugas.validasi-tiket.index');
+
+    Route::post('/petugas/validasi-tiket/verify', [\App\Http\Controllers\Petugas\TicketValidationController::class, 'verify'])
+        ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
+        ->name('petugas.validasi-tiket.verify');
+
+    Route::post('/petugas/validasi-tiket/check-in', [\App\Http\Controllers\Petugas\TicketValidationController::class, 'checkIn'])
+        ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
+        ->name('petugas.validasi-tiket.check-in');
+
     // Dashboard Admin
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
