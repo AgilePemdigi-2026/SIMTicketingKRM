@@ -29,9 +29,7 @@ class TicketPurchasePageTest extends PostgresTicketTestCase
         $order = DB::table('ticket_orders')->first();
 
         $this->assertNotNull($order);
-
         $response->assertRedirect(route('ticket-payment.show', $order->code));
-
         $this->assertSame('30000.00', $order->total);
         $this->assertSame('pending_payment', $order->status);
         $this->assertDatabaseCount('ticket_order_visitors', 2);
