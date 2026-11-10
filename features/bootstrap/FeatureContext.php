@@ -1583,7 +1583,7 @@ class FeatureContext implements Context
         $this->test->getPage(
             '/wisatawan/pembelian-tiket/'
             . $this->sprint2Order->code
-            . '/pembayaran/e-tiket-sementara'
+            . '/pembayaran/e-tiket'
         );
     }
 
@@ -1771,21 +1771,37 @@ class FeatureContext implements Context
     #[Then('halaman E-Tiket menampilkan identitas dan kode tiket')]
     public function halamanETiketMenampilkanDataSprint2(): void
     {
-        $this->test->assertResponseOk();
-        $this->test->assertResponseContains('E-Tiket Saya');
+        $response = $this->test->bddLastResponse();
+        $html = $response->getContent();
 
         $ticket = IssuedTicket::query()
             ->where('ticket_order_id', $this->sprint2Order->id)
             ->with('visitor')
             ->firstOrFail();
 
-        $this->test->assertResponseContains(
-            $ticket->ticket_code
-        );
+        if ($response->getStatusCode() !== 200) {
+            throw new \RuntimeException(
+                'HTTP E-Tiket: ' . $response->getStatusCode()
+            );
+        }
 
-        $this->test->assertResponseContains(
-            $ticket->visitor->name
-        );
+        if (!str_contains($html, 'E-Tiket Saya')) {
+            throw new \RuntimeException(
+                'Judul E-Tiket Saya tidak ditemukan. Kemungkinan UI berubah.'
+            );
+        }
+
+        if (!str_contains($html, $ticket->ticket_code)) {
+            throw new \RuntimeException(
+                'Kode tiket tidak ditemukan pada halaman E-Tiket.'
+            );
+        }
+
+        if (!str_contains($html, $ticket->visitor->name)) {
+            throw new \RuntimeException(
+                'Nama pengunjung tidak ditemukan pada halaman E-Tiket.'
+            );
+        }
     }
 
     private function tiketUntukValidasiSprint2(): IssuedTicket
