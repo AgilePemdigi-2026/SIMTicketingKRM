@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Petugas;
 
 use App\Http\Controllers\Controller;
-use App\Models\TicketOrder;
+use App\Models\IssuedTicket;
+use App\Support\TicketPurchaseDatabase;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -13,6 +15,7 @@ class TicketValidationController extends Controller
     {
         return view('petugas.validasi-tiket.index', [
             'order' => null,
+            'ticket' => null,
             'result' => null,
         ]);
     }
@@ -20,45 +23,118 @@ class TicketValidationController extends Controller
     public function verify(Request $request): View
     {
         $validated = $request->validate([
-            'code' => ['required', 'uuid'],
+            'qr_token' => ['required', 'string', 'size:64', 'alpha_num'],
         ]);
 
-        $order = TicketOrder::query()
-            ->with(['payment', 'items'])
-            ->where('code', $validated['code'])
+        $ticket = IssuedTicket::query()
+            ->with(['order.payment', 'item', 'visitor'])
+            ->where('qr_token', $validated['qr_token'])
             ->first();
 
-        if ($order === null) {
-            $result = [
+        $result = $this->checkTicket($ticket);
+
+        return view('petugas.validasi-tiket.index', [
+            'order' => $ticket?->order,
+            'ticket' => $ticket,
+            'result' => $result,
+        ]);
+    }
+
+    public function checkIn(
+        Request $request,
+        TicketPurchaseDatabase $database
+    ): RedirectResponse {
+        $validated = $request->validate([
+            'qr_token' => ['required', 'string', 'size:64', 'alpha_num'],
+        ]);
+
+        $result = $database->connection()->transaction(
+            function () use ($validated) {
+                // Kunci tiket agar dua petugas tidak bisa
+                // menggunakan tiket yang sama secara bersamaan.
+                $ticket = IssuedTicket::query()
+                    ->where('qr_token', $validated['qr_token'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($ticket !== null) {
+                    $ticket->load(['order.payment']);
+                }
+
+                $result = $this->checkTicket($ticket);
+
+                if (! $result['valid']) {
+                    return $result;
+                }
+
+                $ticket->update([
+                    'status' => 'used',
+                    'used_at' => now(),
+                ]);
+
+                return [
+                    'valid' => true,
+                    'message' => 'Check-in berhasil. E-Tiket telah ditandai sebagai digunakan.',
+                ];
+            },
+            3
+        );
+
+        if (! $result['valid']) {
+            return redirect()
+                ->route('petugas.validasi-tiket.index')
+                ->withErrors([
+                    'qr_token' => $result['message'],
+                ]);
+        }
+
+        return redirect()
+            ->route('petugas.validasi-tiket.index')
+            ->with('success', $result['message']);
+    }
+
+    private function checkTicket(?IssuedTicket $ticket): array
+    {
+        if ($ticket === null) {
+            return [
                 'valid' => false,
-                'message' => 'Kode tiket tidak ditemukan.',
-            ];
-        } elseif (
-            $order->status !== 'paid' ||
-            $order->payment?->status !== 'paid'
-        ) {
-            $result = [
-                'valid' => false,
-                'message' => 'Tiket belum lunas.',
-            ];
-        } elseif (
-            $order->visit_date->toDateString() !==
-            now('Asia/Jakarta')->toDateString()
-        ) {
-            $result = [
-                'valid' => false,
-                'message' => 'Tanggal kunjungan tiket tidak sesuai dengan hari ini.',
-            ];
-        } else {
-            $result = [
-                'valid' => true,
-                'message' => 'Tiket ditemukan, pembayaran lunas, dan tanggal kunjungan sesuai. Status penggunaan tiket belum dapat diperiksa.',
+                'message' => 'E-Tiket tidak ditemukan.',
             ];
         }
 
-        return view('petugas.validasi-tiket.index', [
-            'order' => $order,
-            'result' => $result,
-        ]);
+        if ($ticket->status !== 'active' || $ticket->used_at !== null) {
+            return [
+                'valid' => false,
+                'message' => 'E-Tiket sudah digunakan atau tidak aktif.',
+            ];
+        }
+
+        $order = $ticket->order;
+
+        if (
+            $order === null ||
+            $order->status !== 'paid' ||
+            $order->payment?->status !== 'paid'
+        ) {
+            return [
+                'valid' => false,
+                'message' => 'Pembayaran tiket belum lunas.',
+            ];
+        }
+
+        if (
+            $order->visit_date->toDateString() !==
+            now('Asia/Jakarta')->toDateString()
+        ) {
+            return [
+                'valid' => false,
+                'message' => 'Tanggal kunjungan tidak sesuai dengan hari ini.',
+            ];
+        }
+
+        return [
+            'valid' => true,
+            'message' => 'E-Tiket valid dan siap untuk check-in.',
+        ];
     }
 }
