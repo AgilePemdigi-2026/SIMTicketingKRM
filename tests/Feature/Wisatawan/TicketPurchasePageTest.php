@@ -20,22 +20,30 @@ class TicketPurchasePageTest extends PostgresTicketTestCase
             ->assertSee('href="'.route('ticket-purchase.index').'"', false);
     }
 
-    public function test_browser_checkout_redirects_to_persisted_order_summary(): void
+    public function test_browser_checkout_redirects_to_payment_after_persisting_order(): void
     {
         $payload = $this->payload();
         $payload['total'] = '1.00';
+
         $response = $this->actingAs($this->account())->post(self::ENDPOINT, $payload);
         $order = DB::table('ticket_orders')->first();
+
         $this->assertNotNull($order);
-        $response->assertRedirect(route('ticket-purchase.show', $order->code));
+
+        $response->assertRedirect(route('ticket-payment.show', $order->code));
+
         $this->assertSame('30000.00', $order->total);
         $this->assertSame('pending_payment', $order->status);
         $this->assertDatabaseCount('ticket_order_visitors', 2);
+
         $this->get(route('ticket-purchase.show', $order->code))->assertOk()
             ->assertViewIs('wisatawan.ticket-purchase.show')
             ->assertSee('Pesanan berhasil disimpan.')
-            ->assertSee('Menunggu pembayaran')->assertSee('30.000,00')
-            ->assertSee('Pemesan Tes')->assertSee('Dewasa Tes')->assertSee('Anak Tes');
+            ->assertSee('Menunggu pembayaran')
+            ->assertSee('30.000,00')
+            ->assertSee('Pemesan Tes')
+            ->assertSee('Dewasa Tes')
+            ->assertSee('Anak Tes');
     }
 
     public function test_invalid_browser_checkout_returns_errors_and_preserves_input(): void
