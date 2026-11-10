@@ -184,9 +184,14 @@
             button.setAttribute('aria-pressed',String(selectedGroup===group));
         }
     }
-    function renderItems() {
-        renderGroups(); itemList.replaceChildren();
-        byId('catalog-empty').hidden = available().some(ticket=>ticket.group===selectedGroup);
+        function renderItems() {
+            renderGroups();
+            itemList.replaceChildren();
+
+            const primaryFields = byId('primary-ticket-fields');
+            primaryFields.querySelector('[data-primary-ticket-select]')?.remove();
+            primaryFields.classList.toggle('purchase-primary-single', items.length === 1);
+            byId('catalog-empty').hidden = available().some(ticket=>ticket.group===selectedGroup);
         items.forEach((item,index)=>{
             const current=ticketFor(item);
             const choices=available().filter(ticket=>ticket.group===(current?.group??selectedGroup));
@@ -196,7 +201,14 @@
                 const remove=el('button',`Hapus tiket ${index+1}`,'purchase-link'); remove.type='button';
                 remove.addEventListener('click',()=>{items.splice(index,1);changed();renderItems();}); heading.append(remove);
             }
-            const grid=el('div',undefined,'purchase-grid'),wrapper=el('label',`Pilihan tiket ${index+1}`),select=el('select');
+            const grid = el('div', undefined, 'purchase-grid');
+            const wrapper = el(
+                'label',
+                items.length === 1
+                    ? 'Jenis Tiket Spesifik'
+                    : `Jenis Tiket Spesifik ${index + 1}`
+            );
+            const select = el('select');
             select.name=`items[${index}][ticket_reference]`;select.required=true;
             const placeholder=el('option','Pilih tiket');placeholder.value='';select.append(placeholder);
             choices.forEach(ticket=>{
@@ -204,7 +216,17 @@
                 option.value=ticket.reference;option.disabled=ticket.available_quota<=0;select.append(option);
             });
             if (!current) item.reference='';
-            select.value=item.reference;wrapper.append(select);errorTarget(wrapper,`items.${index}.ticket_reference`);grid.append(wrapper);
+            select.value = item.reference;
+            wrapper.append(select);
+            errorTarget(wrapper, `items.${index}.ticket_reference`);
+
+            if (items.length === 1) {
+                wrapper.dataset.primaryTicketSelect = 'true';
+                primaryFields.prepend(wrapper);
+                grid.classList.add('purchase-only-counters');
+            } else {
+                grid.append(wrapper);
+            }
             const details=el('p',undefined,'purchase-item-details');
             function describeTicket() {
                 const ticket=ticketFor(item);
@@ -216,7 +238,16 @@
             }
             select.addEventListener('change',()=>{item.reference=select.value;changed();describeTicket();});
             for (const [age,label] of [['adult','Dewasa'],['child','Anak']]) {
-                const {wrapper,input}=labelInput(`${label} (tiket ${index+1})`,`items[${index}][${age}_quantity]`,item[age],'number');
+                const counterLabel = items.length === 1
+                    ? label
+                    : `${label} (tiket ${index + 1})`;
+
+                const {wrapper,input} = labelInput(
+                    counterLabel,
+                    `items[${index}][${age}_quantity]`,
+                    item[age],
+                    'number'
+                );
                 input.min='0';input.max='4';input.step='1';
                 const controls=el('div',undefined,'purchase-counter');
                 for (const [symbol,delta,verb] of [['−',-1,'Kurangi'],['+',1,'Tambah']]) {

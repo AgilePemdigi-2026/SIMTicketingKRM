@@ -41,8 +41,8 @@
                 <button type="button" class="krm-card purchase-type" data-group="lainnya" aria-pressed="false" hidden><h2>Lainnya</h2><ul id="other-ticket-names" class="purchase-muted"></ul></button>
             </div>
             <div class="krm-card purchase-fields">
-                <h2>Detail Kunjungan</h2>
-                <div class="purchase-grid">
+                <h2>Detail Pemilihan</h2>
+                <div class="purchase-grid" id="primary-ticket-fields">
                     <label>Jenis wisatawan<select name="visitor_type" aria-label="Jenis wisatawan" id="visitor-type" required><option value="domestik" @selected(old('visitor_type', $visitorType) === 'domestik')>Domestik (WNI)</option><option value="mancanegara" @selected(old('visitor_type', $visitorType) === 'mancanegara')>Mancanegara (WNA)</option></select><span class="purchase-field-error" data-error="visitor_type"></span></label>
                     <label>Tanggal kunjungan<input id="visit-date" aria-label="Tanggal kunjungan" type="date" name="visit_date" value="{{ $oldText('visit_date', $today) }}" min="{{ $today }}" required aria-describedby="date-help"><span class="purchase-field-error" data-error="visit_date"></span></label>
                 </div>
