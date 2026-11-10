@@ -1,0 +1,44 @@
+@postgres_purchase @sprint2 @validasi_tiket
+Feature: Validasi QR dan check-in E-Tiket
+  Sebagai petugas
+  Saya ingin memverifikasi dan memproses check-in E-Tiket
+  Agar hanya tiket yang sah dapat digunakan untuk masuk
+
+  Background:                                                   # features\validasi_tiket_sprint2.feature:7
+    Given saya sudah login sebagai wisatawan                    # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar          # FeatureContext::memilikiPesananSprint2()
+    And pembayaran Cash pesanan saya telah dikonfirmasi petugas # FeatureContext::cashSudahDikonfirmasiUntukETiket()
+    And listener penerbitan memproses event pembayaran lunas    # FeatureContext::listenerMenerbitkanETiketSprint2()
+    And tanggal kunjungan pesanan disetel ke hari ini           # FeatureContext::tanggalKunjunganHariIniSprint2()
+    And saya masuk sebagai petugas validasi tiket               # FeatureContext::loginPetugasValidasiSprint2()
+
+  Scenario: Petugas memverifikasi E-Tiket yang valid # features\validasi_tiket_sprint2.feature:15
+    When petugas memverifikasi token QR E-Tiket      # FeatureContext::verifikasiQrAktifSprint2()
+    Then hasil verifikasi menyatakan tiket valid     # FeatureContext::hasilQrValidSprint2()
+
+  Scenario: Petugas memverifikasi token QR tidak dikenal # features\validasi_tiket_sprint2.feature:19
+    When petugas memverifikasi token QR tidak dikenal    # FeatureContext::verifikasiQrTidakDikenalSprint2()
+    Then hasil verifikasi menolak token tidak ditemukan  # FeatureContext::hasilQrTidakDitemukanSprint2()
+
+  Scenario: Petugas memverifikasi tiket yang belum lunas                  # features\validasi_tiket_sprint2.feature:23
+    Given status pembayaran tiket diubah menjadi menunggu untuk pengujian # FeatureContext::pembayaranBelumLunasValidasiSprint2()
+    When petugas memverifikasi token QR E-Tiket                           # FeatureContext::verifikasiQrAktifSprint2()
+    Then hasil verifikasi menolak pembayaran belum lunas                  # FeatureContext::hasilPembayaranBelumLunasSprint2()
+
+  Scenario: Petugas memverifikasi tanggal kunjungan berbeda # features\validasi_tiket_sprint2.feature:28
+    Given tanggal kunjungan tiket diubah menjadi hari lain  # FeatureContext::tanggalBerbedaSprint2()
+    When petugas memverifikasi token QR E-Tiket             # FeatureContext::verifikasiQrAktifSprint2()
+    Then hasil verifikasi menolak tanggal tidak sesuai      # FeatureContext::hasilTanggalBerbedaSprint2()
+
+  Scenario: Petugas berhasil melakukan check-in               # features\validasi_tiket_sprint2.feature:33
+    When petugas melakukan check-in E-Tiket                   # FeatureContext::checkInPertamaSprint2()
+    Then E-Tiket berstatus used dan waktu penggunaan tercatat # FeatureContext::checkInBerhasilSprint2()
+
+  Scenario: E-Tiket tidak dapat digunakan untuk check-in dua kali   # features\validasi_tiket_sprint2.feature:37
+    When petugas melakukan check-in E-Tiket                         # FeatureContext::checkInPertamaSprint2()
+    And petugas mengulangi check-in pada E-Tiket yang sama          # FeatureContext::checkInKeduaSprint2()
+    Then check-in kedua ditolak dan tiket tetap digunakan satu kali # FeatureContext::checkInKeduaDitolakSprint2()
+
+6 scenarios (6 passed)
+51 steps (51 passed)
+0m1.99s (47.99Mb)

@@ -8,10 +8,12 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\Concerns\MakesHttpRequests;
 use Illuminate\Testing\TestResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Foundation\Testing\Concerns\InteractsWithExceptionHandling;
 
 class BehatLaravelTestCase
 {
     use MakesHttpRequests;
+    use InteractsWithExceptionHandling;
 
     protected Application $app;
 
@@ -63,6 +65,13 @@ class BehatLaravelTestCase
 
     public function getPage(string $uri): TestResponse
     {
+        return $this->response = $this->get($uri);
+    }
+
+    public function getPageWithDebug(string $uri): TestResponse
+    {
+        $this->withoutExceptionHandling();
+
         return $this->response = $this->get($uri);
     }
 
@@ -217,5 +226,16 @@ class BehatLaravelTestCase
     public function deletePage(string $uri): TestResponse
     {
         return $this->response = $this->delete($uri);
+    }
+
+    public function bddLastResponse(): \Illuminate\Testing\TestResponse
+    {
+        if (!($this->response instanceof \Illuminate\Testing\TestResponse)) {
+            throw new \RuntimeException(
+                'Response Laravel belum tersedia.'
+            );
+        }
+
+        return $this->response;
     }
 }

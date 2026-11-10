@@ -1,0 +1,56 @@
+@postgres_purchase @sprint2 @loket
+Feature: Pembelian tiket oleh Petugas Loket
+  Sebagai petugas loket
+  Saya ingin melayani pembelian tiket wisatawan
+  Agar transaksi pembelian dapat diproses langsung
+
+  Scenario: Petugas dapat membuka halaman pembelian loket   # features\pembelian_loket_sprint2.feature:7
+    Given saya sudah login sebagai wisatawan                # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran               # FeatureContext::loginPetugasSprint2()
+    When saya membuka halaman pembelian tiket loket         # FeatureContext::membukaHalamanLoketSprint2()
+    Then halaman pembelian tiket loket berhasil ditampilkan # FeatureContext::halamanLoketBerhasilSprint2()
+
+  Scenario: Wisatawan tidak dapat membuka halaman loket # features\pembelian_loket_sprint2.feature:13
+    Given saya sudah login sebagai wisatawan            # FeatureContext::loggedInAsTourist()
+    When saya membuka halaman pembelian tiket loket     # FeatureContext::membukaHalamanLoketSprint2()
+    Then akses halaman loket ditolak                    # FeatureContext::aksesLoketDitolakSprint2()
+
+  Scenario: Petugas melihat preview harga tiket loket      # features\pembelian_loket_sprint2.feature:19
+    Given saya sudah login sebagai wisatawan               # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran              # FeatureContext::loginPetugasSprint2()
+    And petugas menyiapkan data pembelian loket yang valid # FeatureContext::menyiapkanDataLoketSprint2()
+    When petugas meminta preview harga tiket loket         # FeatureContext::previewHargaLoketSprint2()
+    Then preview loket berhasil menampilkan rincian harga  # FeatureContext::previewLoketBerhasilSprint2()
+
+  Scenario: Petugas berhasil membuat transaksi Cash             # features\pembelian_loket_sprint2.feature:26
+    Given saya sudah login sebagai wisatawan                    # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran                   # FeatureContext::loginPetugasSprint2()
+    And petugas menyiapkan data pembelian loket yang valid      # FeatureContext::menyiapkanDataLoketSprint2()
+    When petugas melakukan checkout tiket loket                 # FeatureContext::checkoutLoketSprint2()
+    Then pesanan loket tersimpan dengan pembayaran Cash pending # FeatureContext::checkoutCashPendingLoketSprint2()
+
+  Scenario: Petugas mengonfirmasi pembayaran Cash loket    # features\pembelian_loket_sprint2.feature:33
+    Given saya sudah login sebagai wisatawan               # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran              # FeatureContext::loginPetugasSprint2()
+    And petugas menyiapkan data pembelian loket yang valid # FeatureContext::menyiapkanDataLoketSprint2()
+    When petugas melakukan checkout tiket loket            # FeatureContext::checkoutLoketSprint2()
+    And petugas mengonfirmasi pembayaran Cash loket        # FeatureContext::konfirmasiCashLoketSprint2()
+    Then transaksi loket dan pembayaran berstatus lunas    # FeatureContext::transaksiLoketLunasSprint2()
+
+  Scenario: Checkout loket menolak identitas wisatawan tidak cocok    # features\pembelian_loket_sprint2.feature:41
+    Given saya sudah login sebagai wisatawan                          # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran                         # FeatureContext::loginPetugasSprint2()
+    And petugas menyiapkan data pembelian loket yang valid            # FeatureContext::menyiapkanDataLoketSprint2()
+    When petugas checkout menggunakan identitas wisatawan tidak cocok # FeatureContext::checkoutIdentitasSalahLoketSprint2()
+    Then checkout loket ditolak tanpa membuat pesanan                 # FeatureContext::checkoutIdentitasDitolakLoketSprint2()
+
+  Scenario: Checkout loket menolak jumlah pengunjung tidak sesuai # features\pembelian_loket_sprint2.feature:48
+    Given saya sudah login sebagai wisatawan                      # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran                     # FeatureContext::loginPetugasSprint2()
+    And petugas menyiapkan data pembelian loket yang valid        # FeatureContext::menyiapkanDataLoketSprint2()
+    When petugas checkout dengan jumlah pengunjung tidak sesuai   # FeatureContext::checkoutPengunjungSalahLoketSprint2()
+    Then validasi checkout loket menolak jumlah pengunjung        # FeatureContext::pengunjungDitolakLoketSprint2()
+
+7 scenarios (7 passed)
+33 steps (33 passed)
+0m1.85s (47.00Mb)
