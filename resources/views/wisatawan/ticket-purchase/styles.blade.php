@@ -36,4 +36,51 @@
 .purchase-field-error{color:#9c3023;font-size:12px;line-height:1.5}.purchase-field-error:empty{display:none}.purchase-page [aria-invalid="true"]{border-color:#b53829}
 .purchase-page input[readonly]{background:#f1f5f0}.purchase-order-card,.purchase-empty{margin-top:20px}.purchase-order-card-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px}.purchase-order-card h2{overflow-wrap:anywhere;min-width:0}.purchase-order-card-header .purchase-status{flex-shrink:0}.purchase-pagination{margin-top:26px}.purchase-review-line{line-height:1.8;margin-bottom:12px;overflow-wrap:anywhere}.purchase-review-line h2{margin-bottom:8px}.purchase-summary-row span:first-child{min-width:0;overflow-wrap:anywhere}
 @media(max-width:640px){.purchase-order-card-header{flex-direction:column}.purchase-summary-row{gap:10px}.purchase-counter{gap:5px}.purchase-counter button{min-width:30px}.purchase-counter input{width:46px}.purchase-steps li:not(:last-child):after{width:calc(100% - 32px)}}
+
+.purchase-steps li.completed > span {
+    position: relative;
+    color: transparent;
+}
+
+.purchase-steps li.completed > span::after {
+    content: "✓";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Sembunyikan judul Tiket 1 jika hanya ada satu jenis tiket */
+#ticket-items > .purchase-item:only-child > .purchase-item-heading {
+    display: none;
+}
+
+/* Layout Detail Pemilihan sesuai Figma */
+
+/* Tanggal kunjungan memenuhi satu baris */
+#primary-ticket-fields.purchase-primary-single > label:last-child {
+    grid-column: 1 / -1;
+}
+
+/* Counter Dewasa dan Anak tetap berdampingan */
+.purchase-item .purchase-grid.purchase-only-counters > label:first-child {
+    grid-column: auto;
+}
+
+/* Hilangkan garis pemisah saat hanya ada satu jenis tiket */
+#ticket-items > .purchase-item:only-child {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 18px;
+}
+
+/* Sementara nonaktifkan fitur tambah jenis tiket sesuai user story */
+#add-ticket {
+    display: none !important;
+}
 </style>
