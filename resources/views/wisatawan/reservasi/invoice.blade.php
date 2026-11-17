@@ -73,14 +73,28 @@
         'Invoice',
     ];
 
-    $tanggalFormatted = \Carbon\Carbon::parse($tanggal)
-        ->locale('id')
-        ->translatedFormat('d F Y');
+    $isFinal = isset($reservasi);
 
-    $waktuMulai = substr($sesi->jam_mulai, 0, 5);
-    $waktuSelesai = substr($sesi->jam_selesai, 0, 5);
+    $tanggalFormatted = \Carbon\Carbon::parse(
+        $isFinal ? $reservasi->visit_date : $tanggal
+    )->locale('id')->translatedFormat('d F Y');
 
-    $totalBiaya = (float) $sesi->harga_sesi;
+    $waktuMulai = substr(
+        (string) ($isFinal ? $reservasi->start_time : $sesi->jam_mulai),
+        0,
+        5
+    );
+
+    $waktuSelesai = substr(
+        (string) ($isFinal ? $reservasi->end_time : $sesi->jam_selesai),
+        0,
+        5
+    );
+
+    $totalBiaya = (float) (
+        $isFinal ? $reservasi->total_amount : $sesi->harga_sesi
+    );
+
 @endphp
 
 <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
@@ -98,16 +112,16 @@
 
                     <div
                         class="flex h-8 w-8 items-center justify-center border text-sm font-semibold
-                        {{ $index === 4 || $index < 3
+                        {{ $index <= 4
                             ? 'border-[#07513D] bg-[#07513D] text-white'
                             : 'border-gray-200 bg-[#FBFCF8] text-gray-400' }}"
                         @if ($index === 4) aria-current="step" @endif
                     >
-                        {{ $index < 3 ? '✓' : $index + 1 }}
+                        {{ $index < 4 ? '✓' : $index + 1 }}
                     </div>
 
                     <span class="text-[10px] sm:text-xs
-                        {{ $index === 4 || $index < 3
+                        {{ $index <= 4
                             ? 'font-semibold text-[#07513D]'
                             : 'text-gray-400' }}">
                         {{ $nama }}
@@ -124,7 +138,7 @@
         {{-- Judul --}}
         <div class="mb-8">
             <h1 class="text-2xl font-bold text-[#193B31]">
-                Pratinjau Invoice
+                {{ $isFinal ? 'Invoice Reservasi' : 'Pratinjau Invoice' }}
             </h1>
 
             <div class="mt-2 h-1 w-44 bg-[#D9E8BE]"></div>
@@ -132,9 +146,15 @@
 
         {{-- Pemberitahuan --}}
         <div class="mb-6 border border-[#D6E0D9] bg-[#F0F7F0] p-4 text-sm text-[#193B31]">
-            <strong>Mode Pratinjau.</strong>
-            Dokumen ini hanya contoh tampilan.
-            Reservasi dan pembayaran belum diproses.
+            @if ($isFinal)
+                <strong>Pembayaran Lunas.</strong>
+                Invoice ini diterbitkan berdasarkan data reservasi
+                dan pembayaran yang telah tercatat dalam sistem.
+            @else
+                <strong>Mode Pratinjau.</strong>
+                Dokumen ini hanya contoh tampilan.
+                Reservasi dan pembayaran belum diproses.
+            @endif
         </div>
 
         {{-- Kartu Invoice --}}
@@ -161,7 +181,9 @@
                         </p>
 
                         <p class="mt-1 text-sm font-bold text-[#193B31]">
-                            Belum Ada Transaksi
+                            {{ $isFinal && $reservasi->payment?->status === 'paid'
+                                ? 'Lunas'
+                                : 'Belum Ada Transaksi' }}
                         </p>
                     </div>
 
@@ -178,7 +200,7 @@
                             Nomor Invoice
                         </p>
                         <p class="rv-invoice-value">
-                            Belum diterbitkan
+                            {{ $isFinal ? $reservasi->invoice_number : 'Belum diterbitkan' }}
                         </p>
                     </div>
 
@@ -187,7 +209,7 @@
                             Tanggal Penerbitan
                         </p>
                         <p class="rv-invoice-value">
-                            Belum diterbitkan
+                            {{ $isFinal ? $reservasi->created_at->timezone('Asia/Jakarta')->format('d/m/Y H:i') . ' WIB' : 'Belum diterbitkan' }}
                         </p>
                     </div>
 
@@ -209,7 +231,7 @@
                             Nama Pemesan
                         </p>
                         <p class="rv-invoice-value">
-                            Belum tersimpan
+                            {{ $isFinal ? $reservasi->customer_name : 'Belum tersimpan' }}
                         </p>
                     </div>
 
@@ -218,7 +240,7 @@
                             Nomor Identitas
                         </p>
                         <p class="rv-invoice-value">
-                            Belum tersimpan
+                            {{ $isFinal ? $reservasi->identity_number : 'Belum tersimpan' }}
                         </p>
                     </div>
 
@@ -227,7 +249,7 @@
                             Nomor Telepon
                         </p>
                         <p class="rv-invoice-value">
-                            Belum tersimpan
+                            {{ $isFinal ? $reservasi->phone : 'Belum tersimpan' }}
                         </p>
                     </div>
 
@@ -236,7 +258,7 @@
                             Email
                         </p>
                         <p class="rv-invoice-value">
-                            Belum tersimpan
+                            {{ $isFinal ? $reservasi->email : 'Belum tersimpan' }}
                         </p>
                     </div>
 
@@ -257,7 +279,7 @@
                             Fasilitas
                         </p>
                         <p class="rv-invoice-value">
-                            {{ $fasilitas->nama_fasilitas }}
+                            {{ $isFinal ? $reservasi->facility_name : $fasilitas->nama_fasilitas }}
                         </p>
                     </div>
 
@@ -275,7 +297,7 @@
                             Sesi Penggunaan
                         </p>
                         <p class="rv-invoice-value">
-                            {{ $sesi->nama_sesi }}
+                            {{ $isFinal ? $reservasi->session_name : $sesi->nama_sesi }}
                         </p>
                     </div>
 
@@ -293,7 +315,7 @@
                             Durasi
                         </p>
                         <p class="rv-invoice-value">
-                            {{ $sesi->durasi_menit }} menit
+                            {{ $isFinal ? $reservasi->duration_minutes : $sesi->durasi_menit }} menit
                         </p>
                     </div>
 
@@ -302,7 +324,7 @@
                             Jumlah Peserta
                         </p>
                         <p class="rv-invoice-value">
-                            Belum tersimpan
+                            {{ $isFinal ? $reservasi->participant_count . ' peserta' : 'Belum tersimpan' }}
                         </p>
                     </div>
 
@@ -311,7 +333,7 @@
                             Keperluan Kegiatan
                         </p>
                         <p class="rv-invoice-value">
-                            Belum tersimpan
+                            {{ $isFinal ? $reservasi->purpose : 'Belum tersimpan' }}
                         </p>
                     </div>
 
@@ -320,7 +342,7 @@
                             Metode Pembayaran
                         </p>
                         <p class="rv-invoice-value">
-                            QRIS (Direncanakan)
+                            {{ $isFinal ? 'QRIS (Midtrans Sandbox)' : 'QRIS (Direncanakan)' }}
                         </p>
                     </div>
 
@@ -335,7 +357,9 @@
                         Total Biaya Reservasi
                     </p>
                     <p class="mt-1 text-xs text-gray-500">
-                        Berdasarkan harga sesi fasilitas
+                        {{ $reservasi->participant_count }} peserta ×
+                        Rp {{ number_format((float) $reservasi->unit_price, 0, ',', '.') }}
+                        per peserta
                     </p>
                 </div>
 
@@ -349,10 +373,15 @@
             <div class="mt-7 bg-[#F4F7F2] p-4">
 
                 <p class="text-xs leading-relaxed text-[#557066]">
-                    Dokumen ini bukan bukti pembayaran atau
-                    konfirmasi reservasi. Invoice final dan
-                    file PDF hanya akan tersedia setelah
-                    pembayaran diverifikasi oleh sistem.
+                    @if ($isFinal)
+                        Pembayaran reservasi telah terverifikasi Lunas.
+                        Persetujuan administratif reservasi tetap mengikuti
+                        proses pengelolaan oleh Admin.
+                    @else
+                        Dokumen ini bukan bukti pembayaran atau konfirmasi
+                        reservasi. Invoice final hanya tersedia setelah
+                        pembayaran diverifikasi oleh sistem.
+                    @endif
                 </p>
 
             </div>

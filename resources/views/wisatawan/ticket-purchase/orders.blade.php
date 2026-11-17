@@ -316,26 +316,181 @@ $latestAttempt = $order->payment?->method === 'qris'
         aria-labelledby="history-tab-reservasi"
         hidden
     >
-        <div class="history-empty">
+        @forelse ($reservations as $reservation)
+            @php
+                $payment = $reservation->payment;
 
-            <h2 class="text-lg font-bold text-[#193B31]">
-                Belum Ada Riwayat Reservasi
-            </h2>
+                $latestAttempt = $payment?->attempts?->first();
 
-            <p class="mt-2 text-sm leading-relaxed text-gray-500">
-                Reservasi fasilitas yang telah kamu buat akan
-                ditampilkan di halaman ini setelah proses
-                pemesanan berhasil tercatat dalam sistem.
-            </p>
+                $isPaid = $payment?->status === 'paid';
 
-            <a
-                href="{{ route('wisatawan.reservasi.index') }}"
-                class="krm-btn krm-btn-primary"
+                // Status pembayaran dan administrasi
+                // ditampilkan secara terpisah.
+                $paymentLabel = match (true) {
+                    $isPaid => 'Lunas',
+                    $latestAttempt?->status === 'expired'
+                        => 'QRIS Kedaluwarsa',
+                    $latestAttempt?->status === 'failed'
+                        => 'Pembayaran Gagal',
+                    $latestAttempt?->status === 'cancelled'
+                        => 'Pembayaran Dibatalkan',
+                    $payment?->status === 'pending'
+                        => 'Menunggu Pembayaran',
+                    default => 'Belum Dibayar',
+                };
+
+                $administrativeLabel = match (
+                    $reservation->administrative_status
+                ) {
+                    'pending' => 'Menunggu Persetujuan',
+                    'approved' => 'Disetujui',
+                    'confirmed' => 'Dikonfirmasi',
+                    'rejected' => 'Ditolak',
+                    'cancelled' => 'Dibatalkan',
+                    default => ucfirst(
+                        str_replace(
+                            '_',
+                            ' ',
+                            $reservation->administrative_status
+                        )
+                    ),
+                };
+
+                // Reservasi lunas menuju invoice asli.
+                // Reservasi belum lunas menuju detail pembayaran.
+                $detailUrl = $isPaid
+                    ? route(
+                        'facility-reservation.payment.invoice',
+                        ['code' => $reservation->code]
+                    )
+                    : route(
+                        'facility-reservation.payment.show',
+                        ['code' => $reservation->code]
+                    );
+            @endphp
+
+            <article
+                class="history-card"
+                aria-label="Reservasi {{ $reservation->invoice_number }}"
             >
-                Reservasi Fasilitas
-            </a>
+                <div class="history-card-grid">
 
-        </div>
+                    {{-- NOMOR RESERVASI --}}
+                    <div>
+                        <p class="history-date">
+                            {{ $reservation->created_at
+                                ->locale('id')
+                                ->translatedFormat('d M Y') }}
+                        </p>
+
+                        <div class="history-code">
+                            {{ $reservation->invoice_number }}
+                        </div>
+                    </div>
+
+                    {{-- FASILITAS --}}
+                    <dl>
+                        <dt>Fasilitas</dt>
+                        <dd>{{ $reservation->facility_name }}</dd>
+                    </dl>
+
+                    {{-- TANGGAL PENGGUNAAN --}}
+                    <dl>
+                        <dt>Tgl Penggunaan</dt>
+                        <dd>
+                            {{ $reservation->visit_date
+                                ->locale('id')
+                                ->translatedFormat('d M Y') }}
+                        </dd>
+                    </dl>
+
+                    {{-- JUMLAH PESERTA --}}
+                    <dl>
+                        <dt>Jumlah</dt>
+                        <dd>
+                            {{ $reservation->participant_count }}
+                            peserta
+                        </dd>
+                    </dl>
+
+                    {{-- TOTAL --}}
+                    <dl>
+                        <dt>Total</dt>
+                        <dd>
+                            Rp {{ number_format(
+                                (float) $reservation->total_amount,
+                                0,
+                                ',',
+                                '.'
+                            ) }}
+                        </dd>
+                    </dl>
+
+                    {{-- STATUS --}}
+                    <div
+                        class="history-statuses"
+                        aria-label="Status reservasi"
+                    >
+                        <span
+                            class="history-status {{ $isPaid ? 'is-paid' : '' }}"
+                        >
+                            {{ $paymentLabel }}
+                        </span>
+
+                        <span class="history-status is-neutral">
+                            {{ $administrativeLabel }}
+                        </span>
+                    </div>
+
+                </div>
+
+                {{-- TOMBOL AKSI --}}
+                <div class="history-actions">
+
+                    <a
+                        class="history-action"
+                        href="{{ $detailUrl }}"
+                    >
+                        {{ $isPaid
+                            ? 'Lihat Invoice'
+                            : 'Lihat Pembayaran' }}
+                    </a>
+
+                </div>
+
+            </article>
+
+        @empty
+
+            {{-- Jika wisatawan belum pernah reservasi --}}
+            <div class="history-empty">
+
+                <h2 class="text-lg font-bold text-[#193B31]">
+                    Belum Ada Riwayat Reservasi
+                </h2>
+
+                <p class="mt-2 text-sm leading-relaxed text-gray-500">
+                    Reservasi fasilitas yang telah kamu buat
+                    akan muncul di halaman ini.
+                </p>
+
+                <a
+                    href="{{ route('wisatawan.reservasi.index') }}"
+                    class="krm-btn krm-btn-primary"
+                >
+                    Reservasi Fasilitas
+                </a>
+
+            </div>
+
+        @endforelse
+
+        @if ($reservations->hasPages())
+            <div class="history-pagination">
+                {{ $reservations->links() }}
+            </div>
+        @endif
+
     </section>
 
 </div>
@@ -362,6 +517,14 @@ $latestAttempt = $order->payment?->method === 'qris'
             panels[i].hidden = !selected;
         });
     };
+
+    // Jika membuka pagination reservasi,
+    // tampilkan tab Reservasi secara otomatis.
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has('reservasi_page')) {
+        activate(1);
+    }
 
     tabs.forEach((tab, index) => {
         tab.addEventListener('click', () => activate(index));
