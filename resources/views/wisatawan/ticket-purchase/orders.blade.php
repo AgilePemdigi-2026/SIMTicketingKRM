@@ -307,12 +307,37 @@ $latestAttempt = $order->payment?->method === 'qris'
         <div class="history-pagination">{{ $orders->links() }}</div>
     </section>
 
-    <section id="history-panel-reservasi" role="tabpanel" aria-labelledby="history-tab-reservasi" hidden>
+    {{-- ==========================================
+        RIWAYAT RESERVASI - SPRINT 3
+    ========================================== --}}
+    <section
+        id="history-panel-reservasi"
+        role="tabpanel"
+        aria-labelledby="history-tab-reservasi"
+        hidden
+    >
         <div class="history-empty">
-            <h2>Riwayat Reservasi</h2>
-            <p>Data reservasi belum terhubung ke halaman ini. Riwayat tiket tetap bisa dilihat melalui tab Tiket.</p>
+
+            <h2 class="text-lg font-bold text-[#193B31]">
+                Belum Ada Riwayat Reservasi
+            </h2>
+
+            <p class="mt-2 text-sm leading-relaxed text-gray-500">
+                Reservasi fasilitas yang telah kamu buat akan
+                ditampilkan di halaman ini setelah proses
+                pemesanan berhasil tercatat dalam sistem.
+            </p>
+
+            <a
+                href="{{ route('wisatawan.reservasi.index') }}"
+                class="krm-btn krm-btn-primary"
+            >
+                Reservasi Fasilitas
+            </a>
+
         </div>
     </section>
+
 </div>
 @endsection
 

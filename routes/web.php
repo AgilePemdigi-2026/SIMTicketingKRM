@@ -124,6 +124,53 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:wisatawan')
         ->name('wisatawan.berita.show');
 
+    // Halaman daftar dan pemilihan fasilitas
+    Route::get('/reservasi', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'index'
+    ])->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.index');
+
+    // Reservasi - Pilih Tanggal dan Waktu
+    Route::get('/reservasi/{fasilitas}/tanggal', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'tanggal'
+    ])->whereNumber('fasilitas')
+      ->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.tanggal');
+
+    // Reservasi - Data Reservasi
+    Route::get('/reservasi/{fasilitas}/data', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'data'
+    ])->whereNumber('fasilitas')
+      ->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.data');
+
+    // Sprint 3 - Pratinjau UI Pembayaran Reservasi
+    Route::get('/reservasi/{fasilitas}/pratinjau-pembayaran', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'previewPembayaran'
+    ])->whereNumber('fasilitas')
+      ->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.pembayaran.preview');
+
+    // Sprint 3 - Pratinjau Desain Invoice Reservasi
+    Route::get('/reservasi/{fasilitas}/pratinjau-invoice', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'previewInvoice'
+    ])->whereNumber('fasilitas')
+      ->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.invoice.preview');
+
+    // Sprint 3 - Pratinjau UI Reschedule Reservasi
+    Route::get('/reservasi/{fasilitas}/pratinjau-reschedule', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'previewReschedule'
+    ])->whereNumber('fasilitas')
+      ->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.reschedule.preview');
+
     // Dashboard Petugas
     Route::get('/petugas/dashboard', function () {
         return Route::has('ticket-payment.staff.index')
