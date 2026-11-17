@@ -63,6 +63,11 @@
                         'active' => 'admin.fasilitas.*',
                     ],
                     [
+                        'label' => 'Manajemen Reservasi',
+                        'route' => 'admin.reservasi.preview',
+                        'active' => 'admin.reservasi.preview*',
+                    ],
+                    [
                         'label' => 'Manajemen Konten',
                         'route' => 'admin.konten-berita.index',
                         'active' => 'admin.konten-berita.*',
@@ -91,7 +96,6 @@
                 @foreach ([
                     'Transaksi',
                     'Monitoring Pendapatan',
-                    'Manajemen Reservasi',
                     'Manajemen Pengguna',
                     'Laporan',
                     'Audit Log',
