@@ -127,9 +127,31 @@
             Informasi Pemesan
         </h2>
 
-        {{-- Form frontend, belum dikirim ke backend --}}
-        <form id="formReservasi" method="POST" action="">
+        {{-- Form reservasi terintegrasi dengan backend --}}
+        <form
+            id="formReservasi"
+            method="POST"
+            action="{{ route('wisatawan.reservasi.checkout') }}"
+        >
             @csrf
+
+            <input
+                type="hidden"
+                name="id_fasilitas"
+                value="{{ $fasilitas->id_fasilitas }}"
+            >
+
+            <input
+                type="hidden"
+                name="id_sesi"
+                value="{{ $sesi->id_sesi }}"
+            >
+
+            <input
+                type="hidden"
+                name="tanggal"
+                value="{{ $tanggal }}"
+            >
 
             <div class="reservasi-data-grid">
 
@@ -301,15 +323,19 @@
             <span class="font-bold text-[#193B31]">
                 Total Pembayaran
             </span>
-            <span class="font-bold text-[#07513D]">
-                Rp {{ number_format($totalBiaya, 0, ',', '.') }}
+            <span
+                id="invoiceTotal"
+                class="font-bold text-[#07513D]"
+            >
+                Rp 0
             </span>
         </div>
 
         <p class="mt-4 text-xs text-gray-500">
-            Pratinjau ini bukan invoice final.
-            Nomor invoice dan status pembayaran akan diterbitkan
-            setelah proses reservasi terintegrasi.
+            Total pembayaran merupakan estimasi sebelum pengajuan
+            disimpan. Nomor invoice diterbitkan setelah reservasi
+            berhasil dicatat. Pengajuan reservasi bukan bukti
+            pembayaran lunas.
         </p>
     </section>
 
@@ -328,12 +354,14 @@
         </a>
 
         <button
-            type="button"
+            type="submit"
+            form="formReservasi"
             id="lanjutPembayaran"
-            class="bg-[#07513D] px-6 py-3 text-sm font-semibold text-white hover:bg-[#063A2B]"
+            class="bg-[#07513D] px-6 py-3 text-sm font-semibold text-white hover:bg-[#063A2B] disabled:cursor-not-allowed disabled:opacity-50"
         >
-            Lanjut ke Pembayaran →
+            Simpan Pengajuan Reservasi →
         </button>
+
     </div>
 
     <p
@@ -343,52 +371,206 @@
         class="mt-3 text-right text-xs text-[#557066]"
     ></p>
 
+    {{-- Hasil penyimpanan reservasi asli --}}
+    <div
+        id="hasilReservasi"
+        class="mt-5 border border-[#D6E0D9] bg-[#F0F7F0] p-5"
+        hidden
+    >
+        <h3 class="text-base font-bold text-[#07513D]">
+            Pengajuan Reservasi Berhasil Dicatat
+        </h3>
+
+        <p class="mt-2 text-sm text-[#193B31]">
+            Nomor Invoice:
+            <strong id="hasilNomorInvoice"></strong>
+        </p>
+
+        <p class="mt-2 text-sm text-[#193B31]">
+            Total:
+            <strong id="hasilTotal"></strong>
+        </p>
+
+        <p class="mt-2 text-sm text-[#193B31]">
+            Status Administrasi:
+            <strong id="hasilStatus"></strong>
+        </p>
+
+        <p class="mt-3 text-xs leading-relaxed text-[#557066]">
+            Reservasi sudah tercatat dalam sistem.
+            Pengajuan masih menunggu proses administrasi
+            dan belum dinyatakan lunas.
+        </p>
+    </div>
+
 </div>
 @endsection
+
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
     const form = document.getElementById('formReservasi');
     const peserta = document.getElementById('jumlah_peserta');
     const keperluan = document.getElementById('keperluan');
     const pesanForm = document.getElementById('pesanForm');
+    const tombolSubmit = document.getElementById('lanjutPembayaran');
 
-    // Hindari submit sebelum backend reservasi tersedia.
-    form.addEventListener('submit', function (event) {
+    const invoicePeserta = document.getElementById('invoicePeserta');
+    const invoiceKeperluan = document.getElementById('invoiceKeperluan');
+    const invoiceTotal = document.getElementById('invoiceTotal');
+
+    const hasilReservasi = document.getElementById('hasilReservasi');
+    const hasilNomorInvoice = document.getElementById('hasilNomorInvoice');
+    const hasilTotal = document.getElementById('hasilTotal');
+    const hasilStatus = document.getElementById('hasilStatus');
+
+    const hargaSesi = @json((int) $sesi->harga_sesi);
+
+    let sedangMengirim = false;
+    let sudahTersimpan = false;
+
+    function formatRupiah(nominal) {
+        return 'Rp ' + Number(nominal).toLocaleString('id-ID');
+    }
+
+    // Perbarui pratinjau ketika jumlah peserta berubah.
+    function updateInvoice() {
+
+        const jumlah = Number(peserta.value);
+
+        invoicePeserta.textContent =
+            Number.isInteger(jumlah) && jumlah > 0
+                ? jumlah + ' peserta'
+                : 'Belum diisi';
+
+        invoiceKeperluan.textContent =
+            keperluan.value.trim() || 'Belum diisi';
+
+        const total =
+            Number.isInteger(jumlah) && jumlah > 0
+                ? hargaSesi * jumlah
+                : 0;
+
+        invoiceTotal.textContent = formatRupiah(total);
+    }
+
+    peserta.addEventListener('input', updateInvoice);
+    keperluan.addEventListener('input', updateInvoice);
+
+    updateInvoice();
+
+    // Kirim form ke backend Naufal.
+    form.addEventListener('submit', async function (event) {
+
         event.preventDefault();
-    });
 
-    peserta.addEventListener('input', function () {
-        document.getElementById('invoicePeserta').textContent =
-            peserta.value || 'Belum diisi';
-    });
+        // Hindari request ganda.
+        if (sedangMengirim || sudahTersimpan) {
+            return;
+        }
 
-    keperluan.addEventListener('input', function () {
-        document.getElementById('invoiceKeperluan').textContent =
-            keperluan.value || 'Belum diisi';
-    });
+        if (!form.reportValidity()) {
+            return;
+        }
 
-    document.getElementById('lanjutPembayaran')
-        .addEventListener('click', function () {
+        sedangMengirim = true;
+        tombolSubmit.disabled = true;
+        tombolSubmit.textContent = 'Menyimpan Reservasi...';
 
-            // Periksa kelengkapan form
-            if (!form.reportValidity()) {
-                return;
+        pesanForm.textContent = '';
+        hasilReservasi.hidden = true;
+
+        try {
+
+            const formData = new FormData(form);
+
+            const response = await fetch(form.action, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': formData.get('_token')
+                },
+                body: formData
+            });
+
+            const result = await response.json()
+                .catch(() => ({}));
+
+            if (!response.ok) {
+
+                const validationErrors = Object.values(
+                    result.errors || {}
+                ).flat().join(' ');
+
+                const errorMessage =
+                    validationErrors ||
+                    (response.status >= 500
+                        ? 'Server mengalami kendala. Periksa data reservasi sebelum mencoba lagi.'
+                        : result.message || 'Gagal menyimpan reservasi.');
+
+                throw new Error(errorMessage);
             }
 
-            // Arahkan ke halaman pratinjau pembayaran
-            const tujuan = new URL(
-                @json(route('wisatawan.reservasi.pembayaran.preview', $fasilitas->id_fasilitas)),
-                window.location.origin
+            const reservasi = result.reservation;
+
+            if (!reservasi || !reservasi.code) {
+                throw new Error(
+                    'Respons server tidak memuat kode reservasi. Periksa data sebelum mengirim ulang.'
+                );
+            }
+
+            sudahTersimpan = true;
+
+            // Ambil URL pembayaran dari route Laravel.
+            // Kode reservasi berasal dari respons backend.
+            const templateUrl = @json(route(
+                'facility-reservation.payment.show',
+                ['code' => '__KODE_RESERVASI__']
+            ));
+
+            const halamanPembayaran = templateUrl.replace(
+                '__KODE_RESERVASI__',
+                encodeURIComponent(reservasi.code)
             );
 
-            // Bawa tanggal dan sesi yang telah dipilih
-            tujuan.searchParams.set('tanggal', @json($tanggal));
-            tujuan.searchParams.set('sesi', @json($sesi->id_sesi));
+            // Berikan informasi sebelum berpindah halaman.
+            pesanForm.textContent =
+                'Reservasi berhasil disimpan. Mengalihkan ke pembayaran QRIS...';
 
-            window.location.assign(tujuan.toString());
-        });
+            tombolSubmit.textContent = 'Menuju Pembayaran...';
+
+            // Buka halaman pembayaran reservasi yang sebenarnya.
+            window.location.assign(halamanPembayaran);
+
+        } catch (error) {
+
+            pesanForm.textContent = error.message;
+
+            tombolSubmit.textContent =
+                'Simpan Pengajuan Reservasi →';
+
+            // Jika koneksi terputus setelah server menyimpan,
+            // status penyimpanan mungkin belum diketahui.
+            // Jangan klik ulang sebelum mengecek database.
+            if (error instanceof TypeError) {
+                pesanForm.textContent =
+                    'Koneksi bermasalah. Periksa apakah reservasi sudah tercatat sebelum mencoba lagi.';
+            }
+
+        } finally {
+
+            sedangMengirim = false;
+
+            if (!sudahTersimpan) {
+                tombolSubmit.disabled = false;
+            }
+        }
+
+    });
+
 });
 </script>
 @endpush
