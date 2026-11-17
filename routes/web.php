@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\InfoKontakController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Wisatawan\WahanaController;
 use App\Http\Controllers\Wisatawan\BeritaController;
+use App\Http\Controllers\Wisatawan\FacilityReservationController;
 
 // Home Publik bagi Pengguna Publik (Tidak Login)
 Route::get('/', [HomeController::class, 'index'])
@@ -130,6 +131,19 @@ Route::middleware('auth')->group(function () {
         'index'
     ])->middleware('role:wisatawan')
       ->name('wisatawan.reservasi.index');
+
+    Route::get('/reservasi/ketersediaan', [FacilityReservationController::class, 'availability'])
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.reservasi.availability');
+
+    Route::post('/reservasi/checkout', [FacilityReservationController::class, 'store'])
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.reservasi.checkout');
+
+    Route::get('/reservasi/transaksi/{code}', [FacilityReservationController::class, 'invoice'])
+        ->whereUuid('code')
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.reservasi.invoice');
 
     // Reservasi - Pilih Tanggal dan Waktu
     Route::get('/reservasi/{fasilitas}/tanggal', [
