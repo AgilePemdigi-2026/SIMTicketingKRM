@@ -217,6 +217,18 @@ Route::middleware('auth')->group(function () {
     })->middleware('role:admin')
     ->name('admin.dashboard');
 
+    // TEMPORARY - Preview UI Manajemen Reservasi
+    Route::get('/admin/reservasi-preview', function () {
+        return view('admin.reservasi.index');
+    })->middleware('role:admin')
+    ->name('admin.reservasi.preview');
+
+    // TEMPORARY - Preview UI Detail Reservasi
+    Route::get('/admin/reservasi-preview/detail', function () {
+        return view('admin.reservasi.show');
+    })->middleware('role:admin')
+    ->name('admin.reservasi.preview.detail');
+
     // Master Data Admin
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::resource('wahana', AdminWahanaController::class)
