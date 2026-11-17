@@ -225,11 +225,12 @@ Route::middleware('auth')->group(function () {
         ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
         ->name('petugas.validasi-tiket.check-in');
 
-    // Dashboard Admin
-    Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard');
-    })->middleware('role:admin')
-    ->name('admin.dashboard');
+    // Dashboard Admin - Monitoring Operasional Harian
+    Route::get('/admin/dashboard', [
+        \App\Http\Controllers\Admin\AdminDashboardController::class,
+        'index'
+    ])->middleware('role:admin')
+      ->name('admin.dashboard');
 
     // TEMPORARY - Preview UI Manajemen Reservasi
     Route::get('/admin/reservasi-preview', function () {
