@@ -309,4 +309,56 @@ public function test_invoice_final_hanya_tersedia_setelah_pembayaran_lunas(): vo
             ->assertSee('Lihat Invoice')
             ->assertSee($invoiceUrl, false);
     }
+
+    public function test_invoice_pdf_hanya_tersedia_setelah_lunas(): void
+    {
+        [$user, $reservation] = $this->createReservation();
+
+        $url = route('facility-reservation.payment.invoice.pdf', [
+            'code' => $reservation->code,
+        ]);
+
+        // Reservasi belum lunas tidak boleh mengunduh PDF.
+        $this->actingAs($user)
+            ->get($url)
+            ->assertForbidden();
+    }
+
+    public function test_invoice_pdf_dapat_diunduh_oleh_pemilik(): void
+    {
+        [$user, $reservation] = $this->createReservation();
+
+        $payment = app(
+            \App\Services\FacilityReservationPaymentService::class
+        )->prepare($user, $reservation->code);
+
+        // Simulasi pembayaran lunas pada database testing.
+        $payment->update([
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        $url = route('facility-reservation.payment.invoice.pdf', [
+            'code' => $reservation->code,
+        ]);
+
+        // Pemilik dapat mengunduh PDF yang valid.
+        $response = $this->actingAs($user)->get($url);
+
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->assertStringStartsWith(
+            '%PDF-',
+            $response->getContent()
+        );
+
+        // Wisatawan lain tidak dapat mengunduh invoice.
+        $otherUser = $this->account();
+
+        $this->actingAs($otherUser)
+            ->get($url)
+            ->assertNotFound();
+    }
+
 }

@@ -402,13 +402,24 @@
                 ← Kembali
             </a>
 
-            <button
-                type="button"
-                disabled
-                class="cursor-not-allowed bg-[#07513D] px-6 py-3 text-sm font-semibold text-white opacity-50"
-            >
-                Unduh Invoice PDF
-            </button>
+            @if ($isFinal)
+                <a
+                    href="{{ route('facility-reservation.payment.invoice.pdf', [
+                        'code' => $reservasi->code
+                    ]) }}"
+                    class="inline-flex items-center justify-center bg-[#07513D] px-6 py-3 text-sm font-semibold text-white hover:bg-[#064332]"
+                >
+                    Unduh Invoice PDF
+                </a>
+            @else
+                <button
+                    type="button"
+                    disabled
+                    class="cursor-not-allowed bg-[#07513D] px-6 py-3 text-sm font-semibold text-white opacity-50"
+                >
+                    Unduh Invoice PDF
+                </button>
+            @endif
 
             <a
                 href="{{ route('wisatawan.beranda') }}"

@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\FacilityReservation;
 use App\Models\Fasilitas;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class FacilityReservationPaymentController extends Controller
 {
@@ -137,6 +138,50 @@ class FacilityReservationPaymentController extends Controller
             'sesi' => $sesi,
             'tanggal' => $reservasi->visit_date->format('Y-m-d'),
         ]);
+    }
+
+    /**
+     * Mengunduh invoice reservasi dalam format PDF.
+     * Hanya pemilik reservasi dengan pembayaran lunas.
+     */
+    public function downloadInvoice(
+        Request $request,
+        string $code
+    ) {
+        $reservasi = FacilityReservation::query()
+            ->where('code', $code)
+            ->where('user_id', $request->user()->getKey())
+            ->with('payment')
+            ->firstOrFail();
+
+        // Invoice PDF hanya tersedia setelah pembayaran lunas.
+        abort_unless(
+            $reservasi->payment?->status === 'paid',
+            403,
+            'Invoice PDF hanya tersedia setelah pembayaran lunas.'
+        );
+
+        $fasilitas = Fasilitas::query()
+            ->where('id_fasilitas', $reservasi->id_fasilitas)
+            ->firstOrFail();
+
+        $sesi = $fasilitas->sesiFasilitas()
+            ->where('id_sesi', $reservasi->id_sesi)
+            ->firstOrFail();
+
+        // Menggunakan template khusus PDF ukuran A4.
+        $pdf = Pdf::loadView(
+            'wisatawan.reservasi.invoice-pdf',
+            [
+                'reservasi' => $reservasi,
+                'fasilitas' => $fasilitas,
+                'sesi' => $sesi,
+            ]
+        )->setPaper('a4', 'portrait');
+
+        return $pdf->download(
+            'Invoice-' . $reservasi->invoice_number . '.pdf'
+        );
     }
 
 }
