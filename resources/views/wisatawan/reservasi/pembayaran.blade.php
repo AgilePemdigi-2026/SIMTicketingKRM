@@ -306,6 +306,36 @@
                     >
                 </div>
 
+            {{-- URL QRIS untuk Midtrans Payment Simulator --}}
+            @if (filled($attempt->qr_image_url))
+                <div class="mx-auto mt-4 w-full max-w-sm text-left">
+                    <p class="mb-2 text-xs font-semibold text-[#07513D]">
+                        URL QRIS Midtrans Sandbox
+                    </p>
+
+                    <textarea
+                        id="reservation-qris-url"
+                        readonly
+                        rows="3"
+                        class="w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-xs text-gray-700"
+                        style="resize: none; overflow-wrap: anywhere;"
+                    >{{ $attempt->qr_image_url }}</textarea>
+
+                    <button
+                        type="button"
+                        id="copy-reservation-qris"
+                        class="mt-2 w-full border border-[#07513D] px-4 py-2 text-xs font-semibold text-[#07513D] hover:bg-[#F0F7F0]"
+                    >
+                        Copy QRIS URL
+                    </button>
+
+                    <p class="mt-2 text-xs text-gray-500">
+                        Salin URL ini ke Midtrans QRIS Payment Simulator
+                        untuk menguji pembayaran Sandbox.
+                    </p>
+                </div>
+            @endif
+
                 <p class="mt-3 text-xs text-gray-500">
                     Scan QRIS menggunakan aplikasi pembayaran.
                 </p>
@@ -414,6 +444,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const feedback = document.getElementById('rv-qris-feedback');
     const countdown = document.getElementById('rv-qris-countdown');
     const buttons = widget.querySelectorAll('[data-qris-action]');
+
+    const copyButton = document.getElementById('copy-reservation-qris');
+    const qrisUrl = document.getElementById('reservation-qris-url');
+
+    copyButton?.addEventListener('click', async () => {
+        if (!qrisUrl) return;
+
+        try {
+            await navigator.clipboard.writeText(qrisUrl.value);
+            copyButton.textContent = 'Berhasil Disalin!';
+        } catch (error) {
+            qrisUrl.select();
+            copyButton.textContent = 'Salin teks yang dipilih';
+        }
+    });
 
     // Countdown berdasarkan waktu kedaluwarsa Midtrans.
     const expiresAt = countdown?.dataset.expiresAt;

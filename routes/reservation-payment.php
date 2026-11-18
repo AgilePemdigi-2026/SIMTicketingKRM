@@ -55,6 +55,14 @@ Route::middleware([
             ]
         )->name('invoice');
 
+        Route::get(
+            '/invoice/pdf',
+            [
+                FacilityReservationPaymentController::class,
+                'downloadInvoice',
+            ]
+        )->name('invoice.pdf');
+
         Route::post(
             '/qris',
             [
