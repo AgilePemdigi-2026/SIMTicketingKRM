@@ -729,3 +729,36 @@ body.portal-page {
         font-size: 29px;
     }
 }
+
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-wrapper input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 60px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #07513D;
+    cursor: pointer;
+}
+
+.password-toggle:focus-visible {
+    outline: 2px solid #07513D;
+    outline-offset: 2px;
+}
