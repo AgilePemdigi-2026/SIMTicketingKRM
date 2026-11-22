@@ -35,6 +35,18 @@ Route::middleware([EnsureMasterTicketDatabase::class, 'web', 'auth'])->name('tic
         [TicketPaymentController::class, 'eTicketPlaceholder']
     )->name('e-ticket-placeholder');
 
+    // E-Tiket Sementara untuk pesanan Cash yang belum lunas.
+    Route::get(
+        '/e-tiket-sementara',
+        [TicketPaymentController::class, 'temporaryETicket']
+    )->name('e-ticket-temporary');
+
+    // Download PDF E-Tiket setelah pembayaran lunas.
+    Route::get(
+        '/e-tiket/download',
+        [TicketPaymentController::class, 'downloadETicket']
+    )->name('e-ticket.download');
+
     Route::post('/bukti', [TicketPaymentController::class, 'submit'])
         ->middleware('throttle:20,1')
         ->name('submit');

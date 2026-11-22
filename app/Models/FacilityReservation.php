@@ -41,4 +41,12 @@ class FacilityReservation extends Model
         );
     }
 
+    public function pendingRescheduleRequest(): HasOne
+    {
+        return $this->hasOne(
+            FacilityReservationRescheduleRequest::class,
+            'facility_reservation_id'
+        )->where('status', 'pending');
+    }
+
 }

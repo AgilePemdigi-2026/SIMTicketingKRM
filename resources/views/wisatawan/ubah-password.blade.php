@@ -5,11 +5,22 @@
 @section('content')
     <div class="mx-auto w-full max-w-[1180px] px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pt-20">
         <div class="mb-8">
-            <p class="text-xs font-bold tracking-[0.18em] text-[#2F795B]">KEAMANAN AKUN</p>
-            <h1 class="mt-3 text-3xl font-bold tracking-tight text-[#193B31] sm:text-[36px]">Ubah Password</h1>
-            <div class="mt-2 h-[3px] w-36 bg-[#A1C977]" aria-hidden="true"></div>
+            {{-- Breadcrumb --}}
+            <x-breadcrumb :items="[
+                [
+                    'label' => 'Profil Saya',
+                    'url' => url('/wisatawan/profil')
+                ],
+                [
+                    'label' => 'Ubah Password'
+                ]
+            ]" />
+
+            <h1 class="krm-page-title">
+                Ubah Password
+            </h1>
             <p class="mt-5 max-w-2xl text-sm leading-6 text-[#718079]">
-                Masukkan password saat ini, lalu tentukan password baru minimal 8 karakter.
+                Masukkan password saat ini, lal<p class="text-xs font-bold tracking-[0.18em] text-[#2F795B]">KEAMANAN AKUN</p>u tentukan password baru minimal 8 karakter.
             </p>
         </div>
 

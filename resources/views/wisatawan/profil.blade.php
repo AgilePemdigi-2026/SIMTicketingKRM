@@ -21,10 +21,16 @@
     @endphp
 
     <div class="mx-auto w-full max-w-[1180px] px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-16 lg:px-8 lg:pt-20">
+
+        {{-- Breadcrumb --}}
+        <x-breadcrumb :items="[
+            ['label' => 'Profil Saya']
+        ]" />
+
         <div class="mb-8 sm:mb-9">
-            <p class="text-xs font-bold tracking-[0.18em] text-[#2F795B]">AKUN WISATAWAN</p>
-            <h1 class="mt-3 text-3xl font-bold tracking-tight text-[#193B31] sm:text-[36px]">Profil Saya</h1>
-            <div class="mt-2 h-[3px] w-36 bg-[#A1C977]" aria-hidden="true"></div>
+            <h1 class="krm-page-title">
+                Profil Saya
+            </h1>
         </div>
 
         @if (session('success'))
@@ -58,11 +64,11 @@
                         Ubah Password
                     </a>
 
-                    {{-- Modul riwayat pesanan belum dibuat; jangan mengarah ke URL palsu. --}}
-                    <button type="button" disabled title="Fitur riwayat pesanan sedang dikembangkan"
-                            class="min-h-12 cursor-not-allowed border border-[#AFC1B4] px-4 py-3 text-sm font-semibold text-[#698376] opacity-75">
-                        Riwayat Pesanan (Segera)
-                    </button>
+                    {{-- Riwayat pembelian tiket dan reservasi wisatawan --}}
+                    <a href="{{ route('ticket-purchase.orders') }}"
+                    class="flex min-h-12 items-center justify-center border border-[#064631] px-4 py-3 text-sm font-semibold text-[#064631] transition hover:bg-[#DCEBDD] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#064631]">
+                        Riwayat Pesanan
+                    </a>
 
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf

@@ -19,6 +19,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Endroid\QrCode\Writer\PngWriter;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TicketPaymentController extends Controller
 {
@@ -38,6 +40,80 @@ class TicketPaymentController extends Controller
         }
 
         return view('wisatawan.ticket-payment.show', compact('order'));
+    }
+
+    /**
+     * Menampilkan E-Tiket Sementara sebagai bukti
+     * pemesanan Cash sebelum pembayaran dikonfirmasi.
+     */
+    public function temporaryETicket(
+        Request $request,
+        string $code
+    ): View|RedirectResponse {
+        // Hanya pemilik pesanan yang boleh mengakses.
+        $order = TicketOrder::query()
+            ->where('code', $code)
+            ->where('user_id', $request->user()->getKey())
+            ->with([
+                'items.visitors',
+                'payment',
+            ])
+            ->firstOrFail();
+
+        // E-Tiket Sementara hanya untuk pembayaran Cash.
+        abort_unless(
+            $order->payment?->method === 'cash',
+            404,
+            'E-Tiket Sementara hanya tersedia untuk pembayaran Cash.'
+        );
+
+        // Jika sudah Lunas, arahkan ke E-Tiket final.
+        if (
+            $order->status === 'paid'
+            && $order->payment?->status === 'paid'
+        ) {
+            return redirect()->route(
+                'ticket-payment.e-ticket-placeholder',
+                ['code' => $order->code]
+            );
+        }
+
+        // Hanya pesanan yang masih menunggu pembayaran
+        // yang bisa menampilkan E-Tiket Sementara.
+        abort_unless(
+            $order->status === 'pending_payment'
+            && $order->payment?->status !== 'paid',
+            403,
+            'Pesanan tidak dapat menggunakan E-Tiket Sementara.'
+        );
+
+        // Kode singkat untuk pembayaran di loket.
+        $cashDisplayCode = 'CASH-' . str_pad(
+            (string) $order->id,
+            4,
+            '0',
+            STR_PAD_LEFT
+        );
+
+        // QR khusus bukti pemesanan, BUKAN QR check-in.
+        // Format sengaja berbeda dari qr_token E-Tiket final.
+        $qrCode = (new Builder())->build(
+            writer: new SvgWriter(),
+            data: 'KRM-CASH-ORDER:' . $order->code,
+            size: 240,
+            margin: 10,
+        );
+
+        $qrCodeDataUri = $qrCode->getDataUri();
+
+        return view(
+            'wisatawan.ticket-payment.e-ticket-temporary',
+            compact(
+                'order',
+                'cashDisplayCode',
+                'qrCodeDataUri'
+            )
+        );
     }
 
     public function eTicketPlaceholder(
@@ -84,6 +160,66 @@ class TicketPaymentController extends Controller
         return view(
             'wisatawan.ticket-payment.e-ticket',
             compact('order')
+        );
+    }
+
+    /**
+     * Mengunduh seluruh E-Tiket dalam satu pesanan
+     * sebagai file PDF.
+     */
+    public function downloadETicket(
+        Request $request,
+        string $code
+    ) {
+        // Hanya pemilik pesanan yang boleh mengunduh.
+        $order = TicketOrder::query()
+            ->where('code', $code)
+            ->where('user_id', $request->user()->getKey())
+            ->with([
+                'payment',
+                'issuedTickets.visitor',
+                'issuedTickets.item',
+            ])
+            ->firstOrFail();
+
+        // PDF hanya tersedia setelah pembayaran Lunas.
+        abort_unless(
+            $order->status === 'paid'
+            && $order->payment?->status === 'paid',
+            403,
+            'E-Tiket hanya dapat diunduh setelah pembayaran Lunas.'
+        );
+
+        // Pastikan E-Tiket sudah diterbitkan.
+        abort_if(
+            $order->issuedTickets->isEmpty(),
+            404,
+            'E-Tiket belum diterbitkan.'
+        );
+
+        // Generate QR Code PNG agar kompatibel dengan Dompdf.
+        foreach ($order->issuedTickets as $ticket) {
+            $qrCode = (new Builder())->build(
+                writer: new PngWriter(),
+                data: $ticket->qr_token,
+                size: 280,
+                margin: 10,
+            );
+
+            $ticket->setAttribute(
+                'qr_code_data_uri',
+                $qrCode->getDataUri()
+            );
+        }
+
+        // Satu PDF berisi seluruh E-Tiket dalam pesanan.
+        $pdf = Pdf::loadView(
+            'wisatawan.ticket-payment.e-ticket-pdf',
+            compact('order')
+        )->setPaper('a4', 'portrait');
+
+        return $pdf->download(
+            'E-Tiket-' . $order->code . '.pdf'
         );
     }
 

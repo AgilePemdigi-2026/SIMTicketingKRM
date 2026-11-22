@@ -107,6 +107,27 @@ Route::middleware('auth')->group(function () {
     )->middleware('role:wisatawan')
     ->name('wisatawan.destinasi');
 
+    // Halaman Tentang Kebun Raya Mangrove
+    Route::get(
+        '/tentang',
+        [\App\Http\Controllers\Wisatawan\TentangController::class, 'index']
+    )->middleware('role:wisatawan')
+      ->name('wisatawan.tentang');
+
+    // Halaman Kontak Wisatawan
+    Route::get(
+        '/kontak',
+        [\App\Http\Controllers\Wisatawan\KontakController::class, 'index']
+    )->middleware('role:wisatawan')
+      ->name('wisatawan.kontak');
+
+    // Pengiriman pesan dari halaman Kontak ke Gmail.
+    Route::post(
+        '/kontak/kirim-pesan',
+        [\App\Http\Controllers\Wisatawan\KontakController::class, 'kirimPesan']
+    )->middleware(['role:wisatawan', 'throttle:3,10'])
+      ->name('wisatawan.kontak.kirim');
+
     // Detail informasi wahana
     Route::get('/wahana/{slug}', [
         WahanaController::class, 'show'
@@ -144,6 +165,24 @@ Route::middleware('auth')->group(function () {
         ->whereUuid('code')
         ->middleware('role:wisatawan')
         ->name('wisatawan.reservasi.invoice');
+
+    // Form pengajuan Reschedule berdasarkan reservasi asli.
+    Route::get(
+        '/reservasi/transaksi/{code}/reschedule',
+        [\App\Http\Controllers\Wisatawan\FacilityReservationRescheduleController::class, 'create']
+    )
+        ->whereUuid('code')
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.reservasi.reschedule.create');
+
+    // Simpan pengajuan Reschedule dari Wisatawan.
+    Route::post(
+        '/reservasi/transaksi/{code}/reschedule',
+        [\App\Http\Controllers\Wisatawan\FacilityReservationRescheduleController::class, 'store']
+    )
+        ->whereUuid('code')
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.reservasi.reschedule.store');
 
     // Reservasi - Pilih Tanggal dan Waktu
     Route::get('/reservasi/{fasilitas}/tanggal', [

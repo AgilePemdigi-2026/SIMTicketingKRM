@@ -144,13 +144,9 @@
          JUDUL
     ====================================== --}}
     <div class="mb-8">
-
-        <h1 class="text-2xl font-bold text-[#193B31]">
+        <h1 class="krm-page-title">
             Pembayaran QRIS
         </h1>
-
-        <div class="mt-2 h-1 w-56 bg-[#D9E8BE]"></div>
-
     </div>
 
     {{-- Pemberitahuan mode pratinjau --}}

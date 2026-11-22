@@ -14,7 +14,6 @@
     };
 @endphp
 <div class="purchase-page krm-container">
-    <nav class="purchase-breadcrumb" aria-label="Breadcrumb"><a href="{{ route('wisatawan.beranda') }}">Beranda</a><span aria-hidden="true">/</span><span>Beli Tiket</span></nav>
     <ol class="purchase-steps" aria-label="Tahapan pembelian">
         <li data-step="1" aria-current="step"><span>1</span>Pilih Tiket</li>
         <li data-step="2"><span>2</span>Data Pengunjung</li>
@@ -34,7 +33,11 @@
         @csrf
         <input type="hidden" name="checkout_token" value="{{ $checkoutToken }}">
         <section id="ticket-step" aria-labelledby="ticket-heading">
-            <div class="purchase-heading"><h1 id="ticket-heading" tabindex="-1">Pilih Jenis Tiket</h1><p>Rencanakan kunjunganmu ke Kebun Raya Mangrove Surabaya.</p></div>
+            <div class="purchase-heading">
+                <h1 id="ticket-heading" tabindex="-1" class="krm-page-title">
+                    Pilih Jenis Tiket
+                </h1>
+                <p>Rencanakan kunjunganmu ke Kebun Raya Mangrove Surabaya.</p></div>
             <div class="purchase-ticket-types" role="group" aria-label="Kelompok tiket">
                 <button type="button" class="krm-card purchase-type" data-group="masuk" aria-pressed="true"><h2>Tiket Masuk</h2><ul id="entry-ticket-names" class="purchase-muted"></ul></button>
                 <button type="button" class="krm-card purchase-type" data-group="wahana" aria-pressed="false"><h2>Tiket Wahana</h2><ul id="ride-ticket-names" class="purchase-muted"></ul></button>
@@ -54,7 +57,12 @@
         </section>
 
         <section id="visitor-step" aria-labelledby="visitor-heading" hidden>
-            <div class="purchase-heading"><h1 id="visitor-heading" tabindex="-1">Data Pengunjung</h1><p>Lengkapi identitas pemesan dan seluruh pengunjung sesuai jumlah tiket.</p></div>
+            <div class="purchase-heading">
+                <h1 id="visitor-heading" tabindex="-1" class="krm-page-title">
+                    Data Pengunjung
+                </h1>
+                <p>Lengkapi identitas pemesan dan seluruh pengunjung sesuai jumlah tiket.</p>
+            </div>
             <div class="krm-card purchase-fields">
                 <h2 id="booker-heading">Identitas Pemesan</h2>
                 <input type="hidden" name="booker_is_visitor" value="0">
