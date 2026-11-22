@@ -69,7 +69,7 @@
             margin-bottom: 38px;
         }
 
-        .qr-page .purchase-heading h1 {
+        .qr-page .purchase-heading h1:not(.krm-page-title) {
             font-size: 27px;
         }
 
@@ -166,8 +166,16 @@
             margin-top: 16px;
         }
 
-        /* ===== BAGIAN QRIS ===== */
+        /* ===== POP-UP KONFIRMASI METODE PEMBAYARAN ===== */
+        #payment-method-dialog {
+            position: fixed;
+            inset: 0;
+            margin: auto;
+            max-height: calc(100dvh - 32px);
+            overflow-y: auto;
+        }
 
+        /* ===== BAGIAN QRIS ===== */
         .qr-payment-box {
             flex: 1;
             text-align: center;
@@ -606,7 +614,9 @@
 
     {{-- ===== JUDUL ===== --}}
     <div class="purchase-heading">
-        <h1>Pembayaran</h1>
+        <h1 class="krm-page-title">
+            Pembayaran
+        </h1>
     </div>
 
     @include('partials.ticket-payment-feedback')
@@ -626,6 +636,7 @@
                 @if(!$payment && $order->status === 'pending_payment')
 
                     <form
+                        id="payment-method-form"
                         method="POST"
                         action="{{ route('ticket-payment.select', $order->code) }}"
                         data-payment-form
@@ -685,6 +696,143 @@
                         </div>
 
                     </form>
+
+                    {{-- Pop-up konfirmasi metode pembayaran --}}
+                    <dialog
+                        id="payment-method-dialog"
+                        aria-labelledby="payment-method-dialog-title"
+                        class="w-[min(92vw,440px)] rounded-xl border-0 bg-white p-0 text-[#18392C] shadow-2xl backdrop:bg-black/50"
+                    >
+                        <div class="p-6 sm:p-8">
+                            <h3
+                                id="payment-method-dialog-title"
+                                class="text-xl font-bold text-[#064631]"
+                            >
+                                Konfirmasi Metode Pembayaran
+                            </h3>
+
+                            <p class="mt-4 text-sm leading-7 text-gray-600">
+                                Apakah Anda yakin ingin menggunakan metode pembayaran
+                                <strong id="selected-payment-method" class="text-[#064631]">
+                                    QRIS
+                                </strong>?
+                            </p>
+
+                            <p class="mt-2 text-sm leading-6 text-gray-500">
+                                Metode pembayaran tidak dapat diubah setelah disimpan.
+                            </p>
+
+                            <div class="mt-7 flex flex-wrap justify-end gap-3">
+                                <button
+                                    type="button"
+                                    id="cancel-payment-method"
+                                    class="krm-btn"
+                                >
+                                    Batal
+                                </button>
+
+                                <button
+                                    type="button"
+                                    id="confirm-payment-method"
+                                    class="krm-btn krm-btn-primary"
+                                >
+                                    Ya, Pilih Metode
+                                </button>
+                            </div>
+                        </div>
+                    </dialog>
+
+                    <script>
+                        (() => {
+                            const form = document.getElementById('payment-method-form');
+                            const dialog = document.getElementById('payment-method-dialog');
+                            const methodText = document.getElementById('selected-payment-method');
+                            const cancelButton = document.getElementById('cancel-payment-method');
+                            const confirmButton = document.getElementById('confirm-payment-method');
+
+                            if (!form || !dialog || typeof dialog.showModal !== 'function') {
+                                return;
+                            }
+
+                            const radios = Array.from(
+                                form.querySelectorAll('input[name="method"]')
+                            );
+
+                            const submitButton = form.querySelector('button[type="submit"]');
+
+                            // Sembunyikan tombol Simpan karena penyimpanan
+                            // dilakukan langsung setelah konfirmasi pada pop-up.
+                            const submitContainer = form.querySelector('.qr-method-submit');
+
+                            if (submitContainer) {
+                                submitContainer.style.display = 'none';
+                            }
+
+                            let confirmedMethod = null;
+                            let pendingMethod = null;
+
+                            // Pilihan harus dikonfirmasi sebelum dapat disimpan.
+                            radios.forEach(radio => {
+                                radio.checked = false;
+                            });
+
+                            submitButton.disabled = true;
+                            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+                            function restoreSelection() {
+                                radios.forEach(radio => {
+                                    radio.checked = radio.value === confirmedMethod;
+                                });
+                            }
+
+                            radios.forEach(radio => {
+                                radio.addEventListener('change', () => {
+                                    pendingMethod = radio.value;
+
+                                    // Jangan tetapkan pilihan baru sebelum konfirmasi.
+                                    restoreSelection();
+
+                                    methodText.textContent =
+                                        pendingMethod === 'qris' ? 'QRIS' : 'Cash';
+
+                                    confirmButton.textContent =
+                                        pendingMethod === 'qris'
+                                            ? 'Ya, Pilih QRIS'
+                                            : 'Ya, Pilih Cash';
+
+                                    dialog.showModal();
+                                });
+                            });
+
+                            confirmButton.addEventListener('click', () => {
+                                if (!pendingMethod || form.dataset.submitting === 'true') {
+                                    return;
+                                }
+
+                                confirmedMethod = pendingMethod;
+                                restoreSelection();
+
+                                dialog.close();
+                                form.requestSubmit();
+                            });
+
+                            cancelButton.addEventListener('click', () => {
+                                dialog.close();
+                            });
+
+                            // Termasuk jika pop-up ditutup menggunakan tombol Escape.
+                            dialog.addEventListener('close', () => {
+                                pendingMethod = null;
+                                restoreSelection();
+                            });
+
+                            form.addEventListener('submit', event => {
+                                if (!confirmedMethod) {
+                                    event.preventDefault();
+                                }
+                            });
+                        })();
+                    </script>
 
                 @elseif($payment)
 
@@ -1000,18 +1148,20 @@
                             <span>E-Tiket Sementara</span>
                         </div>
 
-                        <button
-                            type="button"
+                        <a
                             class="krm-btn qr-cash-view"
-                            disabled
-                            title="Modul E-Tiket sementara belum diintegrasikan"
+                            href="{{ route('ticket-payment.e-ticket-temporary', [
+                                'code' => $order->code
+                            ]) }}"
                         >
                             Lihat E-Tiket Sementara
-                        </button>
+                        </a>
 
                         <p class="qr-info">
-                            E-Tiket sementara belum tersedia.
-                            Pesanan tetap tersimpan dan dapat dilihat di Pesanan Saya.
+                            E-Tiket sementara dapat digunakan sebagai bukti
+                            pemesanan saat melakukan pembayaran Cash di loket.
+                            E-Tiket ini belum berlaku untuk check-in sebelum
+                            pembayaran dikonfirmasi Lunas.
                         </p>
 
                         <div class="qr-cash-payment-status">

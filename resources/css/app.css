@@ -39,10 +39,27 @@ body {
     margin-inline: auto;
 }
 
+/* ===== JUDUL HALAMAN WISATAWAN ===== */
 .krm-page-title {
-    font-size: 36px;
+    display: inline-block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0;
+    padding-bottom: 6px;
+
+    font-size: 26px;
     font-weight: 700;
+    line-height: 1.2;
     color: var(--color-text);
+
+    border-bottom: 3px solid var(--color-accent);
+}
+
+/* Ukuran judul desktop */
+@media (min-width: 640px) {
+    .krm-page-title {
+        font-size: 32px;
+    }
 }
 
 /* ===== REUSABLE BUTTON ===== */

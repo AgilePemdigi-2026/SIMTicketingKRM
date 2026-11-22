@@ -137,11 +137,9 @@
 
         {{-- Judul --}}
         <div class="mb-8">
-            <h1 class="text-2xl font-bold text-[#193B31]">
+            <h1 class="krm-page-title">
                 {{ $isFinal ? 'Invoice Reservasi' : 'Pratinjau Invoice' }}
             </h1>
-
-            <div class="mt-2 h-1 w-44 bg-[#D9E8BE]"></div>
         </div>
 
         {{-- Pemberitahuan --}}
@@ -391,16 +389,25 @@
         {{-- Tombol --}}
         <div class="mt-6 flex flex-wrap justify-end gap-3">
 
-            <a
-                href="{{ route('wisatawan.reservasi.pembayaran.preview', [
-                    'fasilitas' => $fasilitas->id_fasilitas,
-                    'tanggal' => $tanggal,
-                    'sesi' => $sesi->id_sesi,
-                ]) }}"
-                class="border border-[#07513D] px-6 py-3 text-sm font-semibold text-[#07513D] hover:bg-[#F0F7F0]"
-            >
-                ← Kembali
-            </a>
+            @if ($isFinal)
+                <a
+                    href="{{ route('ticket-purchase.orders', ['reservasi_page' => 1]) }}"
+                    class="border border-[#07513D] px-6 py-3 text-sm font-semibold text-[#07513D] hover:bg-[#F0F7F0]"
+                >
+                    ← Kembali
+                </a>
+            @else
+                <a
+                    href="{{ route('wisatawan.reservasi.pembayaran.preview', [
+                        'fasilitas' => $fasilitas->id_fasilitas,
+                        'tanggal' => $tanggal,
+                        'sesi' => $sesi->id_sesi,
+                    ]) }}"
+                    class="border border-[#07513D] px-6 py-3 text-sm font-semibold text-[#07513D] hover:bg-[#F0F7F0]"
+                >
+                    ← Kembali
+                </a>
+            @endif
 
             @if ($isFinal)
                 <a

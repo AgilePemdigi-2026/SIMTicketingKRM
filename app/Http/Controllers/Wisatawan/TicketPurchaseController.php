@@ -64,6 +64,7 @@ class TicketPurchaseController extends Controller
             ->with([
                 'payment.attempts' => fn ($query) =>
                     $query->orderByDesc('id'),
+                'pendingRescheduleRequest',
             ])
             ->where('user_id', $request->user()->getKey())
             ->orderByDesc('created_at')

@@ -8,7 +8,6 @@
 
 @section('content')
 <div class="purchase-page krm-container">
-    <nav class="purchase-breadcrumb" aria-label="Breadcrumb"><a href="{{ route('wisatawan.beranda') }}">Beranda</a><span>/</span><a href="{{ route('ticket-purchase.index') }}">Beli Tiket</a><span>/</span><span>Ringkasan Pesanan</span></nav>
     <ol class="purchase-steps" aria-label="Tahapan pembelian"><li class="completed"><span>✓</span>Pilih Tiket</li><li class="completed"><span>✓</span>Data Pengunjung</li><li aria-current="step"><span>3</span>Ringkasan Pesanan</li></ol>
     @if(session('purchase_created'))
         <div class="purchase-success" role="status"><strong>Pesanan berhasil disimpan.</strong><br>Pesananmu menunggu pembayaran.</div>

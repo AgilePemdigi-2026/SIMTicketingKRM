@@ -6,27 +6,16 @@
 
 <div class="mx-auto w-full max-w-[940px] px-4 pb-20 pt-14 sm:px-6 sm:pt-20 lg:px-8">
 
-    {{-- BREADCRUMB --}}
-    <nav aria-label="Breadcrumb"
-         class="mb-6 text-[12px] font-bold tracking-[0.06em] text-[#2F795B]">
-
-        <a href="{{ route('wisatawan.beranda') }}"
-           class="hover:underline">
-            Beranda
-        </a>
-
-        <span aria-hidden="true">›</span>
-
-        <a href="{{ route('wisatawan.berita.index') }}"
-           class="hover:underline">
-            Berita &amp; Artikel
-        </a>
-
-        <span aria-hidden="true">›</span>
-
-        <span aria-current="page">Detail Artikel</span>
-
-    </nav>
+    {{-- Breadcrumb menggunakan komponen bersama --}}
+    <x-breadcrumb :items="[
+        [
+            'label' => 'Berita & Artikel',
+            'url' => route('wisatawan.berita.index')
+        ],
+        [
+            'label' => $artikel['judul']
+        ]
+    ]" />
 
     @if($artikel['is_demo'] ?? false)
         <p role="note" class="mb-6 border border-[#D6E1DA] bg-[#EEF4EE] px-5 py-4 text-sm text-[#345D47]">Demo Proyek — contoh artikel dari rancangan Figma, bukan publikasi resmi pengelola.</p>
@@ -48,8 +37,8 @@
 
         </div>
 
-        {{-- JUDUL ARTIKEL --}}
-        <h1 class="max-w-3xl border-b-[3px] border-[#A1C977] pb-3 text-3xl font-bold leading-tight text-[#193B31] sm:text-4xl">
+        {{-- Judul artikel menggunakan CSS global --}}
+        <h1 class="krm-page-title">
             {{ $artikel['judul'] }}
         </h1>
 

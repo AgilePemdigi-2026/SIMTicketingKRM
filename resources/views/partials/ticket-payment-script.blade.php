@@ -25,17 +25,12 @@
     const radio = document.querySelector('.qr-method-tabs input[name="method"]');
     const methodForm = radio?.form;
 
-    if (methodForm) {
-        methodForm.querySelectorAll('input[name="method"]').forEach(input => {
-            input.addEventListener('change', () => {
-                if (input.checked && methodForm.dataset.submitting !== 'true') {
-                    methodForm.requestSubmit();
-                }
-            });
-        });
+    // Metode baru dikirim setelah wisatawan menyetujui pop-up.
+    // Sembunyikan tombol simpan lama saat JavaScript aktif.
+    // Tombol tetap tersedia sebagai fallback jika JavaScript nonaktif.
+    const methodForm = document.getElementById('payment-method-form');
 
-        // Jika JavaScript aktif, tombol penyimpanan ekstra tidak diperlukan.
-        // Jika JavaScript nonaktif, tombol asli tetap tersedia sebagai fallback.
+    if (methodForm) {
         methodForm.querySelector('.qr-method-submit')?.remove();
     }
 

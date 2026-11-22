@@ -4,13 +4,12 @@
 
 @section('content')
 <div class="mx-auto w-full max-w-[1180px] px-4 pb-20 pt-14 sm:px-6 sm:pt-20 lg:px-8">
-    <nav aria-label="Breadcrumb" class="mb-3 text-[12px] font-bold tracking-[0.09em] text-[#2F795B]">
-        <a href="{{ route('wisatawan.beranda') }}" class="hover:underline">Beranda</a>
-        <span aria-hidden="true">›</span>
-        <span aria-current="page">Berita &amp; Artikel</span>
-    </nav>
+    {{-- Breadcrumb menggunakan komponen bersama --}}
+    <x-breadcrumb :items="[
+        ['label' => 'Berita & Artikel']
+    ]" />
 
-    <h1 class="inline-block border-b-[3px] border-[#A1C977] pb-1 text-[27px] font-bold leading-tight text-[#193B31] sm:text-[32px]">
+    <h1 class="krm-page-title">
         Berita &amp; Artikel
     </h1>
 
