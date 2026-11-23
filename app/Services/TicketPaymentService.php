@@ -41,6 +41,76 @@ class TicketPaymentService
         });
     }
 
+    public function selectForCounter(
+        User $staff,
+        string $orderCode,
+        string $method
+    ): TicketPayment {
+        // Hanya Petugas yang dapat memproses pembayaran loket.
+        abort_unless($staff->role === 'petugas', 403);
+
+        abort_unless(
+            in_array($method, ['cash', 'qris'], true),
+            422,
+            'Metode pembayaran loket tidak valid.'
+        );
+
+        return $this->database->connection()->transaction(
+            function () use ($staff, $orderCode, $method) {
+
+                // Pastikan pesanan berasal dari loket
+                // dan dibuat oleh Petugas yang sedang login.
+                $order = TicketOrder::query()
+                    ->where('code', $orderCode)
+                    ->where('sale_channel', 'counter')
+                    ->where('staff_user_id', $staff->id)
+                    ->whereNull('user_id')
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                // Satu pesanan hanya boleh memiliki satu pembayaran.
+                $payment = TicketPayment::query()
+                    ->where('ticket_order_id', $order->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($payment !== null) {
+                    abort_unless(
+                        $payment->method === $method,
+                        409,
+                        'Metode pembayaran sudah dikunci.'
+                    );
+
+                    return $payment;
+                }
+
+                abort_unless(
+                    $order->status === 'pending_payment',
+                    409,
+                    'Pesanan tidak dapat dibayar.'
+                );
+
+                $payment = TicketPayment::create([
+                    'code' => (string) Str::uuid(),
+                    'ticket_order_id' => $order->id,
+                    'method' => $method,
+                    'amount' => $order->total,
+                    'status' => 'pending',
+                ]);
+
+                // Catat Petugas sebagai pemilih metode pembayaran.
+                $this->record(
+                    $payment,
+                    $staff,
+                    'method_selected'
+                );
+
+                return $payment;
+            }
+        );
+    }
+
+
     public function submit(User $user, string $orderCode, UploadedFile $proof): TicketPayment
     {
         $path = null;
@@ -140,8 +210,55 @@ class TicketPaymentService
                         409, 'Referensi transaksi merchant sudah digunakan.');
                     $submission->update(['status' => 'approved', 'reviewed_by' => $user->id, 'reviewed_at' => now()]);
                 }
-                $payment->update(['status' => 'paid', 'merchant_reference' => $payment->method === 'qris' ? $reference : null,
-                    'confirmed_by' => $user->id, 'paid_at' => now()]);
+                $updates = [
+                    'status' => 'paid',
+                    'merchant_reference' => $payment->method === 'qris'
+                        ? $reference
+                        : null,
+                    'confirmed_by' => $user->id,
+                    'paid_at' => now(),
+                ];
+
+                // Perhitungan uang diterima hanya untuk Cash loket.
+                if (
+                    $payment->method === 'cash'
+                    && $order->sale_channel === 'counter'
+                ) {
+                    // Hanya Petugas pembuat transaksi yang boleh
+                    // mengonfirmasi pembayaran loket tersebut.
+                    abort_unless(
+                        (int) $order->staff_user_id === (int) $user->id,
+                        403
+                    );
+
+                    // Pastikan nominal tagihan berupa rupiah bulat.
+                    $amount = (string) $payment->amount;
+
+                    if (!preg_match('/\A\d+\.00\z/D', $amount)) {
+                        throw ValidationException::withMessages([
+                            'cash_received_amount' =>
+                                'Nominal tagihan Cash harus berupa rupiah bulat.',
+                        ]);
+                    }
+
+                    $total = (int) explode('.', $amount, 2)[0];
+                    $received = (int) ($data['cash_received_amount'] ?? -1);
+
+                    // Uang diterima tidak boleh kurang dari total tagihan.
+                    if ($received < $total) {
+                        throw ValidationException::withMessages([
+                            'cash_received_amount' =>
+                                'Uang yang diterima tidak mencukupi total tagihan.',
+                        ]);
+                    }
+
+                    // Kembalian dihitung oleh backend.
+                    $updates['cash_received_amount'] = $received;
+                    $updates['cash_change_amount'] = $received - $total;
+                }
+
+                $payment->update($updates);
+
                 $order->update(['status' => 'paid']);
                 $this->record($payment, $user, 'payment_confirmed');
                 TicketPaymentConfirmed::dispatch($order->code, $payment->code, $payment->method,

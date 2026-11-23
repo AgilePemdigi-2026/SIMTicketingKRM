@@ -8,7 +8,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['code', 'user_id', 'visit_date', 'visitor_type', 'booker_name', 'booker_identity_number', 'booker_phone', 'booker_email', 'total', 'status', 'checkout_token', 'checkout_fingerprint'])]
+#[Fillable([
+    'code',
+    'user_id',
+    'sale_channel',
+    'staff_user_id',
+    'visit_date',
+    'visitor_type',
+    'booker_name',
+    'booker_identity_number',
+    'booker_phone',
+    'booker_email',
+    'total',
+    'status',
+    'checkout_token',
+    'checkout_fingerprint',
+])]
 class TicketOrder extends Model
 {
     protected $hidden = ['checkout_token', 'checkout_fingerprint'];
@@ -26,6 +41,11 @@ class TicketOrder extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function staff(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'staff_user_id');
     }
 
     public function items(): HasMany

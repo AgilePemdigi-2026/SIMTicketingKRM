@@ -13,16 +13,40 @@ class TicketQrisStatusSyncService
         private TicketQrisWebhookService $webhook
     ) {}
 
+    /**
+     * Sinkronisasi QRIS untuk pesanan online milik Wisatawan.
+     */
     public function syncFor(
         User $user,
         string $orderCode
     ): TicketPaymentGatewayAttempt {
         abort_unless($user->role === 'wisatawan', 403);
 
-        // Sinkronisasi ini khusus Sandbox.
+        return $this->syncAuthorized($user, $orderCode, false);
+    }
+
+    /**
+     * Sinkronisasi QRIS untuk pesanan loket yang dibuat Petugas terkait.
+     */
+    public function syncForCounter(
+        User $staff,
+        string $orderCode
+    ): TicketPaymentGatewayAttempt {
+        abort_unless($staff->role === 'petugas', 403);
+
+        return $this->syncAuthorized($staff, $orderCode, true);
+    }
+
+    private function syncAuthorized(
+        User $user,
+        string $orderCode,
+        bool $counter
+    ): TicketPaymentGatewayAttempt {
+        // Sinkronisasi manual menggunakan Status API di Sandbox.
         abort_unless(
             config('midtrans.is_production') === false,
-            503
+            503,
+            'Sinkronisasi manual hanya tersedia di Midtrans Sandbox.'
         );
 
         $serverKey = config('midtrans.server_key');
@@ -33,10 +57,18 @@ class TicketQrisStatusSyncService
             'Konfigurasi Midtrans belum lengkap.'
         );
 
-        // Wisatawan hanya boleh mengecek pesanannya sendiri.
-        $order = TicketOrder::query()
-            ->where('code', $orderCode)
-            ->where('user_id', $user->id)
+        // Pembatasan kepemilikan tidak boleh dihapus untuk Wisatawan.
+        $query = TicketOrder::query()->where('code', $orderCode);
+
+        if ($counter) {
+            $query->where('sale_channel', 'counter')
+                ->where('staff_user_id', $user->id)
+                ->whereNull('user_id');
+        } else {
+            $query->where('user_id', $user->id);
+        }
+
+        $order = $query
             ->with('payment.gatewayAttempts')
             ->firstOrFail();
 
@@ -58,7 +90,7 @@ class TicketQrisStatusSyncService
             'Transaksi QRIS belum dibuat.'
         );
 
-        // Pembayaran yang sudah lunas tidak perlu diproses lagi.
+        // Pembayaran lunas tidak perlu diubah atau diproses ulang.
         if ($attempt->status === 'paid') {
             return $attempt;
         }
@@ -70,7 +102,6 @@ class TicketQrisStatusSyncService
             'Identitas transaksi gateway belum lengkap.'
         );
 
-        // Ambil status langsung dari server Midtrans Sandbox.
         $response = Http::withBasicAuth($serverKey, '')
             ->acceptJson()
             ->timeout(15)
@@ -94,7 +125,6 @@ class TicketQrisStatusSyncService
             'Respons Midtrans tidak valid.'
         );
 
-        // Pastikan respons memiliki semua informasi wajib.
         foreach ([
             'order_id',
             'transaction_id',
@@ -112,18 +142,15 @@ class TicketQrisStatusSyncService
             );
         }
 
-        // Respons harus sesuai dengan transaksi yang disimpan.
         abort_unless(
             $data['order_id'] === $attempt->reference_id
-                && $data['transaction_id']
-                    === $attempt->provider_payment_id
+                && $data['transaction_id'] === $attempt->provider_payment_id
                 && $data['payment_type'] === 'qris'
                 && ($data['currency'] ?? 'IDR') === 'IDR',
             502,
             'Identitas transaksi Midtrans tidak cocok.'
         );
 
-        // Jangan memproses status yang tidak didukung.
         abort_unless(
             in_array(
                 $data['transaction_status'],
@@ -133,18 +160,10 @@ class TicketQrisStatusSyncService
             502,
             'Status transaksi Midtrans tidak dikenal.'
         );
-        // Respons ini berasal dari GET Status API Midtrans
-        // melalui HTTPS dan Basic Authentication Server Key.
-        //
-        // Signature SHA-512 tetap WAJIB diverifikasi untuk
-        // webhook POST yang masuk dari luar aplikasi.
-        //
-        // Identitas transaksi, metode pembayaran, mata uang,
-        // dan nominal tetap diperiksa sebelum perubahan status.
 
-        // Gunakan mekanisme pembaruan status yang sama
-        // dengan webhook, termasuk penguncian database,
-        // pemeriksaan nominal, dan pencegahan duplikasi.
+        // Respons Status API berasal dari HTTPS + autentikasi Server Key.
+        // Webhook POST tetap wajib melalui verifikasi signature pada controller.
+        // Service webhook menangani pemeriksaan nominal, lock, dan idempotensi.
         $this->webhook->handle($data);
 
         return $attempt->fresh();

@@ -15,6 +15,7 @@ class IssuedTicket extends Model
         'qr_token',
         'status',
         'used_at',
+        'checked_in_by',
     ];
 
     protected function casts(): array
@@ -37,5 +38,10 @@ class IssuedTicket extends Model
     public function visitor(): BelongsTo
     {
         return $this->belongsTo(TicketOrderVisitor::class, 'ticket_order_visitor_id');
+    }
+
+    public function checkedInBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'checked_in_by');
     }
 }

@@ -21,6 +21,8 @@ class CheckoutCounterTicketRequest extends CheckoutTicketPurchaseRequest
     {
         $rules = parent::rules();
 
+        // Pertahankan toleransi validasi tanggal untuk replay token
+        // milik akun Wisatawan dari implementasi sebelumnya.
         $token = $this->input('checkout_token');
         $booker = $this->input('booker', []);
 
@@ -48,7 +50,11 @@ class CheckoutCounterTicketRequest extends CheckoutTicketPurchaseRequest
             }
         }
 
-        $rules['payment_method'] = ['required', Rule::in(['cash'])];
+        // Cash maupun QRIS boleh dipilih oleh Petugas.
+        $rules['payment_method'] = [
+            'required',
+            Rule::in(['cash', 'qris']),
+        ];
 
         return $rules;
     }

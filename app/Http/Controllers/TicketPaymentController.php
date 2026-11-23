@@ -297,11 +297,82 @@ class TicketPaymentController extends Controller
 
     public function index(Request $request): JsonResponse|View
     {
-        $payments = TicketPayment::with('order:id,code,booker_name,visit_date')
-            ->orderByDesc('created_at')->orderByDesc('id')->paginate(20);
+        // Respons API lama dipertahankan untuk integrasi yang sudah ada.
+        if ($request->expectsJson()) {
+            $payments = TicketPayment::with('order:id,code,booker_name,visit_date')
+                ->orderByDesc('created_at')->orderByDesc('id')->paginate(20);
 
-        return $request->expectsJson() ? response()->json(['payments' => $payments])
-            : view('petugas.ticket-payment.index', compact('payments'));
+            return response()->json(['payments' => $payments]);
+        }
+
+        $rawSearch = $request->query('q', '');
+        $search = is_string($rawSearch) ? substr(trim($rawSearch), 0, 100) : '';
+        $rawBy = $request->query('by', 'name');
+        $searchBy = in_array($rawBy, ['name', 'code'], true) ? $rawBy : 'name';
+        $hasSearched = $search !== '';
+
+        // Semua query web dibatasi pada Cash Booking online, bukan Cash loket/QRIS.
+        $query = TicketPayment::query()
+            ->with('order:id,code,booker_name,visit_date')
+            ->where('method', 'cash')
+            ->whereHas('order', fn ($order) => $order->where('sale_channel', 'online'));
+
+        if (! $hasSearched) {
+            $query->where('id', -1);
+        } else {
+            $keyword = '%'.strtolower($search).'%';
+            if ($searchBy === 'code') {
+                // Pertahankan pencarian UUID order dan UUID payment yang sudah ada.
+                // Terima juga kode publik CASH-xxxx yang ditampilkan Wisatawan.
+                // Kode CASH dibentuk dari ticket_orders.id, BUKAN dari ticket_payments.id.
+                $query->where(function ($paymentQuery) use ($search, $keyword) {
+                    $paymentQuery->whereRaw('LOWER(CAST(code AS TEXT)) LIKE ?', [$keyword])
+                        ->orWhereHas('order', fn ($order) => $order->whereRaw('LOWER(CAST(code AS TEXT)) LIKE ?', [$keyword]));
+
+                    if (preg_match('/^CASH-([0-9]+)$/i', $search, $matches) === 1) {
+                        $orderIdString = ltrim($matches[1], '0');
+                        $orderId = filter_var($orderIdString, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                        if ($orderId !== false) {
+                            $paymentQuery->orWhereHas('order', fn ($order) => $order->whereKey($orderId));
+                        }
+                    }
+                });
+            } else {
+                // Nama pemesan atau nama salah satu pengunjung yang didaftarkan.
+                $query->whereHas('order', function ($order) use ($keyword) {
+                    $order->where(function ($nameQuery) use ($keyword) {
+                        $nameQuery->whereRaw('LOWER(booker_name) LIKE ?', [$keyword])
+                            ->orWhereHas('items.visitors', fn ($visitor) => $visitor->whereRaw('LOWER(name) LIKE ?', [$keyword]));
+                    });
+                });
+            }
+        }
+
+        $query->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
+            ->orderByDesc('created_at')->orderByDesc('id');
+
+        $payments = (clone $query)->paginate(8)->withQueryString();
+        $selectedPayment = null;
+
+        if ($hasSearched) {
+            $rawSelected = $request->query('selected', '');
+            $selectedId = is_scalar($rawSelected) && ctype_digit((string) $rawSelected)
+                ? (int) $rawSelected : 0;
+            if ($selectedId > 0) {
+                // Hanya pembayaran yang cocok dengan hasil pencarian boleh dipilih.
+                $selectedPayment = (clone $query)->whereKey($selectedId)->first();
+            } elseif ($payments->total() === 1) {
+                // Sesuai Figma: satu hasil langsung menampilkan detail booking.
+                $selectedPayment = $payments->first();
+            }
+            if ($selectedPayment !== null) {
+                $selectedPayment->load('order.items.visitors');
+            }
+        }
+
+        return view('petugas.ticket-payment.index', compact(
+            'payments', 'search', 'searchBy', 'hasSearched', 'selectedPayment'
+        ));
     }
 
     public function detail(Request $request, TicketPayment $payment): JsonResponse|View
@@ -312,9 +383,109 @@ class TicketPaymentController extends Controller
             : view('petugas.ticket-payment.show', compact('payment'));
     }
 
-    public function confirm(ReviewTicketPaymentRequest $request, TicketPayment $payment, TicketPaymentService $service): JsonResponse|RedirectResponse
-    {
-        return $this->result($request, $service->review($request->user(), $payment->id, $request->validated(), true));
+    public function confirm(
+        ReviewTicketPaymentRequest $request,
+        TicketPayment $payment,
+        TicketPaymentService $service
+    ): JsonResponse|RedirectResponse {
+        // Form Cash Booking inline menggunakan pencatatan nominal yang atomik.
+        $inlineBooking = ! $request->expectsJson()
+            && $request->input('booking_inline') === '1'
+            && $payment->method === 'cash'
+            && $payment->order?->sale_channel === 'online';
+
+        $cashData = [];
+        if ($inlineBooking) {
+            $cashData = $request->validate([
+                'cash_received_amount' => [
+                    'required', 'integer', 'min:0', 'max:999999999999',
+                    function (string $attribute, mixed $value, \Closure $fail) use ($payment) {
+                        if (is_numeric($value) && (int) $value < (int) round((float) $payment->amount)) {
+                            $fail('Uang diterima tidak boleh kurang dari total tagihan.');
+                        }
+                    },
+                ],
+                'receipt_checked' => ['accepted'],
+            ]);
+        }
+
+        if ($inlineBooking) {
+            // HARUS menggunakan koneksi yang sama dengan TicketPaymentService::review().
+            // review() memiliki transaksi internal; Laravel menahannya sebagai transaksi
+            // bersarang sehingga status Lunas dan data tunai commit/rollback bersama.
+            $updated = app(\App\Support\TicketPurchaseDatabase::class)
+                ->connection()->transaction(function () use ($request, $payment, $service, $cashData) {
+                    // Urutan lock order -> payment sama dengan review(), menghindari deadlock.
+                    $order = \App\Models\TicketOrder::query()
+                        ->whereKey($payment->ticket_order_id)
+                        ->lockForUpdate()->firstOrFail();
+                    $lockedPayment = TicketPayment::query()
+                        ->whereKey($payment->id)
+                        ->lockForUpdate()->firstOrFail();
+
+                    abort_unless(
+                        $order->sale_channel === 'online'
+                        && $order->status === 'pending_payment'
+                        && $lockedPayment->method === 'cash'
+                        && $lockedPayment->status === 'pending',
+                        409,
+                        'Booking sudah dibayar atau tidak dapat dikonfirmasi lagi.'
+                    );
+
+                    $updated = $service->review(
+                        $request->user(),
+                        $lockedPayment->id,
+                        $request->validated(),
+                        true
+                    );
+                    abort_unless($updated->status === 'paid', 409, 'Pembayaran belum berhasil dikonfirmasi.');
+
+                    $received = (int) $cashData['cash_received_amount'];
+                    $amount = (int) round((float) $updated->amount);
+                    abort_unless($received >= $amount, 422, 'Uang diterima kurang dari total tagihan.');
+
+                    // Ini masih di dalam transaksi yang sama dengan review().
+                    $saved = $updated->update([
+                        'cash_received_amount' => $received,
+                        'cash_change_amount' => $received - $amount,
+                    ]);
+                    if (! $saved) {
+                        throw new \RuntimeException('Pencatatan uang tunai gagal. Pembayaran dibatalkan.');
+                    }
+
+                    return $updated;
+                });
+
+                // Setelah pembayaran Cash Booking berhasil,
+                // langsung buka halaman Pembayaran Dikonfirmasi.
+                return redirect()
+                    ->route('ticket-payment.staff.booking-success', $updated->id)
+                    ->with(
+                        'payment_updated',
+                        'Pembayaran Cash Booking berhasil dikonfirmasi.'
+                    );
+        }
+
+        // Alur Cash loket, Wisatawan, dan API lama tidak berubah.
+        $updated = $service->review(
+            $request->user(),
+            $payment->id,
+            $request->validated(),
+            true
+        );
+
+        if (
+            ! $request->expectsJson()
+            && $updated->method === 'cash'
+            && $updated->status === 'paid'
+            && $updated->order?->sale_channel === 'counter'
+        ) {
+            return redirect()
+                ->route('petugas.loket.success', $updated->id)
+                ->with('payment_updated', 'Pembayaran Cash loket berhasil dikonfirmasi.');
+        }
+
+        return $this->result($request, $updated);
     }
 
     public function reject(ReviewTicketPaymentRequest $request, TicketPayment $payment, TicketPaymentService $service): JsonResponse|RedirectResponse
