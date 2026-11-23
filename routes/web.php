@@ -15,6 +15,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Wisatawan\WahanaController;
 use App\Http\Controllers\Wisatawan\BeritaController;
 use App\Http\Controllers\Wisatawan\FacilityReservationController;
+use App\Http\Controllers\Petugas\TransactionHistoryController;
 
 // Home Publik bagi Pengguna Publik (Tidak Login)
 Route::get('/', [HomeController::class, 'index'])
@@ -225,12 +226,15 @@ Route::middleware('auth')->group(function () {
       ->name('wisatawan.reservasi.reschedule.preview');
 
     // Dashboard Petugas
-    Route::get('/petugas/dashboard', function () {
-        return Route::has('ticket-payment.staff.index')
-            ? view('petugas.ticket-payment.dashboard')
-            : 'Dashboard Petugas - SIMTicketingKRM';
-    })->middleware('role:petugas')
-      ->name('petugas.dashboard');
+    Route::get(
+        '/petugas/dashboard',
+        [\App\Http\Controllers\Petugas\PetugasDashboardController::class, 'index']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->name('petugas.dashboard');
 
     // Loket pembelian tiket Petugas
     Route::get('/petugas/loket', [\App\Http\Controllers\Petugas\TicketCounterController::class, 'index'])
@@ -252,6 +256,30 @@ Route::middleware('auth')->group(function () {
         ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
         ->name('petugas.loket.checkout');
 
+    // Halaman transaksi berhasil untuk pembelian loket.
+    Route::get(
+        '/petugas/loket/transaksi/{payment}/berhasil',
+        [\App\Http\Controllers\Petugas\CounterTransactionController::class, 'success']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->whereNumber('payment')
+        ->name('petugas.loket.success');
+
+    // Cetak E-Tiket asli dari transaksi loket yang sudah lunas.
+    Route::get(
+        '/petugas/loket/transaksi/{payment}/cetak',
+        [\App\Http\Controllers\Petugas\CounterTransactionController::class, 'print']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->whereNumber('payment')
+        ->name('petugas.loket.print');
+
     Route::get('/petugas/validasi-tiket', [\App\Http\Controllers\Petugas\TicketValidationController::class, 'index'])
         ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
         ->name('petugas.validasi-tiket.index');
@@ -263,6 +291,40 @@ Route::middleware('auth')->group(function () {
     Route::post('/petugas/validasi-tiket/check-in', [\App\Http\Controllers\Petugas\TicketValidationController::class, 'checkIn'])
         ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
         ->name('petugas.validasi-tiket.check-in');
+
+    // Riwayat Transaksi Petugas
+    Route::get(
+        '/petugas/riwayat-transaksi',
+        [TransactionHistoryController::class, 'index']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->name('petugas.riwayat-transaksi.index');
+
+    // Export Riwayat Transaksi Petugas
+    Route::get(
+        '/petugas/riwayat-transaksi/export',
+        [TransactionHistoryController::class, 'export']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->name('petugas.riwayat-transaksi.export');
+
+    // Detail Riwayat Transaksi Petugas
+    Route::get(
+        '/petugas/riwayat-transaksi/{payment}',
+        [TransactionHistoryController::class, 'show']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->whereNumber('payment')
+        ->name('petugas.riwayat-transaksi.show');
 
     // Dashboard Admin - Monitoring Operasional Harian
     Route::get('/admin/dashboard', [

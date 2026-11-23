@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.petugas')
 @section('title', 'Detail Pembayaran - Petugas')
 @push('styles') @include('partials.ticket-payment-styles') @endpush
 @section('content')
@@ -23,6 +23,45 @@
                         <label for="merchant-reference">Referensi transaksi merchant</label><input id="merchant-reference" name="merchant_reference" maxlength="100" value="{{ old('merchant_reference') }}" required aria-describedby="reference-error">
                         @error('merchant_reference')<p class="payment-error" id="reference-error">{{ $message }}</p>@enderror
                     @endif
+
+                    @if($payment->method === 'cash' && $payment->order->sale_channel === 'counter')
+                        <div class="mt-5 rounded-lg border border-gray-200 p-4">
+                            <h3 class="mb-4 font-semibold">Pembayaran Tunai Loket</h3>
+
+                            <p class="text-sm text-gray-600">Total Tagihan</p>
+                            <p class="mb-4 text-xl font-bold">
+                                Rp {{ number_format((float) $payment->amount, 0, ',', '.') }}
+                            </p>
+
+                            <label for="cash_received_amount" class="block font-semibold">
+                                Uang Diterima (Rp)
+                            </label>
+
+                            <input
+                                type="number"
+                                id="cash_received_amount"
+                                name="cash_received_amount"
+                                min="0"
+                                max="999999999999"
+                                step="1"
+                                value="{{ old('cash_received_amount') }}"
+                                placeholder="Contoh: 100000"
+                                class="mt-2 w-full rounded border p-3"
+                                required
+                            >
+
+                            @error('cash_received_amount')
+                                <p class="payment-error">{{ $message }}</p>
+                            @enderror
+
+                            <div class="mt-4">
+                                <p class="text-sm text-gray-600">Kembalian</p>
+                                <p id="cash-change-display" class="text-xl font-bold">Rp 0</p>
+                                <p id="cash-amount-warning" class="mt-2 text-sm text-red-600"></p>
+                            </div>
+                        </div>
+                    @endif
+
                     <label class="payment-check"><input type="checkbox" name="receipt_checked" value="1" required><span>{{ $payment->method === 'qris' ? 'Saya sudah mencocokkan penerimaan dan referensi di riwayat merchant.' : 'Saya sudah menerima uang cash sesuai nominal pesanan.' }}</span></label>
                     @error('receipt_checked')<p class="payment-error">{{ $message }}</p>@enderror
                     <button type="submit" class="krm-btn krm-btn-primary">{{ $payment->method === 'cash' ? 'Konfirmasi Cash Diterima' : 'Konfirmasi Pembayaran QRIS' }}</button>
@@ -46,4 +85,52 @@
     </div>
 </div>
 @endsection
-@push('scripts') @include('partials.ticket-payment-script') @endpush
+
+@push('scripts')
+@include('partials.ticket-payment-script')
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const cashInput = document.getElementById('cash_received_amount');
+    const changeDisplay = document.getElementById('cash-change-display');
+    const warningDisplay = document.getElementById('cash-amount-warning');
+
+    if (!cashInput || !changeDisplay || !warningDisplay) {
+        return;
+    }
+
+    const total = @json((int) $payment->amount);
+    const formatRupiah = (amount) =>
+        'Rp ' + amount.toLocaleString('id-ID');
+
+    function calculateChange() {
+        if (cashInput.value === '') {
+            changeDisplay.textContent = 'Rp 0';
+            warningDisplay.textContent = '';
+            return;
+        }
+
+        const received = Number(cashInput.value);
+
+        if (!Number.isSafeInteger(received) || received < 0) {
+            changeDisplay.textContent = 'Rp 0';
+            warningDisplay.textContent = 'Masukkan nominal rupiah yang valid.';
+            return;
+        }
+
+        if (received < total) {
+            changeDisplay.textContent = 'Rp 0';
+            warningDisplay.textContent =
+                'Uang diterima kurang dari total tagihan.';
+            return;
+        }
+
+        changeDisplay.textContent = formatRupiah(received - total);
+        warningDisplay.textContent = '';
+    }
+
+    cashInput.addEventListener('input', calculateChange);
+    calculateChange();
+});
+</script>
+@endpush

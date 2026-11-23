@@ -100,13 +100,48 @@
                 <div class="portal-field">
                     <label for="password">Password</label>
 
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        autocomplete="current-password"
-                        required
-                    >
+                    <div class="portal-password">
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="portal-password-toggle"
+                            data-toggle-password
+                            aria-label="Tampilkan password"
+                            aria-controls="password"
+                            aria-pressed="false"
+                        >
+                            <!-- Ikon mata terbuka -->
+                            <svg class="eye-open" xmlns="http://www.w3.org/2000/svg"
+                                width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="1.8"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                aria-hidden="true">
+                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+
+                            <!-- Ikon mata dicoret -->
+                            <svg class="eye-close" xmlns="http://www.w3.org/2000/svg"
+                                width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="1.8"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                style="display:none;"
+                                aria-hidden="true">
+                                <path d="M10.6 5.2A11 11 0 0 1 12 5c6.5 0 10 7 10 7a15 15 0 0 1-3.2 4.1"/>
+                                <path d="M6.4 6.5C3.5 8.5 2 12 2 12s3.5 7 10 7a10 10 0 0 0 5.3-1.5"/>
+                                <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
+                                <path d="M3 3l18 18"/>
+                            </svg>
+
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="portal-button">
@@ -122,6 +157,34 @@
         </section>
 
     </main>
+
+    <script>
+        (() => {
+            const toggle = document.querySelector('[data-toggle-password]');
+            const passwordInput = document.getElementById('password');
+
+            if (!toggle || !passwordInput) return;
+
+            const eyeOpen = toggle.querySelector('.eye-open');
+            const eyeClose = toggle.querySelector('.eye-close');
+
+            toggle.addEventListener('click', () => {
+                const isHidden = passwordInput.type === 'password';
+
+                passwordInput.type = isHidden ? 'text' : 'password';
+                toggle.setAttribute('aria-pressed', isHidden ? 'true' : 'false');
+                toggle.setAttribute(
+                    'aria-label',
+                    isHidden ? 'Sembunyikan password' : 'Tampilkan password'
+                );
+
+                if (eyeOpen && eyeClose) {
+                    eyeOpen.style.display = isHidden ? 'none' : 'inline';
+                    eyeClose.style.display = isHidden ? 'inline' : 'none';
+                }
+            });
+        })();
+    </script>
 
 </body>
 </html>

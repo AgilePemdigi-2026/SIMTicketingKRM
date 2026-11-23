@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers\Petugas;
 
-use App\Support\TicketPurchaseDatabase;
-use Illuminate\Support\Str;
 use App\Contracts\TicketCatalogProvider;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Petugas\PreviewCounterTicketRequest;
-use App\Services\TicketPurchaseService;
 use App\Http\Requests\Petugas\CheckoutCounterTicketRequest;
-use App\Models\User;
+use App\Http\Requests\Petugas\PreviewCounterTicketRequest;
 use App\Services\TicketPaymentService;
+use App\Services\TicketPurchaseService;
+use App\Support\TicketPurchaseDatabase;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class TicketCounterController extends Controller
@@ -49,48 +47,36 @@ class TicketCounterController extends Controller
         TicketPurchaseDatabase $database
     ): RedirectResponse {
         $data = $request->validated();
-        $booker = $data['booker'];
+        $staff = $request->user();
 
-        // Gunakan akun Wisatawan terdaftar yang identitasnya sesuai.
-        $wisatawan = User::query()
-            ->where('role', 'wisatawan')
-            ->where('email', $booker['email'])
-            ->where('identity_number', $booker['identity_number'])
-            ->where('phone', $booker['phone'])
-            ->first();
-
-        if ($wisatawan === null) {
-            return redirect()
-                ->route('petugas.loket.index')
-                ->withErrors([
-                    'booker.email' => 'Akun Wisatawan tidak ditemukan. Pastikan email, nomor identitas, dan telepon sesuai dengan akun terdaftar.',
-                ])
-                ->withInput();
-        }
-
-        // Simpan pesanan dan pembayaran dalam satu transaksi PostgreSQL.
+        // Simpan pesanan walk-in dan pembayaran secara atomik.
         $payment = $database->connection()->transaction(
-            function () use (
-                $wisatawan,
-                $data,
-                $purchaseService,
-                $paymentService
-            ) {
-                $order = $purchaseService->create($wisatawan, $data);
+            function () use ($staff, $data, $purchaseService, $paymentService) {
+                $order = $purchaseService->createForCounter($staff, $data);
 
-                return $paymentService->select(
-                    $wisatawan,
+                return $paymentService->selectForCounter(
+                    $staff,
                     $order->code,
                     $data['payment_method']
                 );
             }
         );
 
+        if ($payment->method === 'qris') {
+            return redirect()
+                ->route('petugas.loket.qris.show', $payment->id)
+                ->with(
+                    'payment_updated',
+                    'Pesanan loket berhasil dibuat. Buat QR Midtrans untuk pembayaran.'
+                );
+        }
+
+        // Cash tetap menuju konfirmasi penerimaan uang oleh Petugas.
         return redirect()
-            ->route('ticket-payment.staff.show', $payment->id)
+            ->route('petugas.loket.cash.show', $payment->id)
             ->with(
                 'payment_updated',
-                'Pesanan loket berhasil dibuat. Pembayaran belum dikonfirmasi.'
+                'Pesanan loket berhasil dibuat. Silakan selesaikan pembayaran Cash.'
             );
     }
 }

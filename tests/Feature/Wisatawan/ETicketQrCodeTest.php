@@ -119,7 +119,7 @@ class ETicketQrCodeTest extends PostgresTicketTestCase
                 ->get($this->endpoint($order).'/e-tiket');
 
             $response->assertOk()
-                ->assertSee('QR Code Tiket')
+                ->assertSee('QR Code E-Tiket')
                 ->assertSee('data:image/svg+xml;base64,', false);
 
             $this->assertSame(
