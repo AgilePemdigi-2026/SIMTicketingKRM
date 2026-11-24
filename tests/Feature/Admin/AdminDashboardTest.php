@@ -367,4 +367,226 @@ class AdminDashboardTest extends PostgresTicketTestCase
         $this->get(route('admin.dashboard'))
             ->assertRedirect(route('login'));
     }
+
+
+    // AT-16: Pesanan sebelum batas awal WIB tidak dihitung.
+    public function test_order_before_wib_day_start_is_excluded(): void
+    {
+        $order = $this->createOrder();
+
+        $order->forceFill([
+            'created_at' => CarbonImmutable::parse(
+                '2026-11-23 16:59:59',
+                'UTC'
+            ),
+        ])->save();
+
+        $stats = $this->dashboardStats();
+
+        $this->assertSame(0, $stats['transaksi_tiket']);
+    }
+
+    // AT-17: Pesanan tepat pada awal hari WIB dihitung.
+    public function test_order_at_wib_day_start_is_included(): void
+    {
+        $order = $this->createOrder();
+
+        $order->forceFill([
+            'created_at' => CarbonImmutable::parse(
+                '2026-11-23 17:00:00',
+                'UTC'
+            ),
+        ])->save();
+
+        $stats = $this->dashboardStats();
+
+        $this->assertSame(1, $stats['transaksi_tiket']);
+    }
+
+    // AT-18: Pesanan sebelum akhir hari WIB dihitung.
+    public function test_order_before_wib_day_end_is_included(): void
+    {
+        $order = $this->createOrder();
+
+        $order->forceFill([
+            'created_at' => CarbonImmutable::parse(
+                '2026-11-24 16:59:59',
+                'UTC'
+            ),
+        ])->save();
+
+        $this->travelTo(
+            CarbonImmutable::parse(
+                '2026-11-24 16:59:59',
+                'UTC'
+            )
+        );
+
+        $stats = $this->dashboardStats();
+
+        $this->assertSame(1, $stats['transaksi_tiket']);
+    }
+
+    // AT-19: Pesanan tepat pada akhir hari WIB tidak dihitung.
+    public function test_order_at_wib_day_end_is_excluded(): void
+    {
+        $order = $this->createOrder();
+
+        $order->forceFill([
+            'created_at' => CarbonImmutable::parse(
+                '2026-11-24 17:00:00',
+                'UTC'
+            ),
+        ])->save();
+
+        $stats = $this->dashboardStats();
+
+        $this->assertSame(0, $stats['transaksi_tiket']);
+    }
+
+    // AT-20: Pendapatan dihitung berdasarkan paid_at.
+    public function test_payment_revenue_uses_paid_at_wib_boundaries(): void
+    {
+        $timestamps = [
+            '2026-11-23 16:59:59',
+            '2026-11-23 17:00:00',
+            '2026-11-24 16:59:59',
+            '2026-11-24 17:00:00',
+        ];
+
+        foreach ($timestamps as $timestamp) {
+            $order = $this->createOrder();
+
+            $order->forceFill([
+                'created_at' => CarbonImmutable::parse(
+                    '2026-11-23 12:00:00',
+                    'UTC'
+                ),
+            ])->save();
+
+            $payment = $this->createPayment(
+                $order,
+                'cash'
+            );
+
+            $payment->forceFill([
+                'paid_at' => CarbonImmutable::parse(
+                    $timestamp,
+                    'UTC'
+                ),
+            ])->save();
+        }
+
+        $stats = $this->dashboardStats();
+
+        $this->assertSame(0, $stats['transaksi_tiket']);
+        $this->assertSame(2, $stats['pembayaran_lunas']);
+        $this->assertEquals(
+            100000,
+            $stats['pendapatan_tiket']
+        );
+    }
+
+    // AT-21: Check-in dihitung berdasarkan used_at.
+    public function test_checkin_uses_used_at_wib_boundaries(): void
+    {
+        $timestamps = [
+            '2026-11-23 16:59:59',
+            '2026-11-23 17:00:00',
+            '2026-11-24 16:59:59',
+            '2026-11-24 17:00:00',
+        ];
+
+        foreach ($timestamps as $timestamp) {
+            $order = $this->createOrder();
+
+            $this->createPayment($order);
+
+            $ticket = $this->createIssuedTicket(
+                $order,
+                'used'
+            );
+
+            $ticket->forceFill([
+                'used_at' => CarbonImmutable::parse(
+                    $timestamp,
+                    'UTC'
+                ),
+            ])->save();
+        }
+
+        $stats = $this->dashboardStats();
+
+        $this->assertSame(
+            2,
+            $stats['pengunjung_checkin']
+        );
+    }
+
+    // AT-22: Statistik berubah mengikuti pergantian hari WIB.
+    public function test_dashboard_follows_wib_date_rollover(): void
+    {
+        $order = $this->createOrder([
+            'visit_date' => '2026-11-25',
+        ]);
+
+        $boundary = CarbonImmutable::parse(
+            '2026-11-24 17:00:00',
+            'UTC'
+        );
+
+        $order->forceFill([
+            'created_at' => $boundary,
+        ])->save();
+
+        $payment = $this->createPayment(
+            $order,
+            'qris'
+        );
+
+        $payment->forceFill([
+            'paid_at' => $boundary,
+        ])->save();
+
+        $ticket = $this->createIssuedTicket(
+            $order,
+            'used'
+        );
+
+        $ticket->forceFill([
+            'used_at' => $boundary,
+        ])->save();
+
+        $this->createReservation([
+            'visit_date' => '2026-11-25',
+        ]);
+
+        // Satu detik sebelum pergantian hari WIB.
+        $this->travelTo(
+            $boundary->subSecond()
+        );
+
+        $before = $this->dashboardStats();
+
+        $this->assertSame(0, $before['transaksi_tiket']);
+        $this->assertSame(0, $before['pembayaran_lunas']);
+        $this->assertEquals(0, $before['pendapatan_tiket']);
+        $this->assertSame(0, $before['pengunjung_checkin']);
+        $this->assertSame(0, $before['reservasi_hari_ini']);
+
+        // Tepat pukul 00:00 WIB pada tanggal berikutnya.
+        $this->travelTo($boundary);
+
+        $after = $this->dashboardStats();
+
+        $this->assertSame(1, $after['transaksi_tiket']);
+        $this->assertSame(1, $after['pembayaran_lunas']);
+        $this->assertEquals(
+            50000,
+            $after['pendapatan_tiket']
+        );
+        $this->assertSame(1, $after['pengunjung_checkin']);
+        $this->assertSame(1, $after['reservasi_hari_ini']);
+    }
+
 }
