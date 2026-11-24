@@ -3,185 +3,177 @@
 @section('title', 'Audit Log - Kebun Raya Mangrove')
 
 @section('content')
-<div class="mx-auto max-w-[1500px]">
 
-    {{-- HEADER HALAMAN --}}
-    <div class="mb-6 border-b border-[#D4DED7] pb-6">
-        <p class="mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-[#668977]">
-            Administrasi Kebun Raya Mangrove
-        </p>
+<div class="mx-auto max-w-[1800px]">
 
-        <h1 class="text-2xl font-semibold text-[#173D30]">
-            Audit Log
-        </h1>
+    {{-- PAGE HEADER --}}
+    <header class="mb-4 border-b border-[#B8C9BD] pb-2">
 
-        <p class="mt-2 text-sm text-[#74877B]">
-            Monitoring histori aktivitas pengguna dan sistem.
-        </p>
-    </div>
-
-    {{-- STATISTIK AKTIVITAS --}}
-    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-        @foreach ([
-            [
-                'label' => 'Total Aktivitas',
-                'value' => $stats['total_aktivitas'],
-                'description' => 'Seluruh histori aktivitas',
-            ],
-            [
-                'label' => 'Aktivitas Hari Ini',
-                'value' => $stats['aktivitas_hari_ini'],
-                'description' => 'Berdasarkan tanggal WIB',
-            ],
-            [
-                'label' => 'Aktivitas Pengguna',
-                'value' => $stats['aktivitas_pengguna'],
-                'description' => 'Admin, Petugas, dan Wisatawan',
-            ],
-            [
-                'label' => 'Aktivitas Sistem',
-                'value' => $stats['aktivitas_sistem'],
-                'description' => 'Aktivitas otomatis sistem',
-            ],
-        ] as $stat)
-
-            <div class="rounded-lg border border-[#DCE5DE] bg-white p-5">
-                <p class="text-xs font-medium text-[#74877B]">
-                    {{ $stat['label'] }}
-                </p>
-
-                <p class="mt-3 text-3xl font-bold text-[#173D30]">
-                    {{ number_format($stat['value'], 0, ',', '.') }}
-                </p>
-
-                <p class="mt-2 text-[11px] leading-5 text-[#819187]">
-                    {{ $stat['description'] }}
-                </p>
-            </div>
-
-        @endforeach
-
-    </div>
-
-    {{-- INFORMASI READ ONLY --}}
-    <div class="mb-6 flex items-start gap-3 border border-[#D5E5DA] bg-[#EFF6F0] px-4 py-3 text-xs leading-6 text-[#355D47]">
-        <svg class="mt-1 h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"/>
-            <path d="M12 11v5M12 7h.01" stroke-linecap="round"/>
-        </svg>
-
-        <p>
-            Audit Log digunakan untuk monitoring histori aktivitas.
-            Catatan tidak dapat diubah atau dihapus melalui halaman ini.
-            Seluruh waktu ditampilkan dalam WIB.
-        </p>
-    </div>
-
-    {{-- FILTER AKTIVITAS --}}
-    <section class="mb-6 rounded-lg border border-[#DCE5DE] bg-white">
-
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2E9E4] px-5 py-5">
+        <div class="flex flex-wrap items-start justify-between gap-3">
 
             <div>
-                <h2 class="text-sm font-bold uppercase tracking-[0.08em] text-[#173D30]">
-                    Filter Aktivitas
-                </h2>
 
-                <p class="mt-1 text-xs text-[#819187]">
-                    Cari dan saring histori aktivitas pengguna dan sistem.
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#527A65]">
+
+                    Administrasi Kebun Raya Mangrove
+
                 </p>
+
+                <h1 class="mt-2 text-[24px] font-medium leading-tight text-[#0B372D]">
+
+                    Audit Log
+
+                </h1>
+
             </div>
 
             @if ($logs->total() > 0 && ! $errors->any())
+
                 <a
                     href="{{ route('admin.audit-log.export', $filters) }}"
-                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-[#174B38] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#073B2D]"
+                    class="inline-flex min-h-10 items-center justify-center border border-[#174B38] bg-white px-4 py-2.5 text-[11px] font-semibold text-[#174B38] transition hover:bg-[#E9F0EB]"
                 >
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                        <path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
 
                     Export Log
+
                 </a>
+
             @endif
 
         </div>
 
+        <p class="mt-4 text-[11px] text-[#74877B]">
+
+            Jejak aktivitas administrator dan petugas
+
+        </p>
+
+    </header>
+
+    {{-- FILTER PANEL --}}
+    <section class="mb-3 border border-[#D8E2DA] bg-white p-4">
+
         <form
+            id="audit-log-filter"
             method="GET"
             action="{{ route('admin.audit-log.index') }}"
-            class="p-5"
         >
 
             @if ($errors->any())
-                <div class="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700" role="alert">
+
+                <div
+                    class="mb-4 border border-red-200 bg-red-50 p-3 text-xs text-red-700"
+                    role="alert"
+                >
+
                     <p class="mb-2 font-semibold">
                         Filter tidak valid.
                     </p>
 
                     <ul class="list-disc space-y-1 pl-4">
+
                         @foreach ($errors->all() as $error)
+
                             <li>{{ $error }}</li>
+
                         @endforeach
+
                     </ul>
+
                 </div>
+
             @endif
 
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
 
-                {{-- CARI AKTIVITAS --}}
-                <div>
-                    <label for="search" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                {{-- KEYWORD --}}
+                <div class="min-w-0">
+
+                    <label
+                        for="search"
+                        class="mb-1.5 block text-[10px] font-semibold text-[#405A4D]"
+                    >
+
                         Cari Aktivitas
+
                     </label>
 
                     <div class="relative">
-                        <svg class="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[#819187]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                            <circle cx="11" cy="11" r="7"/>
-                            <path d="m16 16 4 4" stroke-linecap="round"/>
-                        </svg>
 
                         <input
-                            type="search"
                             id="search"
                             name="search"
+                            type="search"
                             value="{{ $filters['search'] ?? '' }}"
                             maxlength="150"
-                            placeholder="Cari aktivitas..."
-                            class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white pl-9 pr-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] focus:ring-1 focus:ring-[#527A65]"
+                            placeholder="Keyword aktivitas..."
+                            class="h-10 w-full border border-[#CBD9CF] bg-white px-3 pr-8 text-[11px] text-[#173D30] outline-none placeholder:text-[#74877B] focus:border-[#527A65]"
                         >
+
+                        <button
+                            type="submit"
+                            aria-label="Cari aktivitas"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 text-[#527A65]"
+                        >
+
+                            <x-admin-icon
+                                name="chevron"
+                                class="h-3 w-3"
+                            />
+
+                        </button>
+
                     </div>
+
                 </div>
 
-                {{-- FILTER MODUL --}}
-                <div>
-                    <label for="module" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                {{-- MODULE --}}
+                <div class="min-w-0">
+
+                    <label
+                        for="module"
+                        class="mb-1.5 block text-[10px] font-semibold text-[#405A4D]"
+                    >
+
                         Modul
+
                     </label>
 
                     <select
                         id="module"
                         name="module"
-                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] focus:ring-1 focus:ring-[#527A65]"
+                        class="h-10 w-full border border-[#CBD9CF] bg-white px-3 text-[11px] text-[#173D30] outline-none focus:border-[#527A65]"
                     >
+
                         <option value="">Semua Modul</option>
 
                         @foreach ($modules as $module)
+
                             <option
                                 value="{{ $module }}"
                                 @selected(($filters['module'] ?? '') === $module)
                             >
+
                                 {{ $module }}
+
                             </option>
+
                         @endforeach
+
                     </select>
+
                 </div>
 
-                {{-- TANGGAL AWAL --}}
-                <div>
-                    <label for="from" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                {{-- START DATE --}}
+                <div class="min-w-0">
+
+                    <label
+                        for="from"
+                        class="mb-1.5 block text-[10px] font-semibold text-[#405A4D]"
+                    >
+
                         Dari Tanggal
+
                     </label>
 
                     <input
@@ -189,14 +181,21 @@
                         id="from"
                         name="from"
                         value="{{ $filters['from'] ?? '' }}"
-                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] focus:ring-1 focus:ring-[#527A65]"
+                        class="h-10 w-full border border-[#CBD9CF] bg-white px-3 text-[11px] text-[#173D30] outline-none focus:border-[#527A65]"
                     >
+
                 </div>
 
-                {{-- TANGGAL AKHIR --}}
-                <div>
-                    <label for="until" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                {{-- END DATE --}}
+                <div class="min-w-0">
+
+                    <label
+                        for="until"
+                        class="mb-1.5 block text-[10px] font-semibold text-[#405A4D]"
+                    >
+
                         Sampai Tanggal
+
                     </label>
 
                     <input
@@ -204,105 +203,107 @@
                         id="until"
                         name="until"
                         value="{{ $filters['until'] ?? '' }}"
-                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] focus:ring-1 focus:ring-[#527A65]"
+                        class="h-10 w-full border border-[#CBD9CF] bg-white px-3 text-[11px] text-[#173D30] outline-none focus:border-[#527A65]"
                     >
+
                 </div>
 
             </div>
 
-            <div class="mt-5 flex flex-wrap items-center justify-between gap-4">
+            <noscript>
 
-                <p class="text-xs leading-5 text-[#819187]">
-                    Filter tanggal menggunakan zona waktu WIB.
-                    Statistik di atas menunjukkan seluruh aktivitas.
-                </p>
+                <button
+                    type="submit"
+                    class="mt-3 border border-[#174B38] px-4 py-2 text-xs font-semibold text-[#174B38]"
+                >
 
-                <div class="flex flex-wrap items-center gap-2">
+                    Terapkan Filter
 
-                    <a
-                        href="{{ route('admin.audit-log.index') }}"
-                        class="inline-flex min-h-10 items-center justify-center border border-[#CBD9CF] px-4 py-2.5 text-xs font-semibold text-[#355D47] transition hover:bg-[#EAF2EC]"
-                    >
-                        Reset Filter
-                    </a>
+                </button>
 
-                    <button
-                        type="submit"
-                        class="inline-flex min-h-10 items-center justify-center bg-[#174B38] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#073B2D]"
-                    >
-                        Terapkan Filter
-                    </button>
-
-                </div>
-
-            </div>
+            </noscript>
 
         </form>
 
     </section>
 
-    {{-- HASIL FILTER --}}
+    {{-- FILTER RESET --}}
     @if (! empty($filters))
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-3 border border-[#D5E5DA] bg-[#EFF6F0] px-4 py-3 text-xs text-[#355D47]">
+
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2 text-[10px] text-[#74877B]">
 
             <p>
-                Ditemukan
-                <strong>{{ number_format($logs->total(), 0, ',', '.') }}</strong>
-                aktivitas sesuai filter.
+
+                Ditemukan {{ number_format($logs->total(), 0, ',', '.') }} aktivitas sesuai filter.
+
             </p>
 
             <a
                 href="{{ route('admin.audit-log.index') }}"
-                class="font-semibold underline"
+                class="font-semibold text-[#174B38] underline"
             >
-                Hapus semua filter
+
+                Reset Filter
+
             </a>
 
         </div>
+
     @endif
 
-    {{-- DAFTAR AKTIVITAS --}}
-    <div class="overflow-hidden border border-[#DCE5DE] bg-white">
+    {{-- ACTIVITY TABLE --}}
+    <section class="overflow-hidden border border-[#D8E2DA] bg-white">
 
-        <div class="border-b border-[#E2E9E4] px-5 py-5">
-            <h2 class="text-sm font-bold uppercase tracking-[0.08em] text-[#173D30]">
-                Daftar Aktivitas
-            </h2>
-
-            <p class="mt-1 text-xs text-[#819187]">
-                Riwayat aktivitas terbaru ditampilkan terlebih dahulu.
-            </p>
-        </div>
-
-        {{-- TABEL RESPONSIF --}}
         <div class="overflow-x-auto">
 
-            <table class="w-full min-w-[1050px] border-collapse text-left text-xs">
+            <table class="w-full min-w-[950px] table-fixed border-collapse text-left">
 
-                <thead class="bg-[#E9F0EB] text-[#4A695A]">
-                    <tr class="uppercase tracking-[0.05em]">
-                        <th class="px-4 py-4 font-bold">No.</th>
-                        <th class="px-4 py-4 font-bold">Waktu (WIB)</th>
-                        <th class="px-4 py-4 font-bold">Pengguna</th>
-                        <th class="px-4 py-4 font-bold">Role</th>
-                        <th class="px-4 py-4 font-bold">Modul</th>
-                        <th class="px-4 py-4 font-bold">Aktivitas</th>
-                        <th class="px-4 py-4 font-bold">Aksi</th>
+                <colgroup>
+                    <col style="width:15%">
+                    <col style="width:21%">
+                    <col style="width:15%">
+                    <col style="width:11%">
+                    <col style="width:9%">
+                    <col style="width:29%">
+                </colgroup>
+
+                <thead class="bg-[#E9F0EB] text-[#355D47]">
+
+                    <tr class="text-[10px] uppercase">
+
+                        <th scope="col" class="border-b border-r border-[#D8E2DA] px-3 py-3 font-semibold">
+                            Pengguna
+                        </th>
+
+                        <th scope="col" class="border-b border-r border-[#D8E2DA] px-3 py-3 font-semibold">
+                            Aktivitas
+                        </th>
+
+                        <th scope="col" class="border-b border-r border-[#D8E2DA] px-3 py-3 font-semibold">
+                            Modul
+                        </th>
+
+                        <th scope="col" class="border-b border-r border-[#D8E2DA] px-3 py-3 font-semibold">
+                            Tanggal
+                        </th>
+
+                        <th scope="col" class="border-b border-r border-[#D8E2DA] px-3 py-3 font-semibold">
+                            Waktu
+                        </th>
+
+                        <th scope="col" class="border-b border-[#D8E2DA] px-3 py-3 font-semibold">
+                            Keterangan
+                        </th>
+
                     </tr>
+
                 </thead>
 
-                <tbody class="divide-y divide-[#E3EAE5] text-[#405A4D]">
+                <tbody class="divide-y divide-[#E0E8E1] text-[11px] leading-4 text-[#405A4D]">
 
                     @forelse ($logs as $log)
 
                         @php
-                            $roleLabel = match ($log->actor_role) {
-                                'admin' => 'Admin',
-                                'petugas' => 'Petugas',
-                                'wisatawan' => 'Wisatawan',
-                                'system' => 'Sistem',
-                                default => ucfirst($log->actor_role),
-                            };
 
                             $actionLabel = match ($log->action) {
                                 'login' => 'Login',
@@ -315,55 +316,87 @@
                                 'reschedule_requested' => 'Pengajuan Reschedule',
                                 default => ucfirst(str_replace('_', ' ', $log->action)),
                             };
+
+                            $roleLabel = match ($log->actor_role) {
+                                'admin' => 'Admin',
+                                'petugas' => 'Petugas',
+                                'wisatawan' => 'Wisatawan',
+                                'system' => 'Sistem',
+                                default => ucfirst($log->actor_role),
+                            };
+
+                            $timestamp = $log->created_at
+                                ?->timezone('Asia/Jakarta');
+
+                            $detailUrl = route(
+                                'admin.audit-log.show',
+                                array_merge(
+                                    ['auditLog' => $log->id],
+                                    $filters,
+                                    ['page' => $logs->currentPage()]
+                                )
+                            );
+
                         @endphp
 
-                        <tr class="transition hover:bg-[#F8FAF8]">
+                        <tr class="transition hover:bg-[#F3F6F3]">
 
-                            <td class="px-4 py-4 text-[#819187]">
-                                {{ $logs->firstItem() + $loop->index }}
-                            </td>
+                            {{-- USER --}}
+                            <td class="break-words border-r border-[#E0E8E1] px-3 py-2.5">
 
-                            <td class="whitespace-nowrap px-4 py-4">
-                                <p class="font-medium text-[#173D30]">
-                                    {{ $log->created_at?->timezone('Asia/Jakarta')->format('d/m/Y') ?? '-' }}
-                                </p>
-
-                                <p class="mt-1 text-[11px] text-[#819187]">
-                                    {{ $log->created_at?->timezone('Asia/Jakarta')->format('H:i:s') ?? '-' }} WIB
-                                </p>
-                            </td>
-
-                            <td class="min-w-[150px] px-4 py-4 font-semibold text-[#173D30]">
-                                {{ $log->actor_name }}
-                            </td>
-
-                            <td class="px-4 py-4">
-                                <span class="inline-block whitespace-nowrap rounded-sm bg-[#E9F0EB] px-3 py-1.5 font-medium text-[#355D47]">
-                                    {{ $roleLabel }}
-                                </span>
-                            </td>
-
-                            <td class="whitespace-nowrap px-4 py-4">
-                                {{ $log->module }}
-                            </td>
-
-                            <td class="min-w-[240px] px-4 py-4">
-                                <p class="font-semibold text-[#173D30]">
-                                    {{ $actionLabel }}
-                                </p>
-
-                                <p class="mt-1 text-[11px] leading-5 text-[#819187]">
-                                    {{ $log->description }}
-                                </p>
-                            </td>
-
-                            <td class="px-4 py-4">
                                 <a
-                                    href="{{ route('admin.audit-log.show', array_merge(['auditLog' => $log->id], $filters, ['page' => $logs->currentPage()])) }}"
-                                    class="inline-flex min-h-9 items-center justify-center border border-[#CBD9CF] px-4 py-2 font-medium text-[#355D47] transition hover:bg-[#EAF2EC]"
+                                    href="{{ $detailUrl }}"
+                                    title="Lihat detail aktivitas - {{ $roleLabel }}"
+                                    class="text-[#405A4D] hover:text-[#174B38] hover:underline focus:underline"
                                 >
-                                    Detail
+
+                                    {{ $log->actor_name }}
+
                                 </a>
+
+                            </td>
+
+                            {{-- ACTIVITY --}}
+                            <td class="break-words border-r border-[#E0E8E1] px-3 py-2.5">
+
+                                <a
+                                    href="{{ $detailUrl }}"
+                                    title="Lihat detail aktivitas"
+                                    class="hover:text-[#174B38] hover:underline focus:underline"
+                                >
+
+                                    {{ $actionLabel }}
+
+                                </a>
+
+                            </td>
+
+                            {{-- MODULE --}}
+                            <td class="break-words border-r border-[#E0E8E1] px-3 py-2.5">
+
+                                {{ $log->module }}
+
+                            </td>
+
+                            {{-- DATE --}}
+                            <td class="whitespace-nowrap border-r border-[#E0E8E1] px-3 py-2.5">
+
+                                {{ $timestamp?->locale('id')->translatedFormat('d M Y') ?? '-' }}
+
+                            </td>
+
+                            {{-- TIME --}}
+                            <td class="whitespace-nowrap border-r border-[#E0E8E1] px-3 py-2.5">
+
+                                {{ $timestamp?->format('H:i') ?? '-' }} WIB
+
+                            </td>
+
+                            {{-- DESCRIPTION --}}
+                            <td class="break-words px-3 py-2.5">
+
+                                {{ $log->description }}
+
                             </td>
 
                         </tr>
@@ -371,46 +404,228 @@
                     @empty
 
                         <tr>
-                            <td colspan="7" class="px-4 py-14 text-center">
-                                <p class="text-sm font-semibold text-[#173D30]">
+
+                            <td colspan="6" class="px-4 py-12 text-center">
+
+                                <p class="text-xs font-semibold text-[#173D30]">
+
                                     Tidak ada aktivitas ditemukan.
+
                                 </p>
 
-                                <p class="mt-2 text-xs text-[#819187]">
+                                <p class="mt-2 text-[11px] text-[#819187]">
+
                                     @if (! empty($filters))
+
                                         Coba gunakan kata pencarian atau rentang tanggal yang berbeda.
+
                                     @else
+
                                         Histori aktivitas akan muncul setelah sistem mencatat aktivitas pengguna.
+
                                     @endif
+
                                 </p>
+
                             </td>
+
                         </tr>
 
                     @endforelse
 
                 </tbody>
+
             </table>
 
         </div>
 
-    </div>
+    </section>
 
     {{-- PAGINATION --}}
-    <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
 
-        <p class="text-xs text-[#819187]">
-            Menampilkan {{ $logs->firstItem() ?? 0 }}
-            - {{ $logs->lastItem() ?? 0 }}
-            dari {{ $logs->total() }} aktivitas
+        <p class="text-[10px] text-[#74877B]">
+
+            Menampilkan {{ $logs->firstItem() ?? 0 }}-{{ $logs->lastItem() ?? 0 }}
+            dari {{ number_format($logs->total(), 0, ',', '.') }} log aktivitas
+
         </p>
 
         @if ($logs->hasPages())
-            <div>
-                {{ $logs->links('pagination::simple-tailwind') }}
-            </div>
+
+            @php
+
+                $current = $logs->currentPage();
+                $last = $logs->lastPage();
+
+                $firstPage = max(1, min($current - 1, $last - 2));
+                $lastVisiblePage = min($last, $firstPage + 2);
+
+                $pageClass = 'flex h-8 w-8 items-center justify-center border border-[#CBD9CF] bg-white text-[11px] text-[#527A65] transition hover:bg-[#E9F0EB]';
+
+                $disabledClass = 'flex h-8 w-8 items-center justify-center border border-[#CBD9CF] bg-white text-[11px] text-[#B8C9BD]';
+
+            @endphp
+
+            <nav class="flex items-center gap-px" aria-label="Halaman Audit Log">
+
+                {{-- PREVIOUS --}}
+                @if ($logs->onFirstPage())
+
+                    <span class="{{ $disabledClass }}" aria-disabled="true">
+
+                        &#8592;
+
+                    </span>
+
+                @else
+
+                    <a
+                        href="{{ $logs->previousPageUrl() }}"
+                        class="{{ $pageClass }}"
+                        aria-label="Halaman sebelumnya"
+                        rel="prev"
+                    >
+
+                        &#8592;
+
+                    </a>
+
+                @endif
+
+                {{-- PAGE NUMBERS --}}
+                @for ($page = $firstPage; $page <= $lastVisiblePage; $page++)
+
+                    @if ($page === $current)
+
+                        <span
+                            aria-current="page"
+                            class="flex h-8 w-8 items-center justify-center border border-[#174B38] bg-[#174B38] text-[11px] text-white"
+                        >
+
+                            {{ $page }}
+
+                        </span>
+
+                    @else
+
+                        <a
+                            href="{{ $logs->url($page) }}"
+                            aria-label="Halaman {{ $page }}"
+                            class="{{ $pageClass }}"
+                        >
+
+                            {{ $page }}
+
+                        </a>
+
+                    @endif
+
+                @endfor
+
+                {{-- NEXT --}}
+                @if ($logs->hasMorePages())
+
+                    <a
+                        href="{{ $logs->nextPageUrl() }}"
+                        class="{{ $pageClass }}"
+                        aria-label="Halaman berikutnya"
+                        rel="next"
+                    >
+
+                        &#8594;
+
+                    </a>
+
+                @else
+
+                    <span class="{{ $disabledClass }}" aria-disabled="true">
+
+                        &#8594;
+
+                    </span>
+
+                @endif
+
+            </nav>
+
         @endif
 
     </div>
 
 </div>
+
 @endsection
+
+@push('scripts')
+
+<script>
+    (() => {
+        const form = document.getElementById('audit-log-filter');
+
+        if (!form) {
+            return;
+        }
+
+        const search = form.querySelector('[name="search"]');
+        const module = form.querySelector('[name="module"]');
+        const from = form.querySelector('[name="from"]');
+        const until = form.querySelector('[name="until"]');
+
+        let timer;
+
+        const submitFilters = () => {
+            clearTimeout(timer);
+            form.requestSubmit();
+        };
+
+        const validateDates = () => {
+            until.setCustomValidity('');
+
+            if (from.value && until.value && until.value < from.value) {
+                until.setCustomValidity(
+                    'Tanggal akhir tidak boleh lebih awal dari tanggal awal.'
+                );
+
+                until.reportValidity();
+                return false;
+            }
+
+            return true;
+        };
+
+        search.addEventListener('input', () => {
+            clearTimeout(timer);
+
+            timer = setTimeout(() => {
+                if (validateDates()) {
+                    submitFilters();
+                }
+            }, 1000);
+        });
+
+        module.addEventListener('change', () => {
+            if (validateDates()) {
+                submitFilters();
+            }
+        });
+
+        [from, until].forEach(input => {
+            input.addEventListener('change', () => {
+                if (validateDates()) {
+                    submitFilters();
+                }
+            });
+        });
+
+        form.addEventListener('submit', event => {
+            clearTimeout(timer);
+
+            if (!validateDates()) {
+                event.preventDefault();
+            }
+        });
+    })();
+</script>
+
+@endpush

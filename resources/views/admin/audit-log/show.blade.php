@@ -90,28 +90,28 @@
     };
 @endphp
 
-<div class="mx-auto max-w-[1200px]">
+<div class="mx-auto max-w-[1800px]">
 
     {{-- HEADER --}}
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[#D4DED7] pb-6">
+    <div class="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-[#B8C9BD] pb-3">
 
         <div>
-            <p class="mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-[#668977]">
+            <p class="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#527A65]">
                 Administrasi Kebun Raya Mangrove
             </p>
 
-            <h1 class="text-2xl font-semibold text-[#173D30]">
+            <h1 class="text-[24px] font-medium leading-tight text-[#0B372D]">
                 Detail Audit Log
             </h1>
 
-            <p class="mt-2 text-sm text-[#74877B]">
+            <p class="mt-3 text-[11px] text-[#74877B]">
                 Histori aktivitas #{{ $log->id }}
             </p>
         </div>
 
         <a
             href="{{ route('admin.audit-log.index', request()->only(['search', 'module', 'from', 'until', 'page'])) }}"
-            class="inline-flex items-center justify-center border border-[#527A65] px-5 py-3 text-sm font-semibold text-[#315B46] transition hover:bg-[#E9F0EB]"
+            class="inline-flex items-center justify-center gap-2 border border-[#174B38] bg-white px-4 py-2.5 text-[11px] font-semibold text-[#315B46] transition hover:bg-[#E9F0EB]"
         >
             Kembali
         </a>
@@ -119,13 +119,13 @@
     </div>
 
     {{-- INFORMASI AKTIVITAS --}}
-    <section class="mb-6 rounded-lg border border-[#DCE5DE] bg-white p-6">
+    <section class="mb-4 border border-[#D8E2DA] bg-white p-4">
 
-        <h2 class="mb-5 border-b border-[#E5EBE6] pb-3 text-lg font-semibold text-[#173D30]">
+        <h2 class="mb-4 border-b border-[#E5EBE6] pb-3 text-sm font-semibold text-[#173D30]">
             Informasi Aktivitas
         </h2>
 
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
             @foreach ([
                 'ID Audit Log' => $log->id,
@@ -153,7 +153,7 @@
 
         </div>
 
-        <div class="mt-6 border-t border-[#E5EBE6] pt-5">
+        <div class="mt-4 border-t border-[#E5EBE6] pt-4">
             <p class="text-xs text-[#819187]">
                 Keterangan Aktivitas
             </p>
@@ -168,11 +168,11 @@
     {{-- HISTORI PERUBAHAN DATA --}}
     <div class="mb-6">
 
-        <h2 class="mb-4 text-lg font-semibold text-[#173D30]">
+        <h2 class="mb-3 text-sm font-semibold text-[#173D30]">
             Histori Perubahan Data
         </h2>
 
-        <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
 
             @foreach ([
                 [
@@ -187,9 +187,9 @@
                 ],
             ] as $section)
 
-                <section class="overflow-hidden rounded-lg border border-[#DCE5DE] bg-white">
+                <section class="overflow-hidden border border-[#D8E2DA] bg-white">
 
-                    <div class="border-b border-[#E2E9E4] bg-[#F5F8F5] px-5 py-4">
+                    <div class="border-b border-[#E2E9E4] bg-[#E9F0EB] px-4 py-3">
 
                         <h3 class="text-sm font-bold text-[#173D30]">
                             {{ $section['title'] }}
@@ -201,7 +201,7 @@
 
                     </div>
 
-                    <div class="px-5 py-2">
+                    <div class="px-4 py-1">
 
                         @php
                             $visibleValues = array_intersect_key(
@@ -212,7 +212,7 @@
 
                         @forelse ($visibleValues as $key => $value)
 
-                            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-[#E5EBE6] py-4 last:border-b-0">
+                            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-[#E5EBE6] py-3 last:border-b-0">
 
                                 <p class="text-xs text-[#74877B]">
                                     {{ $fieldLabels[$key] }}
