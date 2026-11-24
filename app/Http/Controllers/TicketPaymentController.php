@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\TicketPaymentConfirmed;
 use App\Http\Requests\ReviewTicketPaymentRequest;
 use App\Http\Requests\SelectTicketPaymentRequest;
 use App\Http\Requests\SubmitTicketPaymentProofRequest;
@@ -146,7 +145,7 @@ class TicketPaymentController extends Controller
         }
 
         if ($order->issuedTickets->isEmpty()) {
-            app(IssueTicketsAfterPayment::class)->handle(new TicketPaymentConfirmed($order->code));
+            app(IssueTicketsAfterPayment::class)->issueForOrder($order->code);
             $order->load(['issuedTickets.visitor', 'issuedTickets.item']);
         }
 
@@ -198,7 +197,7 @@ class TicketPaymentController extends Controller
         );
 
         if ($order->issuedTickets->isEmpty()) {
-            app(IssueTicketsAfterPayment::class)->handle(new TicketPaymentConfirmed($order->code));
+            app(IssueTicketsAfterPayment::class)->issueForOrder($order->code);
             $order->load(['issuedTickets.visitor', 'issuedTickets.item']);
         }
 

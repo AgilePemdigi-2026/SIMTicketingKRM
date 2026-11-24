@@ -159,4 +159,35 @@ class ETicketQrCodeTest extends PostgresTicketTestCase
             ->get($this->endpoint($order).'/e-tiket')
             ->assertNotFound();
     }
+
+    public function test_legacy_paid_order_without_issued_tickets_auto_backfills_on_orders_eticket_and_pdf(): void
+    {
+        $order = $this->order();
+        $order->update(['status' => 'paid']);
+        $order->payment()->create([
+            'code' => (string) \Illuminate\Support\Str::uuid(),
+            'method' => 'qris',
+            'status' => 'paid',
+            'amount' => $order->total,
+            'paid_at' => now(),
+        ]);
+
+        $this->assertSame(0, DB::table('issued_tickets')->where('ticket_order_id', $order->id)->count());
+
+        $this->actingAs($order->user)
+            ->get('/wisatawan/pembelian-tiket/pesanan')
+            ->assertOk()
+            ->assertSee('Download E-Tiket');
+
+        $this->assertSame(2, DB::table('issued_tickets')->where('ticket_order_id', $order->id)->count());
+
+        DB::table('issued_tickets')->where('ticket_order_id', $order->id)->delete();
+
+        $this->actingAs($order->user)
+            ->get($this->endpoint($order).'/e-tiket/download')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->assertSame(2, DB::table('issued_tickets')->where('ticket_order_id', $order->id)->count());
+    }
 }
