@@ -10,6 +10,20 @@
                 : route('home')
         );
 
+    $currentRole = auth()->user()?->role;
+
+    $ticketHref = match ($currentRole) {
+        'admin' => route('admin.daftar-tiket.index'),
+        'petugas' => route('petugas.loket.index'),
+        default => \Illuminate\Support\Facades\Route::has('ticket-purchase.index') ? route('ticket-purchase.index') : null,
+    };
+
+    $reservasiHref = match ($currentRole) {
+        'admin' => route('admin.reservasi.preview'),
+        'petugas' => route('petugas.dashboard'),
+        default => route('wisatawan.reservasi.index'),
+    };
+
     $navItems = [
         [
             'label' => 'Beranda',
@@ -29,14 +43,15 @@
         ],
         [
             'label' => 'Tiket',
-            'href' => \Illuminate\Support\Facades\Route::has('ticket-purchase.index') ? route('ticket-purchase.index') : null,
-            'active' => request()->routeIs('ticket-purchase.index'),
+            'href' => $ticketHref,
+            'active' => request()->routeIs('ticket-purchase.index', 'admin.daftar-tiket.*', 'petugas.loket.*'),
         ],
         [
             'label' => 'Reservasi',
-            'href' => route('wisatawan.reservasi.index'),
+            'href' => $reservasiHref,
             'active' => request()->routeIs('wisatawan.reservasi.*')
-                || request()->routeIs('facility-reservation.payment.*'),
+                || request()->routeIs('facility-reservation.payment.*')
+                || request()->routeIs('admin.reservasi.*'),
         ],
         [
             'label' => 'Berita',
@@ -155,15 +170,13 @@
                 </a>
 
                 @auth
-                    @if (auth()->user()->role !== 'wisatawan')
-                        <form method="POST" action="{{ route('logout') }}" class="hidden xl:block">
-                            @csrf
-                            <button type="submit"
-                                    class="rounded border border-[#D7E3DA] px-3 py-2 text-xs font-semibold text-[#064631] hover:bg-[#EEF4EE]">
-                                Keluar
-                            </button>
-                        </form>
-                    @endif
+                    <form method="POST" action="{{ route('logout') }}" class="hidden xl:block">
+                        @csrf
+                        <button type="submit"
+                                class="rounded border border-[#D7E3DA] px-3 py-2 text-xs font-semibold text-[#064631] hover:bg-[#EEF4EE]">
+                            Keluar
+                        </button>
+                    </form>
                 @endauth
                 <!-- Menu mobile tanpa JavaScript -->
                 <details class="relative xl:hidden">
@@ -212,21 +225,19 @@
                         @endforeach
 
                         @auth
-                            @if (auth()->user()->role !== 'wisatawan')
-                                <form
-                                    method="POST"
-                                    action="{{ route('logout') }}"
-                                    class="mt-2 border-t border-[#D7E3DA] pt-2"
+                            <form
+                                method="POST"
+                                action="{{ route('logout') }}"
+                                class="mt-2 border-t border-[#D7E3DA] pt-2"
+                            >
+                                @csrf
+                                <button
+                                    type="submit"
+                                    class="block w-full px-3 py-2 text-left text-[13px] font-semibold text-[#064631] hover:bg-[#EEF4EE]"
                                 >
-                                    @csrf
-                                    <button
-                                        type="submit"
-                                        class="block w-full px-3 py-2 text-left text-[13px] font-semibold text-[#064631] hover:bg-[#EEF4EE]"
-                                    >
-                                        Keluar
-                                    </button>
-                                </form>
-                            @endif
+                                    Keluar
+                                </button>
+                            </form>
                         @endauth
                     </nav>
                 </details>

@@ -105,46 +105,46 @@ Route::middleware('auth')->group(function () {
     Route::get(
         '/destinasi',
         [\App\Http\Controllers\Wisatawan\DestinasiController::class, 'index']
-    )->middleware('role:wisatawan')
+    )->middleware('role:wisatawan,petugas,admin')
     ->name('wisatawan.destinasi');
 
     // Halaman Tentang Kebun Raya Mangrove
     Route::get(
         '/tentang',
         [\App\Http\Controllers\Wisatawan\TentangController::class, 'index']
-    )->middleware('role:wisatawan')
+    )->middleware('role:wisatawan,petugas,admin')
       ->name('wisatawan.tentang');
 
     // Halaman Kontak Wisatawan
     Route::get(
         '/kontak',
         [\App\Http\Controllers\Wisatawan\KontakController::class, 'index']
-    )->middleware('role:wisatawan')
+    )->middleware('role:wisatawan,petugas,admin')
       ->name('wisatawan.kontak');
 
     // Pengiriman pesan dari halaman Kontak ke Gmail.
     Route::post(
         '/kontak/kirim-pesan',
         [\App\Http\Controllers\Wisatawan\KontakController::class, 'kirimPesan']
-    )->middleware(['role:wisatawan', 'throttle:3,10'])
+    )->middleware(['role:wisatawan,petugas,admin', 'throttle:3,10'])
       ->name('wisatawan.kontak.kirim');
 
     // Detail informasi wahana
     Route::get('/wahana/{slug}', [
         WahanaController::class, 'show'
     ])->where('slug', '[a-z0-9-]+')
-    ->middleware('role:wisatawan')
+    ->middleware('role:wisatawan,petugas,admin')
     ->name('wahana.show');
 
     // Daftar Berita & Artikel
     Route::get('/berita', [BeritaController::class, 'index'])
-        ->middleware('role:wisatawan')
+        ->middleware('role:wisatawan,petugas,admin')
         ->name('wisatawan.berita.index');
 
     // Detail Artikel
     Route::get('/berita/{slug}', [BeritaController::class, 'show'])
         ->where('slug', '[a-z0-9-]+')
-        ->middleware('role:wisatawan')
+        ->middleware('role:wisatawan,petugas,admin')
         ->name('wisatawan.berita.show');
 
     // Halaman daftar dan pemilihan fasilitas

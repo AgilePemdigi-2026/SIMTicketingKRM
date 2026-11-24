@@ -11,11 +11,11 @@ class RoleMiddleware
     public function handle(
         Request $request,
         Closure $next,
-        string $role
+        string ...$roles
     ): Response {
         if (
             ! $request->user() ||
-            $request->user()->role !== $role
+            ! in_array($request->user()->role, $roles, true)
         ) {
             abort(403, 'Anda tidak memiliki akses ke halaman ini.');
         }

@@ -315,7 +315,7 @@ class TicketPaymentTest extends PostgresTicketTestCase
             ->assertJsonPath('payments.per_page', 20)->assertJsonCount(20, 'payments.data')
             ->assertJsonPath('payments.data.0.order.code', $order->code);
         $this->getJson('/petugas/pembayaran?page=2')->assertJsonCount(1, 'payments.data');
-        $this->get('/petugas/pembayaran')->assertOk()->assertSee('Verifikasi Pembayaran');
+        $this->get('/petugas/pembayaran')->assertOk()->assertSee('Bayar Cash Booking');
         $this->get('/petugas/dashboard')->assertOk()->assertSee(route('ticket-payment.staff.index'), false);
     }
 

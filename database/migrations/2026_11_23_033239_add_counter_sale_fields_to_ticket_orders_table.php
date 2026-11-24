@@ -9,12 +9,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $connection = app(TicketPurchaseDatabase::class)->connection();
-
-        if ($connection->getDriverName() !== 'pgsql') {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
             return;
         }
 
+        $database = app(TicketPurchaseDatabase::class);
+        if (! $database->supportsEnvironment()) {
+            return;
+        }
+
+        $connection = $database->connection();
         $schema = $connection->getSchemaBuilder();
 
         $schema->table('ticket_orders', function (Blueprint $table) {
@@ -41,11 +45,16 @@ return new class extends Migration
 
     public function down(): void
     {
-        $connection = app(TicketPurchaseDatabase::class)->connection();
-
-        if ($connection->getDriverName() !== 'pgsql') {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
             return;
         }
+
+        $database = app(TicketPurchaseDatabase::class);
+        if (! $database->supportsEnvironment()) {
+            return;
+        }
+
+        $connection = $database->connection();
 
         // Jangan rollback jika sudah ada pesanan tanpa akun.
         if ($connection->table('ticket_orders')

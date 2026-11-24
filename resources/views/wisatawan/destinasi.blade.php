@@ -96,8 +96,22 @@
                 @endforelse
             </dl>
 
-            @if (\Illuminate\Support\Facades\Route::has('ticket-purchase.index'))
-                <a href="{{ route('ticket-purchase.index') }}"
+            @php
+                $destinasiRole = auth()->user()?->role;
+                $destinasiTicketHref = match ($destinasiRole) {
+                    'admin' => route('admin.daftar-tiket.index'),
+                    'petugas' => route('petugas.loket.index'),
+                    default => \Illuminate\Support\Facades\Route::has('ticket-purchase.index') ? route('ticket-purchase.index') : null,
+                };
+                $destinasiReservasiHref = match ($destinasiRole) {
+                    'admin' => route('admin.reservasi.preview'),
+                    'petugas' => route('petugas.dashboard'),
+                    default => route('wisatawan.reservasi.index'),
+                };
+            @endphp
+
+            @if ($destinasiTicketHref)
+                <a href="{{ $destinasiTicketHref }}"
                    class="mt-4 flex min-h-11 w-full items-center justify-center bg-[#064631] px-3 py-3 text-center text-[13px] font-bold text-white transition hover:bg-[#2F795B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F795B]">
                     Beli Tiket
                 </a>
@@ -109,7 +123,7 @@
             @endif
 
             <a
-                href="{{ route('wisatawan.reservasi.index') }}"
+                href="{{ $destinasiReservasiHref }}"
                 class="mt-3 flex min-h-11 w-full items-center justify-center border border-[#064631] px-3 py-3 text-center text-[13px] font-bold text-[#064631] transition hover:bg-[#EEF4EE]"
             >
                 Reservasi Venue

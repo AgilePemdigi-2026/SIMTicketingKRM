@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TicketPaymentConfirmed;
 use App\Http\Requests\ReviewTicketPaymentRequest;
 use App\Http\Requests\SelectTicketPaymentRequest;
 use App\Http\Requests\SubmitTicketPaymentProofRequest;
+use App\Listeners\IssueTicketsAfterPayment;
 use App\Models\TicketOrder;
 use App\Models\TicketPayment;
 use App\Models\TicketPaymentSubmission;
@@ -143,6 +145,11 @@ class TicketPaymentController extends Controller
                 );
         }
 
+        if ($order->issuedTickets->isEmpty()) {
+            app(IssueTicketsAfterPayment::class)->handle(new TicketPaymentConfirmed($order->code));
+            $order->load(['issuedTickets.visitor', 'issuedTickets.item']);
+        }
+
         foreach ($order->issuedTickets as $ticket) {
             $qrCode = (new Builder())->build(
                 writer: new SvgWriter(),
@@ -189,6 +196,11 @@ class TicketPaymentController extends Controller
             403,
             'E-Tiket hanya dapat diunduh setelah pembayaran Lunas.'
         );
+
+        if ($order->issuedTickets->isEmpty()) {
+            app(IssueTicketsAfterPayment::class)->handle(new TicketPaymentConfirmed($order->code));
+            $order->load(['issuedTickets.visitor', 'issuedTickets.item']);
+        }
 
         // Pastikan E-Tiket sudah diterbitkan.
         abort_if(

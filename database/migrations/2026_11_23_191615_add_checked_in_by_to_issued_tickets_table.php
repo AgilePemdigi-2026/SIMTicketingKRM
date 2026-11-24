@@ -3,16 +3,22 @@
 use App\Support\TicketPurchaseDatabase;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        if (config('database.default') !== 'pgsql') {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
             return;
         }
 
-        $schema = app(TicketPurchaseDatabase::class)
+        $database = app(TicketPurchaseDatabase::class);
+        if (! $database->supportsEnvironment()) {
+            return;
+        }
+
+        $schema = $database
             ->connection()
             ->getSchemaBuilder();
 
@@ -26,11 +32,16 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (config('database.default') !== 'pgsql') {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
             return;
         }
 
-        $schema = app(TicketPurchaseDatabase::class)
+        $database = app(TicketPurchaseDatabase::class);
+        if (! $database->supportsEnvironment()) {
+            return;
+        }
+
+        $schema = $database
             ->connection()
             ->getSchemaBuilder();
 

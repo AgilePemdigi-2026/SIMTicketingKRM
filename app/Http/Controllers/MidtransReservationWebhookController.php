@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Services\FacilityReservationQrisWebhookService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Throwable;
 
 class MidtransReservationWebhookController extends Controller
 {
@@ -89,9 +91,11 @@ class MidtransReservationWebhookController extends Controller
         }
 
         if (!$signatureValid) {
-            return response()->json([
-                'message' => 'Signature tidak valid.',
-            ], 403);
+            if (!$this->verifyWithMidtransStatusApi($payload, $serverKey)) {
+                return response()->json([
+                    'message' => 'Signature tidak valid.',
+                ], 403);
+            }
         }
 
         // Signature sudah diverifikasi.
@@ -102,5 +106,44 @@ class MidtransReservationWebhookController extends Controller
         return response()->json([
             'message' => 'Notifikasi reservasi berhasil diproses.',
         ]);
+    }
+
+    private function verifyWithMidtransStatusApi(array $payload, string $serverKey): bool
+    {
+        if (
+            !str_starts_with($serverKey, 'SB-Mid-server-')
+            && !str_starts_with($serverKey, 'Mid-server-')
+        ) {
+            return false;
+        }
+
+        try {
+            $baseUrl = rtrim(
+                (string) config('midtrans.sandbox_url', 'https://api.sandbox.midtrans.com'),
+                '/'
+            );
+
+            $response = Http::withBasicAuth($serverKey, '')
+                ->acceptJson()
+                ->timeout((int) config('midtrans.timeout', 15))
+                ->get($baseUrl . '/v2/' . rawurlencode($payload['order_id']) . '/status');
+
+            if (!$response->successful()) {
+                return false;
+            }
+
+            $data = $response->json();
+            if (!is_array($data)) {
+                return false;
+            }
+
+            return ($data['order_id'] ?? null) === $payload['order_id']
+                && ($data['transaction_id'] ?? null) === $payload['transaction_id']
+                && ($data['transaction_status'] ?? null) === $payload['transaction_status']
+                && (string) ($data['gross_amount'] ?? null) === (string) $payload['gross_amount']
+                && (string) ($data['status_code'] ?? null) === (string) $payload['status_code'];
+        } catch (Throwable) {
+            return false;
+        }
     }
 }

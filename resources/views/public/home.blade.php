@@ -29,9 +29,22 @@
                 Nikmati wisata alam mangrove yang unik, hijau, dan edukatif di Kebun Raya Mangrove Surabaya.
             </p>
             <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-                {{-- Pembelian mengikuti ketersediaan route katalog master. --}}
-                @if (\Illuminate\Support\Facades\Route::has('ticket-purchase.index'))
-                    <a href="{{ route('ticket-purchase.index') }}"
+                {{-- Pembelian mengikuti ketersediaan route katalog master dan role pengguna. --}}
+                @php
+                    $homeRole = auth()->user()?->role;
+                    $homeTicketHref = match ($homeRole) {
+                        'admin' => route('admin.daftar-tiket.index'),
+                        'petugas' => route('petugas.loket.index'),
+                        default => \Illuminate\Support\Facades\Route::has('ticket-purchase.index') ? route('ticket-purchase.index') : null,
+                    };
+                    $homeReservasiHref = match ($homeRole) {
+                        'admin' => route('admin.reservasi.preview'),
+                        'petugas' => route('petugas.dashboard'),
+                        default => route('wisatawan.reservasi.index'),
+                    };
+                @endphp
+                @if ($homeTicketHref)
+                    <a href="{{ $homeTicketHref }}"
                        class="inline-flex min-h-11 items-center justify-center bg-[#064631] px-7 py-3 text-sm font-semibold text-white transition hover:bg-[#0a674a]">
                         Beli Tiket
                     </a>
@@ -105,7 +118,7 @@
                             <h3 class="text-[13px] font-semibold text-[#193B31]">{{ $item['nama'] }}</h3>
                             <p class="mt-1 flex-1 text-xs leading-5 text-[#718079]">{{ $item['kapasitas'] }}</p>
                             <a
-                                href="{{ route('wisatawan.reservasi.index') }}"
+                                href="{{ $homeReservasiHref }}"
                                 class="mt-3 flex min-h-9 items-center justify-center
                                     border border-[#064631] text-xs font-bold
                                     text-[#064631] transition hover:bg-[#EEF4EE]"
@@ -242,7 +255,7 @@
                             </p>
 
                             {{-- LINK DETAIL --}}
-                            @if (auth()->check() && auth()->user()->role === 'wisatawan')
+                            @if (auth()->check())
 
                                 <a
                                     href="{{ route('wisatawan.berita.show', $item['slug']) }}"
@@ -251,7 +264,7 @@
                                     Baca selengkapnya →
                                 </a>
 
-                            @elseif (!auth()->check())
+                            @else
 
                                 <a
                                     href="{{ route('login') }}"
@@ -259,12 +272,6 @@
                                 >
                                     Masuk untuk membaca →
                                 </a>
-
-                            @else
-
-                                <span class="mt-4 text-xs text-[#718079]">
-                                    Detail tersedia untuk akun wisatawan.
-                                </span>
 
                             @endif
 

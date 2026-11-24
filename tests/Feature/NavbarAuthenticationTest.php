@@ -29,4 +29,25 @@ class NavbarAuthenticationTest extends PostgresTicketTestCase
                 ->assertDontSee('action="'.route('logout').'"', false);
         }
     }
+
+    public function test_admin_and_petugas_can_access_public_info_pages_and_role_safe_navbar_links(): void
+    {
+        $admin = $this->account('admin');
+        $this->actingAs($admin)->get('/')->assertOk()
+            ->assertSee('href="'.route('admin.daftar-tiket.index').'"', false)
+            ->assertSee('href="'.route('admin.reservasi.preview').'"', false);
+        $this->actingAs($admin)->get('/berita')->assertOk();
+        $this->actingAs($admin)->get('/destinasi')->assertOk();
+        $this->actingAs($admin)->get('/tentang')->assertOk();
+        $this->actingAs($admin)->get('/kontak')->assertOk();
+
+        $petugas = $this->account('petugas');
+        $this->actingAs($petugas)->get('/')->assertOk()
+            ->assertSee('href="'.route('petugas.loket.index').'"', false)
+            ->assertSee('href="'.route('petugas.dashboard').'"', false);
+        $this->actingAs($petugas)->get('/berita')->assertOk();
+        $this->actingAs($petugas)->get('/destinasi')->assertOk();
+        $this->actingAs($petugas)->get('/tentang')->assertOk();
+        $this->actingAs($petugas)->get('/kontak')->assertOk();
+    }
 }

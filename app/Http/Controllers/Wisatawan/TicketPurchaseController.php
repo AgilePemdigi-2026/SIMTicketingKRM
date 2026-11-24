@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Wisatawan;
 
 use App\Contracts\TicketCatalogProvider;
+use App\Events\TicketPaymentConfirmed;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CheckoutTicketPurchaseRequest;
 use App\Http\Requests\PreviewTicketPurchaseRequest;
+use App\Listeners\IssueTicketsAfterPayment;
 use App\Models\TicketOrder;
 use App\Models\FacilityReservation;
 use App\Services\TicketPurchaseService;
@@ -47,8 +49,16 @@ class TicketPurchaseController extends Controller
     {
         $orders = TicketOrder::with([
             'items',
+            'issuedTickets',
             'payment.gatewayAttempts' => fn ($query) => $query->orderByDesc('id'),
         ])->where('user_id', $request->user()->getKey())->orderByDesc('created_at')->orderByDesc('id')->paginate(20);
+
+        foreach ($orders->getCollection() as $order) {
+            if ($order->status === 'paid' && $order->payment?->status === 'paid' && $order->issuedTickets->isEmpty()) {
+                app(IssueTicketsAfterPayment::class)->handle(new TicketPaymentConfirmed($order->code));
+                $order->load('issuedTickets');
+            }
+        }
 
         if ($request->expectsJson()) {
             return response()->json([
