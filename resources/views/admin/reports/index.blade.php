@@ -135,6 +135,148 @@
 
     </div>
 
+    {{-- FILTER PERIODE --}}
+    <section class="mb-6 rounded-lg border border-[#DCE5DE] bg-white">
+
+        <div class="border-b border-[#E2E9E4] px-5 py-5">
+
+            <h2 class="text-sm font-bold uppercase tracking-[0.08em] text-[#173D30]">
+                Filter Periode Laporan
+            </h2>
+
+            <p class="mt-1 text-xs text-[#819187]">
+                Pilih periode untuk menampilkan laporan operasional.
+            </p>
+
+        </div>
+
+        <form
+            id="report-period-form"
+            method="GET"
+            action="{{ route('admin.reports.index') }}"
+            class="p-5"
+        >
+
+            @if ($errors->any())
+
+                <div class="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700" role="alert">
+
+                    <p class="mb-2 font-semibold">
+                        Periode laporan tidak valid.
+                    </p>
+
+                    <ul class="list-disc space-y-1 pl-4">
+
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+
+                    </ul>
+
+                </div>
+
+            @endif
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+
+                <div>
+
+                    <label for="period" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                        Periode
+                    </label>
+
+                    <select
+                        name="period"
+                        id="period"
+                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65]"
+                    >
+
+                        <option value="daily" @selected($filters['period'] === 'daily')>
+                            Harian
+                        </option>
+
+                        <option value="weekly" @selected($filters['period'] === 'weekly')>
+                            Mingguan
+                        </option>
+
+                        <option value="monthly" @selected($filters['period'] === 'monthly')>
+                            Bulanan
+                        </option>
+
+                        <option value="custom" @selected($filters['period'] === 'custom')>
+                            Rentang Tanggal Custom
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label for="from" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                        Dari Tanggal
+                    </label>
+
+                    <input
+                        type="date"
+                        name="from"
+                        id="from"
+                        value="{{ $filters['from'] }}"
+                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] disabled:bg-[#F0F4F0] disabled:text-[#819187]"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label for="until" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                        Sampai Tanggal
+                    </label>
+
+                    <input
+                        type="date"
+                        name="until"
+                        id="until"
+                        value="{{ $filters['until'] }}"
+                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] disabled:bg-[#F0F4F0] disabled:text-[#819187]"
+                    >
+
+                </div>
+
+            </div>
+
+            <div class="mt-5 flex flex-wrap items-center justify-between gap-4">
+
+                <p class="text-xs leading-5 text-[#819187]">
+                    Periode maksimal 366 hari.
+                    Pilih Custom untuk menentukan tanggal secara manual.
+                    Semua tanggal menggunakan WIB.
+                </p>
+
+                <div class="flex flex-wrap gap-2">
+
+                    <a
+                        href="{{ route('admin.reports.index') }}"
+                        class="inline-flex min-h-10 items-center justify-center border border-[#CBD9CF] px-4 py-2.5 text-xs font-semibold text-[#355D47] hover:bg-[#EAF2EC]"
+                    >
+                        Reset Filter
+                    </a>
+
+                    <button
+                        type="submit"
+                        class="inline-flex min-h-10 items-center justify-center bg-[#174B38] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#073B2D]"
+                    >
+                        Tampilkan Laporan
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </section>
+
     {{-- PERIODE LAPORAN --}}
     <section class="mb-6 rounded-lg border border-[#DCE5DE] bg-white p-5">
 
@@ -158,7 +300,12 @@
             </div>
 
             <span class="rounded-sm bg-[#E9F4EC] px-3 py-2 text-xs font-semibold text-[#355D47]">
-                Bulan Berjalan
+                {{ match ($filters['period']) {
+                    'daily' => 'Hari Ini',
+                    'weekly' => '7 Hari Terakhir',
+                    'monthly' => 'Bulan Berjalan',
+                    'custom' => 'Periode Custom',
+                } }}
             </span>
 
         </div>
@@ -259,6 +406,49 @@
         </div>
 
     @endif
+
+    {{-- GRAFIK OPERASIONAL --}}
+    <div class="mb-6 grid grid-cols-1 gap-5">
+
+        @include('admin.reports.partials.chart', [
+            'title' => 'Grafik Pendapatan Harian',
+            'description' => 'Perbandingan pendapatan tiket dan reservasi lunas berdasarkan tanggal pembayaran (Rp).',
+            'isMoney' => true,
+            'emptyMessage' => 'Belum ada pendapatan pada periode ini.',
+            'series' => [
+                [
+                    'key' => 'pendapatan_tiket',
+                    'label' => 'Pendapatan Tiket',
+                    'color' => '#174B38',
+                ],
+                [
+                    'key' => 'pendapatan_reservasi',
+                    'label' => 'Pendapatan Reservasi',
+                    'color' => '#A1C977',
+                ],
+            ],
+        ])
+
+        @include('admin.reports.partials.chart', [
+            'title' => 'Grafik Tiket dan Kunjungan',
+            'description' => 'Perbandingan E-Tiket yang diterbitkan dan kunjungan aktual berdasarkan check-in.',
+            'isMoney' => false,
+            'emptyMessage' => 'Belum ada penerbitan tiket atau check-in pada periode ini.',
+            'series' => [
+                [
+                    'key' => 'tiket_terbit',
+                    'label' => 'E-Tiket Terbit',
+                    'color' => '#527A65',
+                ],
+                [
+                    'key' => 'pengunjung_checkin',
+                    'label' => 'Pengunjung Check-in',
+                    'color' => '#A1C977',
+                ],
+            ],
+        ])
+
+    </div>
 
     {{-- METODE PEMBAYARAN --}}
     <section class="mb-6 overflow-hidden border border-[#DCE5DE] bg-white">
@@ -577,3 +767,33 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+    (() => {
+        const form = document.getElementById('report-period-form');
+
+        if (!form) {
+            return;
+        }
+
+        const period = form.querySelector('#period');
+        const from = form.querySelector('#from');
+        const until = form.querySelector('#until');
+
+        function syncReportPeriod() {
+            const custom = period.value === 'custom';
+
+            from.disabled = !custom;
+            until.disabled = !custom;
+
+            from.required = custom;
+            until.required = custom;
+        }
+
+        period.addEventListener('change', syncReportPeriod);
+
+        syncReportPeriod();
+    })();
+</script>
+@endpush
