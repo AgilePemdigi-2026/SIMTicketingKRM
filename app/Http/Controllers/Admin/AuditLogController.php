@@ -16,6 +16,8 @@ class AuditLogController extends Controller
     private const ACTION_LABELS = [
         'login' => 'Login',
         'logout' => 'Logout',
+        'profile_updated' => 'Perubahan Profil',
+        'password_updated' => 'Perubahan Password',
         'payment_confirmed' => 'Konfirmasi Cash',
         'qris_payment_confirmed' => 'Konfirmasi QRIS',
         'ticket_checked_in' => 'Check-in E-Tiket',

@@ -315,39 +315,10 @@
             {{-- ADMIN NOTIFICATIONS --}}
             <x-admin-notifications/>
 
-{{-- PROFILE --}}
-            <div class="flex shrink-0 items-center gap-2 border-l border-[#DCE5DE] pl-2 sm:gap-3 sm:pl-4">
+{{-- ADMIN PROFILE --}}
+            <x-admin-profile-menu/>
 
-                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8F1EA] text-base font-semibold text-[#174B38]">
-
-                    {{ $adminInitial }}
-
-                </div>
-
-                <div class="hidden sm:block">
-
-                    <p class="max-w-[150px] truncate text-xs font-semibold text-[#173D30]">
-
-                        {{ $adminName }}
-
-                    </p>
-
-                    <p class="mt-1 text-[10px] text-[#819387]">
-
-                        Administrator
-
-                    </p>
-
-                </div>
-
-                <x-admin-icon
-                    name="chevron"
-                    class="hidden h-3 w-3 text-[#527A65] sm:block"
-                />
-
-            </div>
-
-        </header>
+</header>
 
         {{-- PAGE CONTENT --}}
         <main id="admin-main-content" class="min-w-0 px-3 py-4 sm:px-4 sm:py-6 lg:px-7">

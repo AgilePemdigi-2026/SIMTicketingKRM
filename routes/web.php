@@ -350,6 +350,33 @@ Route::middleware('auth')->group(function () {
     // Master Data Admin
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
 
+        // Profil akun Admin.
+        Route::get('/profile', [
+            \App\Http\Controllers\Admin\ProfileController::class,
+            'show',
+        ])->name('profile.show');
+
+        Route::get('/profile/edit', [
+            \App\Http\Controllers\Admin\ProfileController::class,
+            'edit',
+        ])->name('profile.edit');
+
+        Route::put('/profile', [
+            \App\Http\Controllers\Admin\ProfileController::class,
+            'update',
+        ])->name('profile.update');
+
+        Route::get('/profile/password', [
+            \App\Http\Controllers\Admin\ProfileController::class,
+            'editPassword',
+        ])->name('profile.password.edit');
+
+        Route::put('/profile/password', [
+            \App\Http\Controllers\Admin\ProfileController::class,
+            'updatePassword',
+        ])->middleware('throttle:5,1')
+          ->name('profile.password.update');
+
         // Notifikasi operasional Admin.
         Route::get('/notifications', [
             \App\Http\Controllers\Admin\NotificationController::class,
