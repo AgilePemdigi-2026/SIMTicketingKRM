@@ -27,6 +27,7 @@ class AuditLogService
         'checked_in_by',
         'confirmed_by',
         'role',
+        'is_active',
         'sale_channel',
         'participant_count',
         'id_sesi',
