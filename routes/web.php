@@ -353,6 +353,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/audit-log', [AuditLogController::class, 'index'])
             ->name('audit-log.index');
 
+        Route::get('/audit-log/export', [AuditLogController::class, 'export'])
+            ->name('audit-log.export');
+
         Route::get('/audit-log/{auditLog}', [AuditLogController::class, 'show'])
             ->whereNumber('auditLog')
             ->name('audit-log.show');

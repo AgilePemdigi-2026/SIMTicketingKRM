@@ -110,7 +110,7 @@
         </div>
 
         <a
-            href="{{ route('admin.audit-log.index') }}"
+            href="{{ route('admin.audit-log.index', request()->only(['search', 'module', 'from', 'until', 'page'])) }}"
             class="inline-flex items-center justify-center border border-[#527A65] px-5 py-3 text-sm font-semibold text-[#315B46] transition hover:bg-[#E9F0EB]"
         >
             Kembali

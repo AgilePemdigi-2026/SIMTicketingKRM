@@ -78,6 +78,189 @@
         </p>
     </div>
 
+    {{-- FILTER AKTIVITAS --}}
+    <section class="mb-6 rounded-lg border border-[#DCE5DE] bg-white">
+
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2E9E4] px-5 py-5">
+
+            <div>
+                <h2 class="text-sm font-bold uppercase tracking-[0.08em] text-[#173D30]">
+                    Filter Aktivitas
+                </h2>
+
+                <p class="mt-1 text-xs text-[#819187]">
+                    Cari dan saring histori aktivitas pengguna dan sistem.
+                </p>
+            </div>
+
+            @if ($logs->total() > 0 && ! $errors->any())
+                <a
+                    href="{{ route('admin.audit-log.export', $filters) }}"
+                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-[#174B38] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#073B2D]"
+                >
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+
+                    Export Log
+                </a>
+            @endif
+
+        </div>
+
+        <form
+            method="GET"
+            action="{{ route('admin.audit-log.index') }}"
+            class="p-5"
+        >
+
+            @if ($errors->any())
+                <div class="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700" role="alert">
+                    <p class="mb-2 font-semibold">
+                        Filter tidak valid.
+                    </p>
+
+                    <ul class="list-disc space-y-1 pl-4">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+
+                {{-- CARI AKTIVITAS --}}
+                <div>
+                    <label for="search" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                        Cari Aktivitas
+                    </label>
+
+                    <div class="relative">
+                        <svg class="pointer-events-none absolute left-3 top-3 h-4 w-4 text-[#819187]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7"/>
+                            <path d="m16 16 4 4" stroke-linecap="round"/>
+                        </svg>
+
+                        <input
+                            type="search"
+                            id="search"
+                            name="search"
+                            value="{{ $filters['search'] ?? '' }}"
+                            maxlength="150"
+                            placeholder="Cari aktivitas..."
+                            class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white pl-9 pr-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] focus:ring-1 focus:ring-[#527A65]"
+                        >
+                    </div>
+                </div>
+
+                {{-- FILTER MODUL --}}
+                <div>
+                    <label for="module" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                        Modul
+                    </label>
+
+                    <select
+                        id="module"
+                        name="module"
+                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] focus:ring-1 focus:ring-[#527A65]"
+                    >
+                        <option value="">Semua Modul</option>
+
+                        @foreach ($modules as $module)
+                            <option
+                                value="{{ $module }}"
+                                @selected(($filters['module'] ?? '') === $module)
+                            >
+                                {{ $module }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- TANGGAL AWAL --}}
+                <div>
+                    <label for="from" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                        Dari Tanggal
+                    </label>
+
+                    <input
+                        type="date"
+                        id="from"
+                        name="from"
+                        value="{{ $filters['from'] ?? '' }}"
+                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] focus:ring-1 focus:ring-[#527A65]"
+                    >
+                </div>
+
+                {{-- TANGGAL AKHIR --}}
+                <div>
+                    <label for="until" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                        Sampai Tanggal
+                    </label>
+
+                    <input
+                        type="date"
+                        id="until"
+                        name="until"
+                        value="{{ $filters['until'] ?? '' }}"
+                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] focus:ring-1 focus:ring-[#527A65]"
+                    >
+                </div>
+
+            </div>
+
+            <div class="mt-5 flex flex-wrap items-center justify-between gap-4">
+
+                <p class="text-xs leading-5 text-[#819187]">
+                    Filter tanggal menggunakan zona waktu WIB.
+                    Statistik di atas menunjukkan seluruh aktivitas.
+                </p>
+
+                <div class="flex flex-wrap items-center gap-2">
+
+                    <a
+                        href="{{ route('admin.audit-log.index') }}"
+                        class="inline-flex min-h-10 items-center justify-center border border-[#CBD9CF] px-4 py-2.5 text-xs font-semibold text-[#355D47] transition hover:bg-[#EAF2EC]"
+                    >
+                        Reset Filter
+                    </a>
+
+                    <button
+                        type="submit"
+                        class="inline-flex min-h-10 items-center justify-center bg-[#174B38] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#073B2D]"
+                    >
+                        Terapkan Filter
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </section>
+
+    {{-- HASIL FILTER --}}
+    @if (! empty($filters))
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3 border border-[#D5E5DA] bg-[#EFF6F0] px-4 py-3 text-xs text-[#355D47]">
+
+            <p>
+                Ditemukan
+                <strong>{{ number_format($logs->total(), 0, ',', '.') }}</strong>
+                aktivitas sesuai filter.
+            </p>
+
+            <a
+                href="{{ route('admin.audit-log.index') }}"
+                class="font-semibold underline"
+            >
+                Hapus semua filter
+            </a>
+
+        </div>
+    @endif
+
     {{-- DAFTAR AKTIVITAS --}}
     <div class="overflow-hidden border border-[#DCE5DE] bg-white">
 
@@ -176,7 +359,7 @@
 
                             <td class="px-4 py-4">
                                 <a
-                                    href="{{ route('admin.audit-log.show', $log) }}"
+                                    href="{{ route('admin.audit-log.show', array_merge(['auditLog' => $log->id], $filters, ['page' => $logs->currentPage()])) }}"
                                     class="inline-flex min-h-9 items-center justify-center border border-[#CBD9CF] px-4 py-2 font-medium text-[#355D47] transition hover:bg-[#EAF2EC]"
                                 >
                                     Detail
@@ -194,7 +377,11 @@
                                 </p>
 
                                 <p class="mt-2 text-xs text-[#819187]">
-                                    Histori aktivitas akan muncul setelah sistem mencatat aktivitas pengguna.
+                                    @if (! empty($filters))
+                                        Coba gunakan kata pencarian atau rentang tanggal yang berbeda.
+                                    @else
+                                        Histori aktivitas akan muncul setelah sistem mencatat aktivitas pengguna.
+                                    @endif
                                 </p>
                             </td>
                         </tr>
