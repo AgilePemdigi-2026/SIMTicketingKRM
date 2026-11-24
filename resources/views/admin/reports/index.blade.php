@@ -310,6 +310,54 @@
 
         </div>
 
+        {{-- EXPORT LAPORAN --}}
+        <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#E2E9E4] pt-4">
+
+            <div>
+                <p class="text-xs font-semibold text-[#355D47]">
+                    Unduh Laporan Operasional
+                </p>
+
+                <p class="mt-1 text-[11px] leading-5 text-[#819187]">
+                    File laporan mengikuti periode yang sedang ditampilkan.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+
+                <a
+                    href="{{ route('admin.reports.export.excel', [
+                        'period' => 'custom',
+                        'from' => $period['from'],
+                        'until' => $period['until'],
+                    ]) }}"
+                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-[#217346] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#185C37]"
+                >
+
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="h-4 w-4"
+                        aria-hidden="true"
+                    >
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                        <path d="M8 12h8M8 16h8M12 12v8M8 20h8"/>
+                    </svg>
+
+                    Export Excel
+
+                </a>
+
+            </div>
+
+        </div>
+
         <div class="mt-4 border-t border-[#E2E9E4] pt-3 text-xs text-[#819187]">
             Data dihitung pada
             {{ \Carbon\CarbonImmutable::parse($generatedAt)->timezone('Asia/Jakarta')->format('d/m/Y H:i:s') }}

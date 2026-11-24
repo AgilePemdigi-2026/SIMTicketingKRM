@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\OperationalReportService;
+use App\Services\OperationalReportExcelService;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,6 +48,60 @@ class OperationalReportController extends Controller
             'generatedAt' => $report['generated_at'],
             'filters' => $filters,
         ]);
+    }
+
+    public function exportExcel(
+        Request $request,
+        OperationalReportService $service,
+        OperationalReportExcelService $excelService
+    ): StreamedResponse|RedirectResponse {
+        try {
+            $filters = $this->resolvePeriod($request);
+        } catch (ValidationException $exception) {
+            if ($request->expectsJson()) {
+                throw $exception;
+            }
+
+            return redirect()
+                ->route('admin.reports.index')
+                ->withErrors($exception->errors());
+        }
+
+        $report = $service->generate(
+            $filters['from'],
+            $filters['until']
+        );
+
+        $workbook = $excelService->build($report);
+
+        $filename = 'laporan-operasional-'
+            .str_replace('-', '', $filters['from'])
+            .'-'
+            .str_replace('-', '', $filters['until'])
+            .'.xlsx';
+
+        return response()->streamDownload(
+            function () use ($workbook) {
+                try {
+                    $writer = new Xlsx($workbook);
+
+                    $writer->save('php://output');
+                } finally {
+                    $workbook->disconnectWorksheets();
+                }
+            },
+            $filename,
+            [
+                'Content-Type' =>
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+
+                'Cache-Control' =>
+                    'private, no-store',
+
+                'X-Content-Type-Options' =>
+                    'nosniff',
+            ]
+        );
     }
 
     private function resolvePeriod(Request $request): array

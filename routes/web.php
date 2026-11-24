@@ -354,6 +354,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/reports', [OperationalReportController::class, 'index'])
             ->name('reports.index');
 
+        Route::get('/reports/export/excel', [OperationalReportController::class, 'exportExcel'])
+            ->name('reports.export.excel');
+
         // Audit Log - Monitoring Aktivitas Pengguna dan Sistem.
         Route::get('/audit-log', [AuditLogController::class, 'index'])
             ->name('audit-log.index');
