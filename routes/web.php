@@ -7,6 +7,7 @@ use App\Http\Controllers\Wisatawan\ProfileController;
 use App\Http\Controllers\Admin\WahanaController as AdminWahanaController;
 use App\Http\Controllers\Admin\DaftarTiketController;
 use App\Http\Controllers\Admin\FasilitasController;
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\KontenBeritaController;
 use App\Http\Controllers\Admin\KontenGaleriController;
 use App\Http\Controllers\Admin\InfoDestinasiController;
@@ -347,6 +348,15 @@ Route::middleware('auth')->group(function () {
 
     // Master Data Admin
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+
+        // Audit Log - Monitoring Aktivitas Pengguna dan Sistem.
+        Route::get('/audit-log', [AuditLogController::class, 'index'])
+            ->name('audit-log.index');
+
+        Route::get('/audit-log/{auditLog}', [AuditLogController::class, 'show'])
+            ->whereNumber('auditLog')
+            ->name('audit-log.show');
+
         Route::resource('wahana', AdminWahanaController::class)
             ->except(['show']);
 

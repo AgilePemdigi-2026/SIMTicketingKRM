@@ -48,6 +48,11 @@
                 'route' => 'admin.konten-berita.index',
                 'active' => 'admin.konten-berita.*',
             ],
+            [
+                'label' => 'Audit Log',
+                'route' => 'admin.audit-log.index',
+                'active' => 'admin.audit-log.*',
+            ],
         ];
     @endphp
     <aside class="flex w-full shrink-0 flex-col bg-[#073B2D] text-white lg:sticky lg:top-0 lg:h-screen lg:w-[250px]">
@@ -124,7 +129,6 @@
                     'Monitoring Pendapatan',
                     'Manajemen Pengguna',
                     'Laporan',
-                    'Audit Log',
                 ] as $label)
                     <div class="px-4 py-2 text-[12px] text-white/40">
                         {{ $label }}
