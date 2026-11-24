@@ -80,7 +80,7 @@
         [
             'label' => 'Manajemen Konten',
             'route' => 'admin.konten-berita.index',
-            'active' => 'admin.konten-berita.*',
+            'active' => 'admin.konten-*',
             'icon' => 'file',
         ],
         [
@@ -118,7 +118,7 @@
     <aside class="flex w-full shrink-0 flex-col bg-[#0B372D] text-white lg:sticky lg:top-0 lg:h-screen lg:w-[clamp(220px,14.4vw,300px)]">
 
         {{-- BRAND --}}
-        <div class="flex items-center justify-between gap-3 border-b border-white/15 px-5 py-5 lg:min-h-[108px] lg:py-6">
+        <div class="flex items-center justify-between gap-2 border-b border-white/15 px-3 py-4 sm:gap-3 sm:px-5 lg:min-h-[108px] lg:py-6">
 
             <div class="flex items-center gap-3">
 
@@ -150,7 +150,7 @@
             </div>
 
             {{-- MOBILE MENU --}}
-            <details class="relative lg:hidden">
+            <details id="admin-mobile-menu" class="relative shrink-0 lg:hidden">
 
                 <summary class="flex cursor-pointer list-none items-center gap-2 border border-white/30 px-3 py-2 text-xs [&::-webkit-details-marker]:hidden">
 
@@ -163,13 +163,14 @@
 
                 </summary>
 
-                <nav class="absolute right-0 top-full z-50 mt-2 w-64 border border-[#D8E3DB] bg-white p-2 text-[#183D32] shadow-lg">
+                <nav aria-label="Navigasi Admin Mobile" class="absolute right-0 top-full z-50 mt-2 max-h-[65dvh] w-64 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain border border-[#D8E3DB] bg-white p-2 text-[#183D32] shadow-lg">
 
                     @foreach ($menuAdmin as $menu)
 
                         @if ($menu['route'] && \Illuminate\Support\Facades\Route::has($menu['route']))
 
                             <a href="{{ route($menu['route']) }}"
+                               @if(request()->routeIs($menu['active'])) aria-current="page" @endif
                                class="flex items-center gap-3 px-3 py-2.5 text-xs {{ request()->routeIs($menu['active']) ? 'bg-[#E9F0EA] font-bold' : 'hover:bg-[#F3F6F3]' }}">
 
                                 <x-admin-icon :name="$menu['icon']" class="h-4 w-4"/>
@@ -218,7 +219,7 @@
         </div>
 
         {{-- DESKTOP NAVIGATION --}}
-        <nav class="hidden flex-1 overflow-y-auto px-3 py-4 lg:block">
+        <nav aria-label="Navigasi Admin Desktop" class="hidden min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 lg:block">
 
             @foreach ($menuAdmin as $menu)
 
@@ -290,10 +291,10 @@
     <div class="min-w-0 flex-1">
 
         {{-- TOPBAR --}}
-        <header class="flex min-h-[68px] items-center gap-4 border-b border-[#DCE5DE] bg-white px-4 lg:px-7">
+        <header class="flex min-h-[68px] min-w-0 items-center gap-2 border-b border-[#DCE5DE] bg-white px-3 sm:gap-4 sm:px-4 lg:px-7">
 
             {{-- Global search preview --}}
-            <div class="flex min-w-0 flex-1 items-center gap-3 border border-[#D7E2D9] bg-[#F3F6F3] px-4 py-3">
+            <div class="flex min-w-0 flex-1 items-center gap-2 border border-[#D7E2D9] bg-[#F3F6F3] px-2 py-3 sm:gap-3 sm:px-4">
 
                 <x-admin-icon
                     name="search"
@@ -325,7 +326,7 @@
             </button>
 
             {{-- PROFILE --}}
-            <div class="flex shrink-0 items-center gap-3 border-l border-[#DCE5DE] pl-4">
+            <div class="flex shrink-0 items-center gap-2 border-l border-[#DCE5DE] pl-2 sm:gap-3 sm:pl-4">
 
                 <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8F1EA] text-base font-semibold text-[#174B38]">
 
@@ -359,7 +360,7 @@
         </header>
 
         {{-- PAGE CONTENT --}}
-        <main class="px-4 py-6 lg:px-7 lg:py-6">
+        <main id="admin-main-content" class="min-w-0 px-3 py-4 sm:px-4 sm:py-6 lg:px-7">
 
             @yield('content')
 

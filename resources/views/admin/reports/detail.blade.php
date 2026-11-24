@@ -185,7 +185,7 @@
 
             @endif
 
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
 
                 <div>
 
@@ -550,7 +550,7 @@
 
         </div>
 
-        <div class="overflow-x-auto">
+        <div tabindex="0" role="region" aria-label="Tabel data yang dapat digeser" class="min-w-0 max-w-full overflow-x-auto focus-visible:outline-2 focus-visible:outline-[#527A65]">
 
             <table class="w-full min-w-[950px] border-collapse text-xs">
 
@@ -661,7 +661,7 @@
 
         </div>
 
-        <div class="overflow-x-auto">
+        <div tabindex="0" role="region" aria-label="Tabel data yang dapat digeser" class="min-w-0 max-w-full overflow-x-auto focus-visible:outline-2 focus-visible:outline-[#527A65]">
 
             <table class="w-full min-w-[500px] border-collapse text-xs">
 
@@ -744,7 +744,7 @@
 
         </div>
 
-        <div class="overflow-x-auto">
+        <div tabindex="0" role="region" aria-label="Tabel data yang dapat digeser" class="min-w-0 max-w-full overflow-x-auto focus-visible:outline-2 focus-visible:outline-[#527A65]">
 
             <table class="w-full min-w-[1450px] border-collapse text-xs">
 

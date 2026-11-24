@@ -254,7 +254,7 @@
     {{-- ACTIVITY TABLE --}}
     <section class="overflow-hidden border border-[#D8E2DA] bg-white">
 
-        <div class="overflow-x-auto">
+        <div tabindex="0" role="region" aria-label="Tabel data yang dapat digeser" class="min-w-0 max-w-full overflow-x-auto focus-visible:outline-2 focus-visible:outline-[#527A65]">
 
             <table class="w-full min-w-[950px] table-fixed border-collapse text-left">
 
