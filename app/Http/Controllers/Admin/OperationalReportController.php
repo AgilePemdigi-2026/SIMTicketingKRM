@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\OperationalReportService;
+use App\Services\CategorizedReportService;
+use App\Services\CategorizedReportExcelService;
 use App\Services\OperationalReportExcelService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
@@ -35,12 +37,24 @@ class OperationalReportController extends Controller
                 ->withErrors($exception->errors());
         }
 
+        $category = $this->category($request);
+        if ($category !== null) {
+            $report = app(CategorizedReportService::class)->generate(
+                $category, $filters['from'], $filters['until']
+            );
+            return view('admin.reports.category', compact('report'));
+        }
+
         $report = $service->generate(
             $filters['from'],
             $filters['until']
         );
 
-        return view('admin.reports.index', [
+        return view(
+            $request->query('view') === 'detail'
+                ? 'admin.reports.detail'
+                : 'admin.reports.index',
+            [
             'report' => $report,
             'period' => $report['period'],
             'summary' => $report['summary'],
@@ -67,6 +81,25 @@ class OperationalReportController extends Controller
             return redirect()
                 ->route('admin.reports.index')
                 ->withErrors($exception->errors());
+        }
+
+        $category = $this->category($request);
+        if ($category !== null) {
+            $report = app(CategorizedReportService::class)->generate(
+                $category, $filters['from'], $filters['until']
+            );
+            $workbook = app(CategorizedReportExcelService::class)->build($report);
+            return response()->streamDownload(function () use ($workbook) {
+                try {
+                    (new Xlsx($workbook))->save('php://output');
+                } finally {
+                    $workbook->disconnectWorksheets();
+                }
+            }, $this->categoryFilename($report, 'xlsx'), [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Cache-Control' => 'private, no-store',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
         }
 
         $report = $service->generate(
@@ -120,6 +153,30 @@ class OperationalReportController extends Controller
             return redirect()
                 ->route('admin.reports.index')
                 ->withErrors($exception->errors());
+        }
+
+        $category = $this->category($request);
+        if ($category !== null) {
+            $report = app(CategorizedReportService::class)->generate(
+                $category, $filters['from'], $filters['until']
+            );
+            $pdf = Pdf::loadView('admin.reports.category-pdf', compact('report'))
+                ->setPaper('a4', 'landscape')->setOptions([
+                    'isRemoteEnabled' => false,
+                    'isPhpEnabled' => false,
+                    'isJavascriptEnabled' => false,
+                    'defaultFont' => 'DejaVu Sans',
+                ]);
+            $pdf->render();
+            $dompdf = $pdf->getDomPDF();
+            $canvas = $dompdf->getCanvas();
+            $font = $dompdf->getFontMetrics()->getFont('DejaVu Sans', 'normal');
+            $canvas->page_text(30, $canvas->get_height() - 25,
+                'MangroTix | Halaman {PAGE_NUM} / {PAGE_COUNT}', $font, 8);
+            $response = $pdf->download($this->categoryFilename($report, 'pdf'));
+            $response->headers->set('Cache-Control', 'private, no-store');
+            $response->headers->set('X-Content-Type-Options', 'nosniff');
+            return $response;
         }
 
         $report = $service->generate(
@@ -191,6 +248,25 @@ class OperationalReportController extends Controller
         );
 
         return $response;
+    }
+
+    private function category(Request $request): ?string
+    {
+        $category = $request->query('category');
+        if ($category === null) {
+            return null;
+        }
+        abort_unless(is_string($category) && array_key_exists(
+            $category, CategorizedReportService::CATEGORIES
+        ), 404);
+        return $category;
+    }
+
+    private function categoryFilename(array $report, string $extension): string
+    {
+        return 'laporan-'.$report['category'].'-'
+            .str_replace('-', '', $report['period']['from']).'-'
+            .str_replace('-', '', $report['period']['until']).'.'.$extension;
     }
 
     private function resolvePeriod(Request $request): array

@@ -454,7 +454,7 @@ class AdminOperationalReportTest extends PostgresTicketTestCase
     // OR-UI-06
     public function test_report_displays_operational_sections(): void
     {
-        $this->index()
+        $this->index(['view' => 'detail'])
             ->assertOk()
             ->assertSee('Ringkasan Operasional')
             ->assertSee('Total Pendapatan Operasional')
@@ -469,7 +469,7 @@ class AdminOperationalReportTest extends PostgresTicketTestCase
     {
         $this->createPaidOrder();
 
-        $this->index(['period' => 'daily'])
+        $this->index(['period' => 'daily', 'view' => 'detail'])
             ->assertOk()
             ->assertSee('Grafik Pendapatan Harian')
             ->assertSee('Grafik Tiket dan Kunjungan')
@@ -487,10 +487,10 @@ class AdminOperationalReportTest extends PostgresTicketTestCase
     public function test_empty_report_displays_zero_state(): void
     {
         $response = $this->index(
-            $this->customPeriod(
+            array_merge($this->customPeriod(
                 '2020-01-01',
                 '2020-01-03'
-            )
+            ), ['view' => 'detail'])
         );
 
         $response
@@ -540,7 +540,7 @@ class AdminOperationalReportTest extends PostgresTicketTestCase
     {
         $this->seedReport();
 
-        $this->index(['period' => 'daily'])
+        $this->index(['period' => 'daily', 'view' => 'detail'])
             ->assertOk()
             ->assertDontSee('Pemesan Export Tes')
             ->assertDontSee('TES-EXPORT-ID')
