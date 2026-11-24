@@ -354,6 +354,35 @@
 
                 </a>
 
+                <a
+                    href="{{ route('admin.reports.export.pdf', [
+                        'period' => 'custom',
+                        'from' => $period['from'],
+                        'until' => $period['until'],
+                    ]) }}"
+                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-[#B84646] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#963737]"
+                >
+
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="h-4 w-4"
+                        aria-hidden="true"
+                    >
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                        <path d="M8 13h8M8 17h8"/>
+                    </svg>
+
+                    Export PDF
+
+                </a>
+
             </div>
 
         </div>

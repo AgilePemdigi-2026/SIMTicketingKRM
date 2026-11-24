@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\OperationalReportService;
 use App\Services\OperationalReportExcelService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Response;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Carbon\CarbonImmutable;
@@ -102,6 +104,93 @@ class OperationalReportController extends Controller
                     'nosniff',
             ]
         );
+    }
+
+    public function exportPdf(
+        Request $request,
+        OperationalReportService $service
+    ): Response|RedirectResponse {
+        try {
+            $filters = $this->resolvePeriod($request);
+        } catch (ValidationException $exception) {
+            if ($request->expectsJson()) {
+                throw $exception;
+            }
+
+            return redirect()
+                ->route('admin.reports.index')
+                ->withErrors($exception->errors());
+        }
+
+        $report = $service->generate(
+            $filters['from'],
+            $filters['until']
+        );
+
+        $filename = 'laporan-operasional-'
+            .str_replace('-', '', $filters['from'])
+            .'-'
+            .str_replace('-', '', $filters['until'])
+            .'.pdf';
+
+        $pdf = Pdf::loadView(
+            'admin.reports.pdf',
+            ['report' => $report]
+        )->setPaper('a4', 'landscape')
+            ->setOptions([
+                'isRemoteEnabled' => false,
+                'isPhpEnabled' => false,
+                'isJavascriptEnabled' => false,
+                'defaultFont' => 'DejaVu Sans',
+            ]);
+
+        // Render once before drawing the page footer.
+        $pdf->render();
+
+        $dompdf = $pdf->getDomPDF();
+
+        $canvas = $dompdf->getCanvas();
+
+        $font = $dompdf->getFontMetrics()->getFont(
+            'DejaVu Sans',
+            'normal'
+        );
+
+        $width = $canvas->get_width();
+
+        $height = $canvas->get_height();
+
+        $canvas->page_text(
+            30,
+            $height - 28,
+            'MangroTix | Laporan Operasional Kebun Raya Mangrove',
+            $font,
+            7,
+            [0.32, 0.48, 0.40]
+        );
+
+        $canvas->page_text(
+            $width - 130,
+            $height - 28,
+            'Halaman {PAGE_NUM} / {PAGE_COUNT}',
+            $font,
+            7,
+            [0.32, 0.48, 0.40]
+        );
+
+        $response = $pdf->download($filename);
+
+        $response->headers->set(
+            'Cache-Control',
+            'private, no-store'
+        );
+
+        $response->headers->set(
+            'X-Content-Type-Options',
+            'nosniff'
+        );
+
+        return $response;
     }
 
     private function resolvePeriod(Request $request): array
