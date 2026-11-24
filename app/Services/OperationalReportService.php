@@ -422,7 +422,7 @@ class OperationalReportService
         $issuedDays = $this->aggregateByDay(
             $issuedTickets,
             'created_at',
-            false
+            true
         );
 
         $checkinDays = $this->aggregateByDay(
