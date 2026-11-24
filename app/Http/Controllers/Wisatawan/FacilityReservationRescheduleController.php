@@ -7,6 +7,7 @@ use App\Models\FacilityReservation;
 use App\Models\FacilityReservationRescheduleRequest;
 use App\Models\SesiFasilitas;
 use App\Services\FacilityReservationService;
+use App\Services\AuditLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -141,7 +142,7 @@ class FacilityReservationRescheduleController extends Controller
                 ]);
             }
 
-            FacilityReservationRescheduleRequest::create([
+            $rescheduleRequest = FacilityReservationRescheduleRequest::create([
                 'facility_reservation_id' => $reservation->id,
                 'user_id' => $request->user()->getKey(),
                 'original_visit_date' => $reservation->visit_date,
@@ -151,6 +152,25 @@ class FacilityReservationRescheduleController extends Controller
                 'reason' => $data['reason'],
                 'status' => 'pending',
             ]);
+
+            // Audit log pengajuan perubahan jadwal.
+            app(AuditLogService::class)->record(
+                actor: $request->user(),
+                module: 'Reservasi',
+                action: 'reschedule_requested',
+                description: 'Wisatawan mengajukan perubahan jadwal reservasi fasilitas.',
+                subjectType: 'FacilityReservationRescheduleRequest',
+                subjectId: $rescheduleRequest->getKey(),
+                oldValues: [
+                    'visit_date' => $reservation->visit_date->toDateString(),
+                    'id_sesi' => $reservation->id_sesi,
+                ],
+                newValues: [
+                    'status' => $rescheduleRequest->status,
+                    'requested_visit_date' => $rescheduleRequest->requested_visit_date->toDateString(),
+                    'requested_id_sesi' => $rescheduleRequest->requested_id_sesi,
+                ]
+            );
         }, 3);
 
         return redirect()
