@@ -41,3 +41,34 @@ if (adminMobileMenu) {
         }
     });
 }
+
+const adminNotificationMenu = document.getElementById(
+    'admin-notification-menu'
+);
+
+if (adminNotificationMenu) {
+    document.addEventListener('click', (event) => {
+        if (
+            adminNotificationMenu.open &&
+            !adminNotificationMenu.contains(event.target)
+        ) {
+            adminNotificationMenu.open = false;
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (
+            event.key === 'Escape' &&
+            adminNotificationMenu.open
+        ) {
+            adminNotificationMenu.open = false;
+            adminNotificationMenu.querySelector('summary')?.focus();
+        }
+    });
+
+    adminNotificationMenu.addEventListener('toggle', () => {
+        if (adminNotificationMenu.open && adminMobileMenu) {
+            adminMobileMenu.open = false;
+        }
+    });
+}

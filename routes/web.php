@@ -350,6 +350,23 @@ Route::middleware('auth')->group(function () {
     // Master Data Admin
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
 
+        // Notifikasi operasional Admin.
+        Route::get('/notifications', [
+            \App\Http\Controllers\Admin\NotificationController::class,
+            'index',
+        ])->name('notifications.index');
+
+        Route::post('/notifications/read-all', [
+            \App\Http\Controllers\Admin\NotificationController::class,
+            'readAll',
+        ])->name('notifications.read-all');
+
+        Route::post('/notifications/{auditLog}/read', [
+            \App\Http\Controllers\Admin\NotificationController::class,
+            'read',
+        ])->whereNumber('auditLog')
+          ->name('notifications.read');
+
         // Laporan Operasional Admin.
         Route::get('/reports', [OperationalReportController::class, 'index'])
             ->name('reports.index');

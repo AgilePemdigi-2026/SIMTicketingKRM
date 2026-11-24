@@ -312,20 +312,10 @@
 
             </div>
 
-            {{-- Notification placeholder --}}
-            <button
-                type="button"
-                disabled
-                aria-label="Notifikasi belum tersedia"
-                title="Notifikasi belum tersedia"
-                class="flex h-10 w-10 shrink-0 items-center justify-center border border-[#DCE5DE] text-[#174B38]"
-            >
+            {{-- ADMIN NOTIFICATIONS --}}
+            <x-admin-notifications/>
 
-                <x-admin-icon name="bell" class="h-5 w-5"/>
-
-            </button>
-
-            {{-- PROFILE --}}
+{{-- PROFILE --}}
             <div class="flex shrink-0 items-center gap-2 border-l border-[#DCE5DE] pl-2 sm:gap-3 sm:pl-4">
 
                 <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8F1EA] text-base font-semibold text-[#174B38]">
