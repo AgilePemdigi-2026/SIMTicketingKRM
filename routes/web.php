@@ -7,6 +7,8 @@ use App\Http\Controllers\Wisatawan\ProfileController;
 use App\Http\Controllers\Admin\WahanaController as AdminWahanaController;
 use App\Http\Controllers\Admin\DaftarTiketController;
 use App\Http\Controllers\Admin\FasilitasController;
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\OperationalReportController;
 use App\Http\Controllers\Admin\KontenBeritaController;
 use App\Http\Controllers\Admin\KontenGaleriController;
 use App\Http\Controllers\Admin\InfoDestinasiController;
@@ -347,6 +349,72 @@ Route::middleware('auth')->group(function () {
 
     // Master Data Admin
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+
+        // Profil akun Admin.
+        Route::get('/profile', [
+            \App\Http\Controllers\Admin\ProfileController::class,
+            'show',
+        ])->name('profile.show');
+
+        Route::get('/profile/edit', [
+            \App\Http\Controllers\Admin\ProfileController::class,
+            'edit',
+        ])->name('profile.edit');
+
+        Route::put('/profile', [
+            \App\Http\Controllers\Admin\ProfileController::class,
+            'update',
+        ])->name('profile.update');
+
+        Route::get('/profile/password', [
+            \App\Http\Controllers\Admin\ProfileController::class,
+            'editPassword',
+        ])->name('profile.password.edit');
+
+        Route::put('/profile/password', [
+            \App\Http\Controllers\Admin\ProfileController::class,
+            'updatePassword',
+        ])->middleware('throttle:5,1')
+          ->name('profile.password.update');
+
+        // Notifikasi operasional Admin.
+        Route::get('/notifications', [
+            \App\Http\Controllers\Admin\NotificationController::class,
+            'index',
+        ])->name('notifications.index');
+
+        Route::post('/notifications/read-all', [
+            \App\Http\Controllers\Admin\NotificationController::class,
+            'readAll',
+        ])->name('notifications.read-all');
+
+        Route::post('/notifications/{auditLog}/read', [
+            \App\Http\Controllers\Admin\NotificationController::class,
+            'read',
+        ])->whereNumber('auditLog')
+          ->name('notifications.read');
+
+        // Laporan Operasional Admin.
+        Route::get('/reports', [OperationalReportController::class, 'index'])
+            ->name('reports.index');
+
+        Route::get('/reports/export/excel', [OperationalReportController::class, 'exportExcel'])
+            ->name('reports.export.excel');
+
+        Route::get('/reports/export/pdf', [OperationalReportController::class, 'exportPdf'])
+            ->name('reports.export.pdf');
+
+        // Audit Log - Monitoring Aktivitas Pengguna dan Sistem.
+        Route::get('/audit-log', [AuditLogController::class, 'index'])
+            ->name('audit-log.index');
+
+        Route::get('/audit-log/export', [AuditLogController::class, 'export'])
+            ->name('audit-log.export');
+
+        Route::get('/audit-log/{auditLog}', [AuditLogController::class, 'show'])
+            ->whereNumber('auditLog')
+            ->name('audit-log.show');
+
         Route::resource('wahana', AdminWahanaController::class)
             ->except(['show']);
 

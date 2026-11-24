@@ -40,6 +40,14 @@ class ETicketQrCodeTest extends PostgresTicketTestCase
                 ->where('ticket_order_id', $orderId)
                 ->pluck('id');
 
+            DB::table('audit_logs')
+                ->where('subject_type', 'TicketPayment')
+                ->whereIn(
+                    'subject_id',
+                    $payments->map(fn ($id) => (string) $id)->all()
+                )
+                ->delete();
+
             DB::table('ticket_payment_events')
                 ->whereIn('ticket_payment_id', $payments)
                 ->delete();

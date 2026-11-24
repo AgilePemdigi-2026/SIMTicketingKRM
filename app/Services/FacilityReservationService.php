@@ -59,7 +59,7 @@ class FacilityReservationService
                 'Kapasitas sesi untuk tanggal tersebut tidak mencukupi.'
             );
 
-            return FacilityReservation::create([
+            $createdReservation = FacilityReservation::create([
                 'code' => (string) Str::uuid(),
                 'invoice_number' => 'RSV-'.now()->format('Ymd').'-'.Str::upper(Str::random(8)),
                 'user_id' => $user->getKey(),
@@ -83,6 +83,25 @@ class FacilityReservationService
                 'administrative_status' => 'pending',
                 'capacity_hold_until' => now()->addDay(),
             ]);
+
+            app(AuditLogService::class)->record(
+                actor: $user,
+                module: 'Reservasi',
+                action: 'reservation_created',
+                description: 'Wisatawan berhasil membuat reservasi fasilitas.',
+                subjectType: 'FacilityReservation',
+                subjectId: $createdReservation->getKey(),
+                newValues: [
+                    'administrative_status' => $createdReservation->administrative_status,
+                    'id_fasilitas' => $createdReservation->id_fasilitas,
+                    'id_sesi' => $createdReservation->id_sesi,
+                    'visit_date' => $createdReservation->visit_date->toDateString(),
+                    'participant_count' => $createdReservation->participant_count,
+                    'total_amount' => (string) $createdReservation->total_amount,
+                ]
+            );
+
+            return $createdReservation;
         }, 3);
 
         return $reservation;
