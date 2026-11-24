@@ -153,7 +153,7 @@ class AuditLogController extends Controller
     {
         $query = AuditLog::query();
 
-        if (! empty($filters['search'])) {
+        if (isset($filters['search']) && $filters['search'] !== '') {
             $keyword = $filters['search'];
 
             // Escape wildcard agar pencarian menggunakan teks literal.
