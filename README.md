@@ -1,58 +1,139 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SIMTicketingKRM (MangroTix)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistem Informasi Manajemen Tiket dan Reservasi Fasilitas **Kebun Raya Mangrove Surabaya**.
 
-## About Laravel
+Proyek ini dikembangkan untuk memenuhi tugas mata kuliah **Pembangunan Perangkat Lunak (PPL) Praktikum** Kelas **I4**, Program Studi S1 Sistem Informasi, Universitas Airlangga.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Website Live:** https://mangrotix.caiis.ai.id/
+- **Simulator Pembayaran QRIS (Midtrans Sandbox):** https://simulator.sandbox.midtrans.com/v2/qris/index
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Akun Pengujian (Live Demo)
 
-## Learning Laravel
+Gunakan akun berikut untuk mencoba seluruh alur sesuai peran pengguna di https://mangrotix.caiis.ai.id/:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Peran Pengguna | Halaman Login | Email | Kata Sandi |
+| :--- | :--- | :--- | :--- |
+| **Pembeli (Wisatawan)** | `/login` | `pembeli@gmail.com` | `vIsheb-pubgem-7desjy` |
+| **Petugas Operasional** | `/petugas/login` | `petugas@gmail.com` | `rohgac-veWvok-woxwe1` |
+| **Administrator** | `/admin/login` | `admin@gmail.com` | `xuvbIw-fuvvac-xyvci4` |
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Cara Menguji Pembayaran QRIS (Midtrans Sandbox)
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+1. Masuk menggunakan akun **Pembeli (Wisatawan)** di https://mangrotix.caiis.ai.id/login.
+2. Buat pesanan baru pada menu **Tiket** (`/wisatawan/pembelian-tiket`) atau **Reservasi** (`/reservasi`).
+3. Pada halaman pembayaran, pilih metode **QRIS** lalu tekan tombol pembuatan QRIS hingga kode QR tampil.
+4. Salin URL gambar kode QRIS (klik kanan pada gambar QR lalu pilih *Copy Image Address*, atau gunakan tombol salin URL QRIS pada halaman reservasi).
+5. Buka [Midtrans QRIS Sandbox Simulator](https://simulator.sandbox.midtrans.com/v2/qris/index), tempel URL gambar QRIS tersebut, klik **Scan QR**, lalu klik **Pay**.
+6. Kembali ke halaman pembayaran aplikasi: status akan otomatis diperbarui menjadi **Lunas** (atau tekan tombol **Perbarui Status** / **Cek Status Pembayaran**).
 
-## Agentic Development
+---
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Fitur Utama Berdasarkan Peran
+
+### 1. Wisatawan (Pembeli) & Pengunjung Publik
+- **Informasi Kawasan:** Halaman Beranda, Destinasi, Detail Wahana, Berita & Artikel, Tentang Kami, dan Kontak pengelola.
+- **Pembelian Tiket Online:** Pemilihan tanggal kunjungan, kuota tiket real-time, pengisian identitas pengunjung, pembayaran **QRIS Midtrans Sandbox** maupun **Cash Booking** (bayar tunai di loket dengan E-Tiket Sementara `CASH-xxxx`).
+- **Penerbitan E-Tiket:** Kode QR unik untuk setiap pengunjung dalam satu pesanan serta unduhan dokumen **E-Tiket PDF**.
+- **Reservasi Fasilitas / Venue:** Pemilihan fasilitas, pengecekan ketersediaan sesi per tanggal, checkout reservasi, pembayaran QRIS Midtrans Sandbox, **Invoice PDF**, dan pengajuan perubahan jadwal (*reschedule*).
+- **Manajemen Akun & Riwayat:** Pengelolaan profil, ubah kata sandi, dan halaman **Pesanan Saya** yang memuat riwayat transaksi tiket serta reservasi fasilitas.
+
+### 2. Petugas Operasional (`/petugas/dashboard`)
+- **Dashboard Operasional Harian:** Ringkasan metrik kunjungan, tiket terjual, pembayaran lunas, dan aktivitas pengunjung hari berjalan.
+- **Jual Tiket Langsung (`/petugas/loket`):** Transaksi pembelian tiket *walk-in* di loket dengan metode tunai (kalkulasi kembalian otomatis) atau QRIS serta cetak E-Tiket langsung.
+- **Bayar Cash Booking (`/petugas/pembayaran`):** Pencarian kode `CASH-xxxx` atau nama pemesan untuk verifikasi dan konfirmasi pelunasan pesanan tunai di loket.
+- **Scan & Validasi Tiket (`/petugas/validasi-tiket`):** Pemindaian kode QR E-Tiket menggunakan kamera maupun input kode manual untuk proses *check-in* pengunjung.
+- **Riwayat Transaksi (`/petugas/riwayat-transaksi`):** Daftar transaksi lengkap beserta filter dan ekspor data transaksi.
+
+### 3. Administrator (`/admin/dashboard`)
+- **Monitoring Operasional Harian:** Pemantauan jumlah transaksi tiket, pembayaran lunas, total pendapatan tiket, pengunjung *check-in*, dan reservasi fasilitas harian.
+- **Manajemen Master Data:** CRUD produk **Tiket** (`/admin/daftar-tiket`), **Wahana** (`/admin/wahana`), dan **Fasilitas** beserta jadwal sesi & tarif sewa (`/admin/fasilitas`).
+- **Manajemen Reservasi:** Antarmuka pemantauan daftar reservasi dan pengajuan *reschedule* (`/admin/reservasi-preview`).
+- **Manajemen Konten Portal:** Pengelolaan artikel berita (`/admin/konten-berita`), galeri foto (`/admin/konten-galeri`), informasi destinasi (`/admin/konten-destinasi`), dan kontak resmi (`/admin/konten-kontak`).
+
+---
+
+## Teknologi & Arsitektur
+
+- **Backend:** PHP 8.3+ (PHP 8.5 pada container produksi), Laravel 13
+- **Frontend:** Blade Templates, Tailwind CSS v4, Vite 8
+- **Database:** PostgreSQL 17
+- **Payment Gateway:** Midtrans Core API v2 (QRIS Sandbox, sinkronisasi status, dan verifikasi webhook)
+- **QR Code & PDF:** `endroid/qr-code` (SVG & PNG) dan `barryvdh/laravel-dompdf`
+- **Automated Testing:** PHPUnit (Feature & Unit Test) serta Behat (BDD skenario fitur)
+- **Infrastruktur Deployment:** Docker Compose & Apache di VPS melalui **Coolify**
+
+---
+
+## Panduan Menjalankan di Lokal
+
+### Prasyarat
+- PHP `^8.3` beserta ekstensi `pdo_pgsql`, `gd`, `mbstring`, dan `openssl`
+- Composer 2
+- Node.js 20+ & npm
+- Docker & Docker Compose (untuk menjalankan PostgreSQL 17 lokal)
+
+### Langkah Instalasi
+
+1. **Pasang dependensi PHP dan frontend:**
+   ```bash
+   composer install
+   npm install
+   ```
+
+2. **Siapkan konfigurasi environment:**
+   ```bash
+   cp .env.postgres.example .env
+   php artisan key:generate
+   ```
+   Sesuaikan kredensial database lokal (`DB_PORT=5433`, `DB_DATABASE=simticketingkrm`, `DB_USERNAME`, `DB_PASSWORD`) serta kunci Midtrans Sandbox (`MIDTRANS_IS_PRODUCTION=false`, `MIDTRANS_SERVER_KEY`, `MIDTRANS_CLIENT_KEY`) di file `.env`.
+
+3. **Jalankan container PostgreSQL lokal:**
+   ```bash
+   docker compose -f compose.local.yaml up -d
+   ```
+
+4. **Jalankan migrasi database dan symlink storage:**
+   ```bash
+   php artisan migrate
+   php artisan storage:link
+   ```
+   *(Opsional)* Untuk mengisi data master awal di lingkungan lokal yang masih kosong, lihat panduan di `docs/local-postgresql.md` (`PostgreSqlDemoSeeder` dan `PostgreSqlRoleSeeder`).
+
+5. **Jalankan server pengembangan:**
+   ```bash
+   composer run dev
+   ```
+   Atau jalankan terpisah dengan `npm run build` lalu `php artisan serve`. Aplikasi dapat diakses di `http://127.0.0.1:8000`.
+
+---
+
+## Pengujian Otomatis
+
+Pastikan container PostgreSQL lokal sedang berjalan dan file `.env.postgres.local` tersedia (serta database pengujian `simticketingkrm_purchase_test` telah dibuat di PostgreSQL lokal), lalu jalankan:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+php artisan test --compact
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Seluruh rangkaian pengujian mencakup 262 test (CRUD master data admin, autentikasi & otorisasi role, checkout tiket, verifikasi pembayaran tunai & QRIS Midtrans, webhook tiket & reservasi, E-Tiket QR/PDF, loket petugas, serta reservasi fasilitas).
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Deployment Produksi (Coolify)
 
-## Code of Conduct
+Aplikasi di-deploy menggunakan konfigurasi Docker Compose pada file `compose.coolify.yaml` dan `Dockerfile` dari branch `main`:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- **Build multi-stage:** Kompilasi aset Vite (`node:24-bookworm-slim`), instalasi Composer tanpa paket dev, dan runtime `php:8.5-apache-bookworm` dengan ekstensi `pdo_pgsql` serta `gd`.
+- **Migrasi otomatis:** Saat container `web` dijalankan, perintah `php artisan migrate --force --no-interaction` dieksekusi otomatis setelah layanan `postgres` berstatus *healthy*.
+- **Webhook Midtrans:** Endpoint `/webhooks/midtrans/ticket` dan `/webhooks/midtrans/reservation` dikecualikan dari CSRF dan memverifikasi integritas tanda tangan transaksi sebelum memperbarui status pembayaran.
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Dokumentasi Tambahan
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- `docs/local-postgresql.md`: Panduan setup database PostgreSQL lokal dan seeder pengujian.
+- `docs/ticket-purchase-postgresql.md`: Spesifikasi teknis modul pembelian tiket pada PostgreSQL.
+- `docs/ticket-payment.md`: Dokumentasi alur pembayaran tiket, QRIS Midtrans, dan verifikasi petugas.
+- `docs/bdd/`: Dokumentasi ketertelusuran kebutuhan dan bukti pengujian BDD.
