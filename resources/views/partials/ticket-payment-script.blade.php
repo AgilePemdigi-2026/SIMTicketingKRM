@@ -20,15 +20,11 @@
         });
     });
 
-    // Langsung simpan metode begitu tab QRIS atau Cash diklik.
-    // Tetap menggunakan POST Laravel + CSRF, bukan mengubah data lewat GET.
-    const radio = document.querySelector('.qr-method-tabs input[name="method"]');
-    const methodForm = radio?.form;
-
     // Metode baru dikirim setelah wisatawan menyetujui pop-up.
     // Sembunyikan tombol simpan lama saat JavaScript aktif.
     // Tombol tetap tersedia sebagai fallback jika JavaScript nonaktif.
-    const methodForm = document.getElementById('payment-method-form');
+    const methodForm = document.getElementById('payment-method-form')
+        || document.querySelector('.qr-method-tabs input[name="method"]')?.form;
 
     if (methodForm) {
         methodForm.querySelector('.qr-method-submit')?.remove();
