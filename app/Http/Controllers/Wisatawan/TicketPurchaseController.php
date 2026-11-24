@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Wisatawan;
 
 use App\Contracts\TicketCatalogProvider;
-use App\Events\TicketPaymentConfirmed;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CheckoutTicketPurchaseRequest;
 use App\Http\Requests\PreviewTicketPurchaseRequest;
@@ -55,7 +54,7 @@ class TicketPurchaseController extends Controller
 
         foreach ($orders->getCollection() as $order) {
             if ($order->status === 'paid' && $order->payment?->status === 'paid' && $order->issuedTickets->isEmpty()) {
-                app(IssueTicketsAfterPayment::class)->handle(new TicketPaymentConfirmed($order->code));
+                app(IssueTicketsAfterPayment::class)->issueForOrder($order->code);
                 $order->load('issuedTickets');
             }
         }

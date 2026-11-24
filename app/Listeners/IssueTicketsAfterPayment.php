@@ -12,9 +12,14 @@ class IssueTicketsAfterPayment
 {
     public function handle(TicketPaymentConfirmed $event): void
     {
-        DB::transaction(function () use ($event) {
+        $this->issueForOrder($event->orderCode);
+    }
+
+    public function issueForOrder(string $orderCode): void
+    {
+        DB::transaction(function () use ($orderCode) {
             $order = TicketOrder::query()
-                ->where('code', $event->orderCode)
+                ->where('code', $orderCode)
                 ->lockForUpdate()
                 ->firstOrFail();
 
