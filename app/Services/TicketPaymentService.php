@@ -257,10 +257,34 @@ class TicketPaymentService
                     $updates['cash_change_amount'] = $received - $total;
                 }
 
+                // Snapshot status sebelum pembayaran dikonfirmasi.
+                $previousStatus = $payment->status;
+
                 $payment->update($updates);
 
                 $order->update(['status' => 'paid']);
                 $this->record($payment, $user, 'payment_confirmed');
+
+                // Audit log terpusat, masih dalam transaksi database.
+                app(AuditLogService::class)->record(
+                    actor: $user,
+                    module: 'Pembayaran',
+                    action: 'payment_confirmed',
+                    description: 'Pembayaran Cash berhasil dikonfirmasi oleh Petugas.',
+                    subjectType: 'TicketPayment',
+                    subjectId: $payment->id,
+                    oldValues: [
+                        'status' => $previousStatus,
+                    ],
+                    newValues: [
+                        'status' => $payment->status,
+                        'method' => $payment->method,
+                        'amount' => (string) $payment->amount,
+                        'sale_channel' => $order->sale_channel,
+                        'confirmed_by' => $user->id,
+                        'paid_at' => $payment->paid_at->toIso8601String(),
+                    ]
+                );
                 TicketPaymentConfirmed::dispatch($order->code, $payment->code, $payment->method,
                     $payment->amount, $payment->paid_at->toIso8601String());
 
