@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 /* ==================================
    RESET DAN WARNA
@@ -23,7 +24,7 @@ html, body {
 }
 
 body.auth-page {
-    font-family: 'DM Sans', Arial, sans-serif;
+    font-family: 'Plus Jakarta Sans', Arial, sans-serif;
     color: var(--dark);
     background: #ffffff;
 }
@@ -534,7 +535,7 @@ body.auth-page {
 body.portal-page {
     margin: 0;
     min-height: 100vh;
-    font-family: 'DM Sans', Arial, sans-serif;
+    font-family: 'Plus Jakarta Sans', Arial, sans-serif;
     color: #193B31;
     background: #173F31;
 }
@@ -728,4 +729,64 @@ body.portal-page {
     .portal-heading h1 {
         font-size: 29px;
     }
+}
+
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-wrapper input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 60px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #07513D;
+    cursor: pointer;
+}
+
+.password-toggle:focus-visible {
+    outline: 2px solid #07513D;
+    outline-offset: 2px;
+}
+
+.portal-password {
+    position: relative;
+}
+
+.portal-password input {
+    width: 100%;
+    padding-right: 52px;
+}
+
+.portal-password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 18px;
+    line-height: 1;
+    color: #456457;
+}
+
+.portal-password-toggle:focus {
+    outline: none;
 }

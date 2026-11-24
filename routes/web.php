@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\InfoKontakController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Wisatawan\WahanaController;
 use App\Http\Controllers\Wisatawan\BeritaController;
+use App\Http\Controllers\Wisatawan\FacilityReservationController;
+use App\Http\Controllers\Petugas\TransactionHistoryController;
 
 // Home Publik bagi Pengguna Publik (Tidak Login)
 Route::get('/', [HomeController::class, 'index'])
@@ -103,34 +105,136 @@ Route::middleware('auth')->group(function () {
     Route::get(
         '/destinasi',
         [\App\Http\Controllers\Wisatawan\DestinasiController::class, 'index']
-    )->middleware('role:wisatawan')
+    )->middleware('role:wisatawan,petugas,admin')
     ->name('wisatawan.destinasi');
+
+    // Halaman Tentang Kebun Raya Mangrove
+    Route::get(
+        '/tentang',
+        [\App\Http\Controllers\Wisatawan\TentangController::class, 'index']
+    )->middleware('role:wisatawan,petugas,admin')
+      ->name('wisatawan.tentang');
+
+    // Halaman Kontak Wisatawan
+    Route::get(
+        '/kontak',
+        [\App\Http\Controllers\Wisatawan\KontakController::class, 'index']
+    )->middleware('role:wisatawan,petugas,admin')
+      ->name('wisatawan.kontak');
+
+    // Pengiriman pesan dari halaman Kontak ke Gmail.
+    Route::post(
+        '/kontak/kirim-pesan',
+        [\App\Http\Controllers\Wisatawan\KontakController::class, 'kirimPesan']
+    )->middleware(['role:wisatawan,petugas,admin', 'throttle:3,10'])
+      ->name('wisatawan.kontak.kirim');
 
     // Detail informasi wahana
     Route::get('/wahana/{slug}', [
         WahanaController::class, 'show'
     ])->where('slug', '[a-z0-9-]+')
-    ->middleware('role:wisatawan')
+    ->middleware('role:wisatawan,petugas,admin')
     ->name('wahana.show');
 
     // Daftar Berita & Artikel
     Route::get('/berita', [BeritaController::class, 'index'])
-        ->middleware('role:wisatawan')
+        ->middleware('role:wisatawan,petugas,admin')
         ->name('wisatawan.berita.index');
 
     // Detail Artikel
     Route::get('/berita/{slug}', [BeritaController::class, 'show'])
         ->where('slug', '[a-z0-9-]+')
-        ->middleware('role:wisatawan')
+        ->middleware('role:wisatawan,petugas,admin')
         ->name('wisatawan.berita.show');
 
+    // Halaman daftar dan pemilihan fasilitas
+    Route::get('/reservasi', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'index'
+    ])->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.index');
+
+    Route::get('/reservasi/ketersediaan', [FacilityReservationController::class, 'availability'])
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.reservasi.availability');
+
+    Route::post('/reservasi/checkout', [FacilityReservationController::class, 'store'])
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.reservasi.checkout');
+
+    Route::get('/reservasi/transaksi/{code}', [FacilityReservationController::class, 'invoice'])
+        ->whereUuid('code')
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.reservasi.invoice');
+
+    // Form pengajuan Reschedule berdasarkan reservasi asli.
+    Route::get(
+        '/reservasi/transaksi/{code}/reschedule',
+        [\App\Http\Controllers\Wisatawan\FacilityReservationRescheduleController::class, 'create']
+    )
+        ->whereUuid('code')
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.reservasi.reschedule.create');
+
+    // Simpan pengajuan Reschedule dari Wisatawan.
+    Route::post(
+        '/reservasi/transaksi/{code}/reschedule',
+        [\App\Http\Controllers\Wisatawan\FacilityReservationRescheduleController::class, 'store']
+    )
+        ->whereUuid('code')
+        ->middleware('role:wisatawan')
+        ->name('wisatawan.reservasi.reschedule.store');
+
+    // Reservasi - Pilih Tanggal dan Waktu
+    Route::get('/reservasi/{fasilitas}/tanggal', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'tanggal'
+    ])->whereNumber('fasilitas')
+      ->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.tanggal');
+
+    // Reservasi - Data Reservasi
+    Route::get('/reservasi/{fasilitas}/data', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'data'
+    ])->whereNumber('fasilitas')
+      ->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.data');
+
+    // Sprint 3 - Pratinjau UI Pembayaran Reservasi
+    Route::get('/reservasi/{fasilitas}/pratinjau-pembayaran', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'previewPembayaran'
+    ])->whereNumber('fasilitas')
+      ->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.pembayaran.preview');
+
+    // Sprint 3 - Pratinjau Desain Invoice Reservasi
+    Route::get('/reservasi/{fasilitas}/pratinjau-invoice', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'previewInvoice'
+    ])->whereNumber('fasilitas')
+      ->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.invoice.preview');
+
+    // Sprint 3 - Pratinjau UI Reschedule Reservasi
+    Route::get('/reservasi/{fasilitas}/pratinjau-reschedule', [
+        \App\Http\Controllers\Wisatawan\ReservasiPageController::class,
+        'previewReschedule'
+    ])->whereNumber('fasilitas')
+      ->middleware('role:wisatawan')
+      ->name('wisatawan.reservasi.reschedule.preview');
+
     // Dashboard Petugas
-    Route::get('/petugas/dashboard', function () {
-        return Route::has('ticket-payment.staff.index')
-            ? view('petugas.ticket-payment.dashboard')
-            : 'Dashboard Petugas - SIMTicketingKRM';
-    })->middleware('role:petugas')
-      ->name('petugas.dashboard');
+    Route::get(
+        '/petugas/dashboard',
+        [\App\Http\Controllers\Petugas\PetugasDashboardController::class, 'index']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->name('petugas.dashboard');
 
     // Loket pembelian tiket Petugas
     Route::get('/petugas/loket', [\App\Http\Controllers\Petugas\TicketCounterController::class, 'index'])
@@ -148,11 +252,98 @@ Route::middleware('auth')->group(function () {
         ])
         ->name('petugas.loket.preview');
 
-    // Dashboard Admin
-    Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard');
+    Route::post('/petugas/loket/checkout', [\App\Http\Controllers\Petugas\TicketCounterController::class, 'checkout'])
+        ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
+        ->name('petugas.loket.checkout');
+
+    // Halaman transaksi berhasil untuk pembelian loket.
+    Route::get(
+        '/petugas/loket/transaksi/{payment}/berhasil',
+        [\App\Http\Controllers\Petugas\CounterTransactionController::class, 'success']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->whereNumber('payment')
+        ->name('petugas.loket.success');
+
+    // Cetak E-Tiket asli dari transaksi loket yang sudah lunas.
+    Route::get(
+        '/petugas/loket/transaksi/{payment}/cetak',
+        [\App\Http\Controllers\Petugas\CounterTransactionController::class, 'print']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->whereNumber('payment')
+        ->name('petugas.loket.print');
+
+    Route::get('/petugas/validasi-tiket', [\App\Http\Controllers\Petugas\TicketValidationController::class, 'index'])
+        ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
+        ->name('petugas.validasi-tiket.index');
+
+    Route::post('/petugas/validasi-tiket/verify', [\App\Http\Controllers\Petugas\TicketValidationController::class, 'verify'])
+        ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
+        ->name('petugas.validasi-tiket.verify');
+
+    Route::post('/petugas/validasi-tiket/check-in', [\App\Http\Controllers\Petugas\TicketValidationController::class, 'checkIn'])
+        ->middleware(['role:petugas', \App\Http\Middleware\EnsureMasterTicketDatabase::class])
+        ->name('petugas.validasi-tiket.check-in');
+
+    // Riwayat Transaksi Petugas
+    Route::get(
+        '/petugas/riwayat-transaksi',
+        [TransactionHistoryController::class, 'index']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->name('petugas.riwayat-transaksi.index');
+
+    // Export Riwayat Transaksi Petugas
+    Route::get(
+        '/petugas/riwayat-transaksi/export',
+        [TransactionHistoryController::class, 'export']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->name('petugas.riwayat-transaksi.export');
+
+    // Detail Riwayat Transaksi Petugas
+    Route::get(
+        '/petugas/riwayat-transaksi/{payment}',
+        [TransactionHistoryController::class, 'show']
+    )
+        ->middleware([
+            'role:petugas',
+            \App\Http\Middleware\EnsureMasterTicketDatabase::class,
+        ])
+        ->whereNumber('payment')
+        ->name('petugas.riwayat-transaksi.show');
+
+    // Dashboard Admin - Monitoring Operasional Harian
+    Route::get('/admin/dashboard', [
+        \App\Http\Controllers\Admin\AdminDashboardController::class,
+        'index'
+    ])->middleware('role:admin')
+      ->name('admin.dashboard');
+
+    // TEMPORARY - Preview UI Manajemen Reservasi
+    Route::get('/admin/reservasi-preview', function () {
+        return view('admin.reservasi.index');
     })->middleware('role:admin')
-    ->name('admin.dashboard');
+    ->name('admin.reservasi.preview');
+
+    // TEMPORARY - Preview UI Detail Reservasi
+    Route::get('/admin/reservasi-preview/detail', function () {
+        return view('admin.reservasi.show');
+    })->middleware('role:admin')
+    ->name('admin.reservasi.preview.detail');
 
     // Master Data Admin
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {

@@ -1,11 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 
@@ -29,9 +30,16 @@
 
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: var(--font-sans);
     background: var(--color-background);
     color: var(--color-text);
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
 }
 
 .krm-container {
@@ -39,10 +47,27 @@ body {
     margin-inline: auto;
 }
 
+/* ===== JUDUL HALAMAN WISATAWAN ===== */
 .krm-page-title {
-    font-size: 36px;
+    display: inline-block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0;
+    padding-bottom: 6px;
+
+    font-size: 26px;
     font-weight: 700;
+    line-height: 1.2;
     color: var(--color-text);
+
+    border-bottom: 3px solid var(--color-accent);
+}
+
+/* Ukuran judul desktop */
+@media (min-width: 640px) {
+    .krm-page-title {
+        font-size: 32px;
+    }
 }
 
 /* ===== REUSABLE BUTTON ===== */

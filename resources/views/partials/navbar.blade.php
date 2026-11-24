@@ -10,6 +10,20 @@
                 : route('home')
         );
 
+    $currentRole = auth()->user()?->role;
+
+    $ticketHref = match ($currentRole) {
+        'admin' => route('admin.daftar-tiket.index'),
+        'petugas' => route('petugas.loket.index'),
+        default => \Illuminate\Support\Facades\Route::has('ticket-purchase.index') ? route('ticket-purchase.index') : null,
+    };
+
+    $reservasiHref = match ($currentRole) {
+        'admin' => route('admin.reservasi.preview'),
+        'petugas' => route('petugas.dashboard'),
+        default => route('wisatawan.reservasi.index'),
+    };
+
     $navItems = [
         [
             'label' => 'Beranda',
@@ -29,13 +43,15 @@
         ],
         [
             'label' => 'Tiket',
-            'href' => \Illuminate\Support\Facades\Route::has('ticket-purchase.index') ? route('ticket-purchase.index') : null,
-            'active' => request()->routeIs('ticket-purchase.index'),
+            'href' => $ticketHref,
+            'active' => request()->routeIs('ticket-purchase.index', 'admin.daftar-tiket.*', 'petugas.loket.*'),
         ],
         [
             'label' => 'Reservasi',
-            'href' => null,
-            'active' => false,
+            'href' => $reservasiHref,
+            'active' => request()->routeIs('wisatawan.reservasi.*')
+                || request()->routeIs('facility-reservation.payment.*')
+                || request()->routeIs('admin.reservasi.*'),
         ],
         [
             'label' => 'Berita',
@@ -46,13 +62,13 @@
         ],
         [
             'label' => 'Tentang',
-            'href' => null,
-            'active' => false,
+            'href' => route('wisatawan.tentang'),
+            'active' => request()->routeIs('wisatawan.tentang'),
         ],
         [
             'label' => 'Kontak',
-            'href' => $berandaUrl . '#kontak',
-            'active' => false,
+            'href' => route('wisatawan.kontak'),
+            'active' => request()->routeIs('wisatawan.kontak'),
         ],
     ];
 
@@ -116,10 +132,10 @@
 
                     @if ($item['href'])
                         <a href="{{ $item['href'] }}"
-                        @if($item['active'])
-                            aria-current="page"
-                        @endif
-                        class="text-[13px] transition-all duration-200
+                            @if($item['active'])
+                                aria-current="page"
+                            @endif
+                            class="text-[13px] transition-all duration-200
                                 hover:text-[#064631]
                                 {{ $item['active']
                                     ? 'font-bold text-[#064631] underline decoration-2 underline-offset-[7px]'
@@ -156,52 +172,76 @@
                 @auth
                     <form method="POST" action="{{ route('logout') }}" class="hidden xl:block">
                         @csrf
-                        <button type="submit" class="rounded border border-[#D7E3DA] px-3 py-2 text-xs font-semibold text-[#064631] hover:bg-[#EEF4EE]">Keluar</button>
+                        <button type="submit"
+                                class="rounded border border-[#D7E3DA] px-3 py-2 text-xs font-semibold text-[#064631] hover:bg-[#EEF4EE]">
+                            Keluar
+                        </button>
                     </form>
                 @endauth
-
                 <!-- Menu mobile tanpa JavaScript -->
                 <details class="relative xl:hidden">
-                    <summary class="flex cursor-pointer list-none items-center gap-1 rounded border border-[#D7E3DA] px-3 py-2 text-xs font-semibold text-[#064631] [&::-webkit-details-marker]:hidden">
+                    <summary
+                        class="flex cursor-pointer list-none items-center gap-2 rounded border border-[#D7E3DA] px-3 py-2 text-xs font-semibold text-[#064631] [&::-webkit-details-marker]:hidden"
+                    >
                         Menu
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <svg
+                            class="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            aria-hidden="true"
+                        >
                             <path d="M4 7h16M4 12h16M4 17h16"/>
                         </svg>
                     </summary>
-                    <nav class="absolute right-0 top-full z-50 mt-2 w-52 rounded border border-[#D7E3DA] bg-white py-2 shadow-lg"
-                         aria-label="Navigasi seluler">
+
+                    <nav
+                        class="absolute right-0 top-full z-50 mt-2 max-h-[70dvh] w-56 max-w-[calc(100vw-24px)] overflow-y-auto rounded-lg border border-[#D7E3DA] bg-white p-2 shadow-lg"
+                        aria-label="Navigasi seluler"
+                    >
                         @foreach ($navItems as $item)
-                        @if ($item['href'])
-                            <a href="{{ $item['href'] }}"
-                            @if($item['active'])
-                                aria-current="page"
+                            @if ($item['href'])
+                                <a
+                                    href="{{ $item['href'] }}"
+                                    @if ($item['active'])
+                                        aria-current="page"
+                                    @endif
+                                    class="flex min-h-10 items-center rounded px-3 py-2 text-[13px] leading-snug transition-colors
+                                        {{ $item['active']
+                                            ? 'bg-[#EEF4EE] font-bold text-[#064631]'
+                                            : 'font-normal text-[#466459] hover:bg-[#EEF4EE]' }}"
+                                >
+                                    {{ $item['label'] }}
+                                </a>
+                            @else
+                                <span
+                                    class="flex min-h-10 cursor-not-allowed items-center px-3 py-2 text-[13px] text-[#77857D]"
+                                >
+                                    {{ $item['label'] }}
+                                </span>
                             @endif
-                            class="block px-4 py-2 text-sm
-                                    {{ $item['active']
-                                        ? 'bg-[#EEF4EE] font-bold text-[#064631] underline underline-offset-4'
-                                        : 'font-normal text-[#466459] hover:bg-[#EEF4EE]' }}">
+                        @endforeach
 
-                                {{ $item['label'] }}
-
-                            </a>
-                        @else
-                            <span
-                                class="block cursor-not-allowed px-4 py-2 text-sm font-normal text-[#77857D]">
-
-                                {{ $item['label'] }}
-
-                            </span>
-                        @endif
-
-                    @endforeach
-                    @auth
-                        <form method="POST" action="{{ route('logout') }}" class="mt-2 border-t border-[#D7E3DA] pt-2">
-                            @csrf
-                            <button type="submit" class="block w-full px-4 py-2 text-left text-sm font-semibold text-[#064631] hover:bg-[#EEF4EE]">Keluar</button>
-                        </form>
-                    @endauth
+                        @auth
+                            <form
+                                method="POST"
+                                action="{{ route('logout') }}"
+                                class="mt-2 border-t border-[#D7E3DA] pt-2"
+                            >
+                                @csrf
+                                <button
+                                    type="submit"
+                                    class="block w-full px-3 py-2 text-left text-[13px] font-semibold text-[#064631] hover:bg-[#EEF4EE]"
+                                >
+                                    Keluar
+                                </button>
+                            </form>
+                        @endauth
                     </nav>
                 </details>
+
             </div>
         </div>
     </div>

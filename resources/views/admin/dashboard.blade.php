@@ -32,6 +32,84 @@
         </p>
     </div>
 
+    {{-- Monitoring Operasional Harian --}}
+    <div class="mb-8">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h2 class="text-lg font-semibold text-[#173E30]">
+                    Monitoring Operasional Harian
+                </h2>
+                <p class="mt-1 text-sm text-[#74877B]">
+                    Ringkasan aktivitas operasional hari ini.
+                </p>
+            </div>
+
+            <span class="rounded-md bg-[#E9F4EC] px-3 py-2 text-xs font-medium text-[#135A3F]">
+                {{ now('Asia/Jakarta')->translatedFormat('d F Y') }}
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+
+            {{-- Transaksi Tiket --}}
+            <div class="rounded-lg border border-[#D9E4DC] bg-white p-5">
+                <p class="text-sm text-[#74877B]">Transaksi Tiket</p>
+                <p class="mt-3 text-3xl font-bold text-[#173E30]">
+                    {{ number_format($stats['transaksi_tiket']) }}
+                </p>
+                <p class="mt-2 text-xs text-[#74877B]">
+                    Pesanan tiket dibuat hari ini
+                </p>
+            </div>
+
+            {{-- Pembayaran Lunas --}}
+            <div class="rounded-lg border border-[#D9E4DC] bg-white p-5">
+                <p class="text-sm text-[#74877B]">Pembayaran Lunas</p>
+                <p class="mt-3 text-3xl font-bold text-[#173E30]">
+                    {{ number_format($stats['pembayaran_lunas']) }}
+                </p>
+                <p class="mt-2 text-xs text-[#74877B]">
+                    Pembayaran dikonfirmasi hari ini
+                </p>
+            </div>
+
+            {{-- Pendapatan Tiket --}}
+            <div class="rounded-lg border border-[#D9E4DC] bg-white p-5">
+                <p class="text-sm text-[#74877B]">Pendapatan Tiket</p>
+                <p class="mt-3 text-3xl font-bold text-[#173E30]">
+                    Rp {{ number_format($stats['pendapatan_tiket'], 0, ',', '.') }}
+                </p>
+                <p class="mt-2 text-xs text-[#74877B]">
+                    Total pembayaran lunas hari ini
+                </p>
+            </div>
+
+            {{-- Pengunjung Check-in --}}
+            <div class="rounded-lg border border-[#D9E4DC] bg-white p-5">
+                <p class="text-sm text-[#74877B]">Pengunjung Check-in</p>
+                <p class="mt-3 text-3xl font-bold text-[#173E30]">
+                    {{ number_format($stats['pengunjung_checkin']) }}
+                </p>
+                <p class="mt-2 text-xs text-[#74877B]">
+                    E-Tiket digunakan hari ini
+                </p>
+            </div>
+
+            {{-- Reservasi Fasilitas --}}
+            <div class="rounded-lg border border-[#D9E4DC] bg-white p-5">
+                <p class="text-sm text-[#74877B]">Reservasi Fasilitas</p>
+                <p class="mt-3 text-3xl font-bold text-[#173E30]">
+                    {{ number_format($stats['reservasi_hari_ini']) }}
+                </p>
+                <p class="mt-2 text-xs text-[#74877B]">
+                    Reservasi terjadwal hari ini, semua status
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+
     {{-- Akses cepat --}}
     <h2 class="mb-4 text-sm font-bold uppercase tracking-[0.10em] text-[#173E30]">
         Akses Cepat Manajemen

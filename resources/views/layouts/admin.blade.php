@@ -16,59 +16,90 @@
 <div class="min-h-screen lg:flex">
 
     {{-- SIDEBAR ADMIN --}}
+    @php
+        $menuAdmin = [
+            [
+                'label' => 'Dashboard',
+                'route' => 'admin.dashboard',
+                'active' => 'admin.dashboard',
+            ],
+            [
+                'label' => 'Manajemen Tiket',
+                'route' => 'admin.daftar-tiket.index',
+                'active' => 'admin.daftar-tiket.*',
+            ],
+            [
+                'label' => 'Manajemen Wahana',
+                'route' => 'admin.wahana.index',
+                'active' => 'admin.wahana.*',
+            ],
+            [
+                'label' => 'Manajemen Fasilitas',
+                'route' => 'admin.fasilitas.index',
+                'active' => 'admin.fasilitas.*',
+            ],
+            [
+                'label' => 'Manajemen Reservasi',
+                'route' => 'admin.reservasi.preview',
+                'active' => 'admin.reservasi.preview*',
+            ],
+            [
+                'label' => 'Manajemen Konten',
+                'route' => 'admin.konten-berita.index',
+                'active' => 'admin.konten-berita.*',
+            ],
+        ];
+    @endphp
     <aside class="flex w-full shrink-0 flex-col bg-[#073B2D] text-white lg:sticky lg:top-0 lg:h-screen lg:w-[250px]">
 
-        {{-- Logo --}}
-        <div class="flex items-center gap-3 border-b border-white/15 px-6 py-8">
-            <div class="flex h-12 w-12 items-center justify-center rounded-full border border-white/40 text-2xl">
-                ♧
+        {{-- Logo & Mobile Menu Toggle --}}
+        <div class="flex items-center justify-between gap-3 border-b border-white/15 px-5 py-4 lg:px-6 lg:py-8">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full border border-white/40 text-xl lg:h-12 lg:w-12 lg:text-2xl">
+                    ♧
+                </div>
+
+                <div>
+                    <p class="text-sm font-bold tracking-[0.14em]">
+                        KEBUN RAYA
+                    </p>
+                    <p class="mt-0.5 text-[10px] tracking-[0.14em] text-white/75 lg:mt-1">
+                        MANGROVE SURABAYA
+                    </p>
+                    <p class="mt-1 hidden text-[9px] tracking-[0.13em] text-white/45 lg:block lg:mt-2">
+                        PORTAL ADMINISTRASI
+                    </p>
+                </div>
             </div>
 
-            <div>
-                <p class="text-sm font-bold tracking-[0.14em]">
-                    KEBUN RAYA
-                </p>
-                <p class="mt-1 text-[10px] tracking-[0.14em] text-white/75">
-                    MANGROVE SURABAYA
-                </p>
-                <p class="mt-2 text-[9px] tracking-[0.13em] text-white/45">
-                    PORTAL ADMINISTRASI
-                </p>
-            </div>
+            <details class="relative lg:hidden">
+                <summary class="flex cursor-pointer list-none items-center gap-2 rounded border border-white/30 px-3 py-2 text-xs font-semibold text-white [&::-webkit-details-marker]:hidden">
+                    Menu
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <path d="M4 7h16M4 12h16M4 17h16"/>
+                    </svg>
+                </summary>
+                <div class="absolute right-0 top-full z-50 mt-2 w-60 rounded border border-[#D7E3DA] bg-white p-2 text-[#183D32] shadow-xl">
+                    @foreach ($menuAdmin as $menu)
+                        <a href="{{ route($menu['route']) }}"
+                           class="block rounded px-3 py-2.5 text-[13px] transition {{ request()->routeIs($menu['active']) ? 'bg-[#EEF4EE] font-bold text-[#073B2D]' : 'hover:bg-[#EEF4EE]' }}">
+                            {{ $menu['label'] }}
+                        </a>
+                    @endforeach
+                    @if (\Illuminate\Support\Facades\Route::has('logout'))
+                        <form method="POST" action="{{ route('logout') }}" class="mt-2 border-t border-[#D7E3DA] pt-2">
+                            @csrf
+                            <button type="submit" class="w-full rounded px-3 py-2.5 text-left text-[13px] font-semibold text-[#073B2D] hover:bg-[#EEF4EE]">
+                                ← Logout
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </details>
         </div>
 
-        {{-- Navigasi --}}
-        <nav class="flex-1 space-y-1 px-3 py-6">
-
-            @php
-                $menuAdmin = [
-                    [
-                        'label' => 'Dashboard',
-                        'route' => 'admin.dashboard',
-                        'active' => 'admin.dashboard',
-                    ],
-                    [
-                        'label' => 'Manajemen Tiket',
-                        'route' => 'admin.daftar-tiket.index',
-                        'active' => 'admin.daftar-tiket.*',
-                    ],
-                    [
-                        'label' => 'Manajemen Wahana',
-                        'route' => 'admin.wahana.index',
-                        'active' => 'admin.wahana.*',
-                    ],
-                    [
-                        'label' => 'Manajemen Fasilitas',
-                        'route' => 'admin.fasilitas.index',
-                        'active' => 'admin.fasilitas.*',
-                    ],
-                    [
-                        'label' => 'Manajemen Konten',
-                        'route' => 'admin.konten-berita.index',
-                        'active' => 'admin.konten-berita.*',
-                    ],
-                ];
-            @endphp
+        {{-- Navigasi Desktop --}}
+        <nav class="hidden flex-1 space-y-1 px-3 py-6 lg:block">
 
             @foreach ($menuAdmin as $menu)
                 <a
@@ -91,7 +122,6 @@
                 @foreach ([
                     'Transaksi',
                     'Monitoring Pendapatan',
-                    'Manajemen Reservasi',
                     'Manajemen Pengguna',
                     'Laporan',
                     'Audit Log',
@@ -104,8 +134,8 @@
 
         </nav>
 
-        {{-- Logout --}}
-        <div class="border-t border-white/15 p-4">
+        {{-- Logout Desktop --}}
+        <div class="hidden border-t border-white/15 p-4 lg:block">
             @if (\Illuminate\Support\Facades\Route::has('logout'))
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

@@ -53,6 +53,7 @@
 
         @csrf
 
+        <!-- Email / Nomor Telepon -->
         <div class="auth-field">
             <label for="login">
                 Email / No. Telepon
@@ -69,24 +70,51 @@
             >
         </div>
 
+        <!-- Kata Sandi -->
         <div class="auth-field">
             <label for="password">
                 Kata Sandi
             </label>
 
-            <input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Masukkan kata sandi"
-                autocomplete="current-password"
-                required
-            >
-        </div>
+            <div class="password-wrapper">
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Masukkan kata sandi"
+                    autocomplete="current-password"
+                    required
+                >
 
-        <!-- Teks Lupa Kata Sandi -->
-        <div class="login-forgot">
-            <span>Lupa kata sandi?</span>
+                <button
+                    type="button"
+                    id="togglePassword"
+                    class="password-toggle"
+                    aria-label="Tampilkan kata sandi"
+                    aria-controls="password"
+                    aria-pressed="false"
+                >
+                    <!-- Mata terbuka -->
+                    <svg id="eyeOpen" width="22" height="22"
+                        viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.8"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+
+                    <!-- Mata dicoret -->
+                    <svg id="eyeClosed" width="22" height="22"
+                        viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="1.8"
+                        stroke-linecap="round" stroke-linejoin="round"
+                        style="display:none;">
+                        <path d="M3 3l18 18"/>
+                        <path d="M10.6 5.1A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a14 14 0 0 1-3.1 4.2"/>
+                        <path d="M6.1 6.1A14 14 0 0 0 2 12s3.5 7 10 7a10.5 10.5 0 0 0 5.9-1.8"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <!-- Tombol Login -->
@@ -95,6 +123,23 @@
         </button>
 
     </form>
+
+    <script>
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            const input = document.getElementById('password');
+            const eyeOpen = document.getElementById('eyeOpen');
+            const eyeClosed = document.getElementById('eyeClosed');
+            const show = input.type === 'password';
+
+            input.type = show ? 'text' : 'password';
+            eyeOpen.style.display = show ? 'none' : 'block';
+            eyeClosed.style.display = show ? 'block' : 'none';
+
+            this.setAttribute('aria-label',
+                show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+            this.setAttribute('aria-pressed', String(show));
+        });
+    </script>
 
     <!-- Navigasi ke Register -->
     <p class="login-register">

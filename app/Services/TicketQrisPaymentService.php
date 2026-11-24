@@ -19,26 +19,56 @@ class TicketQrisPaymentService
         private TicketQrisGateway $gateway
     ) {}
 
+    /**
+     * QRIS untuk transaksi walk-in yang dibuat oleh Petugas.
+     */
+    public function createForCounter(
+        User $staff,
+        string $orderCode
+    ): TicketPaymentGatewayAttempt {
+        abort_unless($staff->role === 'petugas', 403);
+
+        return $this->createAuthorized($staff, $orderCode, true);
+    }
+
+    /**
+     * QRIS Wisatawan tetap hanya dapat diakses pemilik pesanan.
+     */
     public function createFor(
         User $user,
         string $orderCode
     ): TicketPaymentGatewayAttempt {
+        abort_unless($user->role === 'wisatawan', 403);
 
-        // 1. Periksa pesanan dan siapkan percobaan QRIS.
-        // Transaksi database selesai sebelum memanggil Midtrans.
-        [$attempt, $isNew] = $this->database
-            ->connection()
-            ->transaction(function () use ($user, $orderCode) {
+        return $this->createAuthorized($user, $orderCode, false);
+    }
 
-                abort_unless(
-                    $user->role === 'wisatawan',
-                    403
-                );
+    /**
+     * Jalur Midtrans bersama dengan pembatasan kepemilikan berdasarkan role.
+     */
+    private function createAuthorized(
+        User $user,
+        string $orderCode,
+        bool $counter
+    ): TicketPaymentGatewayAttempt {
+        // 1. Periksa pesanan dan buat attempt di dalam transaksi database.
+        // Request eksternal ke Midtrans dilakukan setelah transaksi DB selesai.
+        [$attempt, $isNew] = $this->database->connection()->transaction(
+            function () use ($user, $orderCode, $counter) {
+                $query = TicketOrder::query()->where('code', $orderCode);
 
-                $order = TicketOrder::where('code', $orderCode)
-                    ->where('user_id', $user->id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
+                if ($counter) {
+                    // Petugas tidak boleh menggunakan pesanan Petugas lain
+                    // ataupun transaksi pembelian online Wisatawan.
+                    $query->where('sale_channel', 'counter')
+                        ->where('staff_user_id', $user->id)
+                        ->whereNull('user_id');
+                } else {
+                    // Alur online Wisatawan tetap terbatas pada pemilik akun.
+                    $query->where('user_id', $user->id);
+                }
+
+                $order = $query->lockForUpdate()->firstOrFail();
 
                 abort_unless(
                     $order->status === 'pending_payment',
@@ -46,10 +76,9 @@ class TicketQrisPaymentService
                     'Pesanan tidak dapat dibayar.'
                 );
 
-                $payment = TicketPayment::where(
-                    'ticket_order_id',
-                    $order->id
-                )->lockForUpdate()->first();
+                $payment = TicketPayment::where('ticket_order_id', $order->id)
+                    ->lockForUpdate()
+                    ->first();
 
                 abort_unless(
                     $payment
@@ -65,8 +94,7 @@ class TicketQrisPaymentService
                     'Nominal pesanan tidak sesuai.'
                 );
 
-                // Jangan membuat transaksi Midtrans berulang
-                // untuk pembayaran yang masih diproses.
+                // Hindari pembuatan transaksi Midtrans ganda.
                 $latest = $payment->gatewayAttempts()
                     ->latest('id')
                     ->first();
@@ -79,10 +107,11 @@ class TicketQrisPaymentService
                         return [$latest, false];
                     }
 
+                    // Gunakan status yang benar-benar disimpan webhook.
                     abort_unless(
                         in_array(
                             $latest->status,
-                            ['expire', 'cancel', 'deny', 'failed'],
+                            ['expired', 'cancelled', 'failed'],
                             true
                         ),
                         409,
@@ -90,7 +119,6 @@ class TicketQrisPaymentService
                     );
                 }
 
-                // Harga tiket harus berupa rupiah bulat.
                 $amount = (string) $payment->amount;
 
                 abort_unless(
@@ -108,34 +136,30 @@ class TicketQrisPaymentService
                 ]);
 
                 return [$attempt, true];
-            });
+            }
+        );
 
-        // QRIS lama yang masih pending digunakan kembali.
         if (! $isNew) {
             return $attempt;
         }
 
-        // 2. Hubungi Midtrans di luar transaksi database.
+        // 2. Panggil Midtrans di luar transaksi database.
         try {
             $result = $this->gateway->createQris(
                 $attempt->reference_id,
                 (int) $attempt->amount
             );
         } catch (Throwable $exception) {
-
-            // Jika request gagal atau timeout, statusnya
-            // dianggap belum pasti agar tidak membuat
-            // transaksi gateway kedua secara otomatis.
+            // Hasil request timeout/tidak pasti tidak boleh otomatis
+            // membuat transaksi baru dengan referensi berbeda.
             $this->database->connection()->transaction(
                 function () use ($attempt) {
-                    $locked = TicketPaymentGatewayAttempt::whereKey(
-                        $attempt->id
-                    )->lockForUpdate()->firstOrFail();
+                    $locked = TicketPaymentGatewayAttempt::whereKey($attempt->id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
 
                     if ($locked->status === 'initiating') {
-                        $locked->update([
-                            'status' => 'initiation_unknown',
-                        ]);
+                        $locked->update(['status' => 'initiation_unknown']);
                     }
                 }
             );
@@ -143,39 +167,27 @@ class TicketQrisPaymentService
             throw $exception;
         }
 
-        // 3. Simpan hasil transaksi Midtrans.
+        // 3. Simpan respons Midtrans.
         return $this->database->connection()->transaction(
             function () use ($attempt, $result) {
-
-                $locked = TicketPaymentGatewayAttempt::whereKey(
-                    $attempt->id
-                )->lockForUpdate()->firstOrFail();
+                $locked = TicketPaymentGatewayAttempt::whereKey($attempt->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
                 if (
                     $locked->status !== 'initiating'
                     && $locked->status !== 'paid'
                     && $locked->status !== 'settlement'
                 ) {
-                    throw new RuntimeException(
-                        'Status percobaan QRIS tidak sesuai.'
-                    );
+                    throw new RuntimeException('Status percobaan QRIS tidak sesuai.');
                 }
 
-                $locked->provider_payment_id =
-                    $result['transaction_id'];
+                $locked->provider_payment_id = $result['transaction_id'];
+                $locked->qr_image_url = $result['qr_image_url'];
+                $locked->qr_string = $result['qr_string'];
 
-                $locked->qr_image_url =
-                    $result['qr_image_url'];
-
-                $locked->qr_string =
-                    $result['qr_string'];
-
-                // Simpan waktu kedaluwarsa dari Midtrans.
-                // Jika tidak ada informasi zona waktu,
-                // gunakan Asia/Jakarta (WIB).
+                // Waktu Midtrans tanpa timezone ditafsirkan sebagai WIB.
                 $expiryTime = $result['expires_at'] ?? null;
-
-
                 $locked->expires_at =
                     is_string($expiryTime) && trim($expiryTime) !== ''
                         ? \Illuminate\Support\Carbon::parse(
@@ -183,6 +195,7 @@ class TicketQrisPaymentService
                             'Asia/Jakarta'
                         )->utc()
                         : null;
+
                 if ($locked->status === 'initiating') {
                     $locked->status = 'pending';
                 }

@@ -1,0 +1,15 @@
+@postgres_purchase @sprint2 @e_tiket
+Feature: Penerbitan dan akses E-Tiket wisatawan
+  Sebagai wisatawan
+  Saya ingin memperoleh E-Tiket setelah pembayaran lunas
+  Agar tiket dapat digunakan saat berkunjung
+
+  Scenario: E-Tiket tidak dapat diakses sebelum pembayaran lunas # features\e_tiket_sprint2.feature:7
+    Given saya sudah login sebagai wisatawan                     # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar           # FeatureContext::memilikiPesananSprint2()
+    When saya membuka E-Tiket pesanan                            # FeatureContext::membukaETiketSprint2()
+    Then saya diarahkan kembali ke halaman pembayaran            # FeatureContext::eTiketBelumBisaDiaksesSprint2()
+
+1 scenario (1 passed)
+4 steps (4 passed)
+0m0.49s (44.78Mb)

@@ -7,12 +7,29 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['code', 'ticket_order_id', 'method', 'amount', 'status', 'merchant_reference', 'confirmed_by', 'paid_at'])]
+#[Fillable([
+    'code',
+    'ticket_order_id',
+    'method',
+    'amount',
+    'status',
+    'merchant_reference',
+    'confirmed_by',
+    'paid_at',
+    'cash_received_amount',
+    'cash_change_amount',
+])]
+
 class TicketPayment extends Model
 {
     protected function casts(): array
     {
-        return ['amount' => 'decimal:2', 'paid_at' => 'immutable_datetime'];
+        return [
+            'amount' => 'decimal:2',
+            'cash_received_amount' => 'decimal:2',
+            'cash_change_amount' => 'decimal:2',
+            'paid_at' => 'immutable_datetime',
+        ];
     }
 
     public function order(): BelongsTo

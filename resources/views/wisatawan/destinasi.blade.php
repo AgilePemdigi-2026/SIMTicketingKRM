@@ -4,17 +4,10 @@
 
 @section('content')
 <div class="mx-auto w-full max-w-[1180px] px-4 pb-20 pt-10 sm:px-6 sm:pb-24 sm:pt-14 lg:px-8 lg:pt-16">
-    {{-- Breadcrumb: menuju beranda milik wisatawan, bukan halaman publik. --}}
-    <nav class="mb-5 text-[12px] font-semibold tracking-[0.08em] text-[#2F795B] sm:text-[13px]"
-         aria-label="Breadcrumb">
-        <ol class="flex flex-wrap items-center gap-1.5">
-            <li><a href="{{ route('wisatawan.beranda') }}" class="hover:underline">Beranda</a></li>
-            <li aria-hidden="true">›</li>
-            <li>Destinasi</li>
-            <li aria-hidden="true">›</li>
-            <li aria-current="page">{{ $destinasi['nama'] }}</li>
-        </ol>
-    </nav>
+    {{-- Breadcrumb menggunakan komponen bersama --}}
+    <x-breadcrumb :items="[
+        ['label' => 'Destinasi']
+    ]" />
 
     {{-- Foto utama sesuai komposisi mockup. --}}
     <section aria-labelledby="destinasi-title">
@@ -103,8 +96,22 @@
                 @endforelse
             </dl>
 
-            @if (\Illuminate\Support\Facades\Route::has('ticket-purchase.index'))
-                <a href="{{ route('ticket-purchase.index') }}"
+            @php
+                $destinasiRole = auth()->user()?->role;
+                $destinasiTicketHref = match ($destinasiRole) {
+                    'admin' => route('admin.daftar-tiket.index'),
+                    'petugas' => route('petugas.loket.index'),
+                    default => \Illuminate\Support\Facades\Route::has('ticket-purchase.index') ? route('ticket-purchase.index') : null,
+                };
+                $destinasiReservasiHref = match ($destinasiRole) {
+                    'admin' => route('admin.reservasi.preview'),
+                    'petugas' => route('petugas.dashboard'),
+                    default => route('wisatawan.reservasi.index'),
+                };
+            @endphp
+
+            @if ($destinasiTicketHref)
+                <a href="{{ $destinasiTicketHref }}"
                    class="mt-4 flex min-h-11 w-full items-center justify-center bg-[#064631] px-3 py-3 text-center text-[13px] font-bold text-white transition hover:bg-[#2F795B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2F795B]">
                     Beli Tiket
                 </a>
@@ -115,17 +122,12 @@
                 </span>
             @endif
 
-            @if (\Illuminate\Support\Facades\Route::has('reservasi.index'))
-                <a href="{{ route('reservasi.index') }}"
-                   class="mt-3 flex min-h-11 w-full items-center justify-center border border-[#064631] px-3 py-3 text-center text-[13px] font-bold text-[#064631] transition hover:bg-[#EEF4EE]">
-                    Reservasi Venue
-                </a>
-            @else
-                <span aria-disabled="true" title="Fitur reservasi venue sedang dikembangkan"
-                      class="mt-3 flex min-h-11 w-full cursor-not-allowed items-center justify-center border border-[#819B8B] px-3 py-3 text-center text-[13px] font-bold text-[#537463] opacity-70">
-                    Reservasi Venue (segera)
-                </span>
-            @endif
+            <a
+                href="{{ $destinasiReservasiHref }}"
+                class="mt-3 flex min-h-11 w-full items-center justify-center border border-[#064631] px-3 py-3 text-center text-[13px] font-bold text-[#064631] transition hover:bg-[#EEF4EE]"
+            >
+                Reservasi Venue
+            </a>
 
             <p class="mt-4 text-[11px] leading-5 text-[#708176]">
                 *Harga diambil dari master data tiket aplikasi untuk pengujian. Tarif resmi mengikuti konfirmasi pengelola.

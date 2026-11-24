@@ -132,6 +132,93 @@ class TicketPurchaseService
         });
     }
 
+    public function createForCounter(User $staff, array $data): TicketOrder
+    {
+        // Hanya Petugas yang boleh membuat transaksi loket.
+        abort_unless($staff->role === 'petugas', 403);
+
+        $token = $data['checkout_token'] ?? null;
+
+        abort_unless(
+            is_string($token) && Str::isUuid($token),
+            422,
+            'Token checkout loket tidak valid.'
+        );
+
+        $fingerprint = $this->fingerprint($data);
+
+        return $this->database->connection()->transaction(
+            function () use ($staff, $data, $token, $fingerprint) {
+
+                // Cegah transaksi ganda jika tombol checkout
+                // dikirim ulang dengan token yang sama.
+                $existing = TicketOrder::query()
+                    ->whereNull('user_id')
+                    ->where('checkout_token', $token)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing !== null) {
+                    abort_unless(
+                        $existing->sale_channel === 'counter'
+                        && (int) $existing->staff_user_id === (int) $staff->id
+                        && is_string($existing->checkout_fingerprint)
+                        && hash_equals(
+                            $existing->checkout_fingerprint,
+                            $fingerprint
+                        ),
+                        409,
+                        'Token checkout sudah digunakan untuk transaksi lain.'
+                    );
+
+                    return $existing->load('items.visitors');
+                }
+
+                // Harga dan kuota diperiksa kembali di server.
+                $quote = $this->calculate($data);
+                $booker = $data['booker'];
+
+                // Pesanan walk-in tidak memerlukan akun Wisatawan.
+                $order = TicketOrder::create([
+                    'code' => (string) Str::uuid(),
+                    'user_id' => null,
+                    'sale_channel' => 'counter',
+                    'staff_user_id' => $staff->id,
+                    'visit_date' => $data['visit_date'],
+                    'visitor_type' => $data['visitor_type'],
+                    'booker_name' => $booker['name'],
+                    'booker_identity_number' => $booker['identity_number'],
+                    'booker_phone' => $booker['phone'],
+                    'booker_email' => $booker['email'],
+                    'total' => $quote['total'],
+                    'status' => 'pending_payment',
+                    'checkout_token' => $token,
+                    'checkout_fingerprint' => $fingerprint,
+                ]);
+
+                foreach ($quote['items'] as $index => $snapshot) {
+                    unset(
+                        $snapshot['adult_subtotal'],
+                        $snapshot['child_subtotal'],
+                        $snapshot['available_quota']
+                    );
+
+                    $orderItem = $order->items()->create($snapshot);
+
+                    foreach ($data['items'][$index]['visitors'] as $visitor) {
+                        $orderItem->visitors()->create([
+                            'name' => $visitor['name'],
+                            'identity_number' => $visitor['identity_number'],
+                            'age_category' => $visitor['age_category'],
+                        ]);
+                    }
+                }
+
+                return $order->load('items.visitors');
+            }
+        );
+    }
+
     private function fingerprint(array $data): string
     {
         $canonical = [

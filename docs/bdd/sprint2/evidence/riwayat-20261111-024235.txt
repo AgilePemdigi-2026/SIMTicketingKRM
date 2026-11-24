@@ -1,0 +1,44 @@
+@postgres_purchase @sprint2 @riwayat_pesanan
+Feature: Melihat riwayat pesanan tiket
+  Sebagai wisatawan
+  Saya ingin melihat riwayat pembelian tiket
+  Agar saya dapat memantau transaksi dan membuka detail pesanan
+
+  Background:                                # features\riwayat_pesanan_sprint2.feature:7
+    Given saya sudah login sebagai wisatawan # FeatureContext::loggedInAsTourist()
+
+  Scenario: Wisatawan belum memiliki riwayat pesanan # features\riwayat_pesanan_sprint2.feature:10
+    When saya membuka halaman riwayat pesanan tiket  # FeatureContext::membukaRiwayatPesananSprint2()
+    Then daftar riwayat tiket masih kosong           # FeatureContext::riwayatTiketKosongSprint2()
+
+  Scenario: Wisatawan melihat riwayat pesanan miliknya              # features\riwayat_pesanan_sprint2.feature:14
+    Given saya memiliki pesanan tiket yang belum dibayar            # FeatureContext::memilikiPesananSprint2()
+    When saya membuka halaman riwayat pesanan tiket                 # FeatureContext::membukaRiwayatPesananSprint2()
+    Then riwayat mencantumkan pesanan saya yang menunggu pembayaran # FeatureContext::riwayatPendingSprint2()
+
+  Scenario: Riwayat menampilkan status pembayaran lunas         # features\riwayat_pesanan_sprint2.feature:19
+    Given saya memiliki pesanan tiket yang belum dibayar        # FeatureContext::memilikiPesananSprint2()
+    And pembayaran Cash pesanan saya telah dikonfirmasi petugas # FeatureContext::cashSudahDikonfirmasiUntukETiket()
+    When saya membuka halaman riwayat pesanan tiket             # FeatureContext::membukaRiwayatPesananSprint2()
+    Then riwayat mencantumkan pesanan saya yang sudah lunas     # FeatureContext::riwayatLunasSprint2()
+
+  Scenario: Wisatawan membuka detail pesanannya sendiri  # features\riwayat_pesanan_sprint2.feature:25
+    Given saya memiliki pesanan tiket yang belum dibayar # FeatureContext::memilikiPesananSprint2()
+    When saya membuka detail pesanan tiket saya          # FeatureContext::membukaDetailPesananSayaSprint2()
+    Then detail transaksi sesuai dengan pesanan saya     # FeatureContext::detailPesananSesuaiSprint2()
+
+  Scenario: Wisatawan tidak melihat pesanan akun lain         # features\riwayat_pesanan_sprint2.feature:30
+    Given saya memiliki pesanan tiket yang belum dibayar      # FeatureContext::memilikiPesananSprint2()
+    And saya beralih ke akun wisatawan lain                   # FeatureContext::beralihAkunWisatawanLainSprint2()
+    When saya membuka halaman riwayat pesanan tiket           # FeatureContext::membukaRiwayatPesananSprint2()
+    Then pesanan wisatawan pertama tidak muncul dalam riwayat # FeatureContext::riwayatAkunLainTerisolasiSprint2()
+
+  Scenario: Wisatawan tidak dapat membuka detail akun lain # features\riwayat_pesanan_sprint2.feature:36
+    Given saya memiliki pesanan tiket yang belum dibayar   # FeatureContext::memilikiPesananSprint2()
+    And saya beralih ke akun wisatawan lain                # FeatureContext::beralihAkunWisatawanLainSprint2()
+    When saya membuka detail pesanan wisatawan pertama     # FeatureContext::membukaDetailAkunLainSprint2()
+    Then akses detail pesanan tersebut ditolak             # FeatureContext::detailAkunLainDitolakSprint2()
+
+6 scenarios (6 passed)
+26 steps (26 passed)
+0m1.02s (48.18Mb)

@@ -1,0 +1,25 @@
+@postgres_purchase
+Feature: Pembelian tiket wisatawan
+  Sebagai wisatawan
+  Saya ingin memilih tiket dan mengisi data pengunjung
+  Agar transaksi pembelian tiket tersimpan
+
+  Scenario: Wisatawan membuka katalog tiket aktif # features\pembelian_tiket.feature:7
+    Given saya sudah login sebagai wisatawan      # FeatureContext::loggedInAsTourist()
+    When saya membuka halaman pembelian tiket     # FeatureContext::sayaMembukaHalamanPembelianTiket()
+    Then halaman katalog tiket tampil             # FeatureContext::halamanKatalogTiketTampil()
+
+  Scenario: Wisatawan melihat detail checkout tiket # features\pembelian_tiket.feature:12
+    Given saya sudah login sebagai wisatawan        # FeatureContext::loggedInAsTourist()
+    When saya membuka halaman pembelian tiket       # FeatureContext::sayaMembukaHalamanPembelianTiket()
+    And saya memilih tiket untuk checkout           # FeatureContext::sayaMemilihTiketUntukCheckout()
+    Then detail checkout tiket tampil               # FeatureContext::detailCheckoutTiketTampil()
+
+  Scenario: Wisatawan menyimpan transaksi pembelian                # features\pembelian_tiket.feature:18
+    Given saya sudah login sebagai wisatawan                       # FeatureContext::loggedInAsTourist()
+    When saya mengirim checkout tiket dengan data pengunjung valid # FeatureContext::sayaMengirimCheckoutTiketDenganDataPengunjungValid()
+    Then transaksi pembelian berhasil disimpan                     # FeatureContext::transaksiPembelianBerhasilDisimpan()
+
+3 scenarios (3 passed)
+10 steps (10 passed)
+0m0.42s (46.39Mb)

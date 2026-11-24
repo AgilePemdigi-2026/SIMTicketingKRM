@@ -12,6 +12,31 @@ class MidtransQrisGateway implements TicketQrisGateway
         string $referenceId,
         int $amount
     ): array {
+        // Tetap digunakan pembayaran tiket Sprint 2.
+        return $this->sendQrisCharge(
+            $referenceId,
+            $amount,
+            '/webhooks/midtrans/ticket'
+        );
+    }
+
+    public function createReservationQris(
+        string $referenceId,
+        int $amount
+    ): array {
+        // Khusus pembayaran reservasi Sprint 3.
+        return $this->sendQrisCharge(
+            $referenceId,
+            $amount,
+            '/webhooks/midtrans/reservation'
+        );
+    }
+
+    private function sendQrisCharge(
+        string $referenceId,
+        int $amount,
+        string $webhookPath
+    ): array {
         // Selama pengembangan, hanya izinkan Sandbox.
         if (config('midtrans.is_production') !== false) {
             throw new RuntimeException(
@@ -39,7 +64,7 @@ class MidtransQrisGateway implements TicketQrisGateway
         );
 
         $appUrl = (string) config('app.url');
-        $webhookUrl = rtrim($appUrl, '/') . '/webhooks/midtrans/ticket';
+        $webhookUrl = rtrim($appUrl, '/') . $webhookPath;
         $headers = [
             'Accept' => 'application/json',
         ];

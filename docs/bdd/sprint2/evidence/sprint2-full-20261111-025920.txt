@@ -1,0 +1,239 @@
+@postgres_purchase @sprint2 @e_tiket
+Feature: Penerbitan dan akses E-Tiket wisatawan
+  Sebagai wisatawan
+  Saya ingin memperoleh E-Tiket setelah pembayaran lunas
+  Agar tiket dapat digunakan saat berkunjung
+
+  Scenario: E-Tiket tidak dapat diakses sebelum pembayaran lunas # features\e_tiket_sprint2.feature:7
+    Given saya sudah login sebagai wisatawan                     # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar           # FeatureContext::memilikiPesananSprint2()
+    When saya membuka E-Tiket pesanan                            # FeatureContext::membukaETiketSprint2()
+    Then saya diarahkan kembali ke halaman pembayaran            # FeatureContext::eTiketBelumBisaDiaksesSprint2()
+
+  Scenario: Pembayaran lunas menerbitkan E-Tiket pengunjung     # features\e_tiket_sprint2.feature:14
+    Given saya sudah login sebagai wisatawan                    # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar          # FeatureContext::memilikiPesananSprint2()
+    And pembayaran Cash pesanan saya telah dikonfirmasi petugas # FeatureContext::cashSudahDikonfirmasiUntukETiket()
+    When listener penerbitan memproses event pembayaran lunas   # FeatureContext::listenerMenerbitkanETiketSprint2()
+    Then satu E-Tiket aktif diterbitkan untuk setiap pengunjung # FeatureContext::satuETiketPerPengunjungSprint2()
+
+  Scenario: Pemrosesan ulang tidak menduplikasi E-Tiket                # features\e_tiket_sprint2.feature:21
+    Given saya sudah login sebagai wisatawan                           # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar                 # FeatureContext::memilikiPesananSprint2()
+    And pembayaran Cash pesanan saya telah dikonfirmasi petugas        # FeatureContext::cashSudahDikonfirmasiUntukETiket()
+    When listener penerbitan memproses event pembayaran lunas dua kali # FeatureContext::listenerDiprosesDuaKaliSprint2()
+    Then satu E-Tiket aktif diterbitkan untuk setiap pengunjung        # FeatureContext::satuETiketPerPengunjungSprint2()
+    And kode E-Tiket tidak berubah setelah pemrosesan ulang            # FeatureContext::kodeETiketTidakBerubahSprint2()
+
+  Scenario: Wisatawan melihat E-Tiket setelah pembayaran lunas  # features\e_tiket_sprint2.feature:29
+    Given saya sudah login sebagai wisatawan                    # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar          # FeatureContext::memilikiPesananSprint2()
+    And pembayaran Cash pesanan saya telah dikonfirmasi petugas # FeatureContext::cashSudahDikonfirmasiUntukETiket()
+    When listener penerbitan memproses event pembayaran lunas   # FeatureContext::listenerMenerbitkanETiketSprint2()
+    And saya membuka E-Tiket pesanan                            # FeatureContext::membukaETiketSprint2()
+    Then halaman E-Tiket menampilkan identitas dan kode tiket   # FeatureContext::halamanETiketMenampilkanDataSprint2()
+
+@postgres_purchase @sprint2
+Feature: Pembayaran tiket wisatawan
+  Sebagai wisatawan
+  Saya ingin melakukan pembayaran Cash atau QRIS
+  Agar transaksi pembelian tiket dapat diproses
+
+  Background:                                          # features\pembayaran_tiket_sprint2.feature:7
+    Given saya sudah login sebagai wisatawan           # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar # FeatureContext::memilikiPesananSprint2()
+
+  Scenario: Wisatawan memilih pembayaran Cash        # features\pembayaran_tiket_sprint2.feature:11
+    When saya memilih pembayaran Cash untuk pesanan  # FeatureContext::memilihCashSprint2()
+    Then pembayaran Cash menunggu konfirmasi petugas # FeatureContext::cashPendingSprint2()
+    And halaman pembayaran menampilkan kode Cash     # FeatureContext::halamanCashSprint2()
+
+  Scenario: Petugas mengonfirmasi pembayaran Cash      # features\pembayaran_tiket_sprint2.feature:16
+    When saya memilih pembayaran Cash untuk pesanan    # FeatureContext::memilihCashSprint2()
+    And saya login sebagai petugas pembayaran          # FeatureContext::loginPetugasSprint2()
+    And saya mengonfirmasi pembayaran Cash tersebut    # FeatureContext::konfirmasiCashSprint2()
+    Then transaksi dan pembayaran Cash berstatus lunas # FeatureContext::cashLunasSprint2()
+
+  Scenario: Wisatawan memilih pembayaran QRIS               # features\pembayaran_tiket_sprint2.feature:22
+    When saya memilih pembayaran QRIS untuk pesanan         # FeatureContext::memilihQrisSprint2()
+    Then pembayaran QRIS masih menunggu konfirmasi Midtrans # FeatureContext::qrisPendingSprint2()
+
+  Scenario: Petugas tidak dapat mengonfirmasi QRIS secara manual # features\pembayaran_tiket_sprint2.feature:26
+    When saya memilih pembayaran QRIS untuk pesanan              # FeatureContext::memilihQrisSprint2()
+    And saya login sebagai petugas pembayaran                    # FeatureContext::loginPetugasSprint2()
+    And petugas mencoba mengonfirmasi QRIS secara manual         # FeatureContext::konfirmasiManualQrisSprint2()
+    Then sistem menolak konfirmasi QRIS manual                   # FeatureContext::qrisManualDitolakSprint2()
+
+@postgres_purchase @sprint2 @loket
+Feature: Pembelian tiket oleh Petugas Loket
+  Sebagai petugas loket
+  Saya ingin melayani pembelian tiket wisatawan
+  Agar transaksi pembelian dapat diproses langsung
+
+  Scenario: Petugas dapat membuka halaman pembelian loket   # features\pembelian_loket_sprint2.feature:7
+    Given saya sudah login sebagai wisatawan                # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran               # FeatureContext::loginPetugasSprint2()
+    When saya membuka halaman pembelian tiket loket         # FeatureContext::membukaHalamanLoketSprint2()
+    Then halaman pembelian tiket loket berhasil ditampilkan # FeatureContext::halamanLoketBerhasilSprint2()
+
+  Scenario: Wisatawan tidak dapat membuka halaman loket # features\pembelian_loket_sprint2.feature:13
+    Given saya sudah login sebagai wisatawan            # FeatureContext::loggedInAsTourist()
+    When saya membuka halaman pembelian tiket loket     # FeatureContext::membukaHalamanLoketSprint2()
+    Then akses halaman loket ditolak                    # FeatureContext::aksesLoketDitolakSprint2()
+
+  Scenario: Petugas melihat preview harga tiket loket      # features\pembelian_loket_sprint2.feature:19
+    Given saya sudah login sebagai wisatawan               # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran              # FeatureContext::loginPetugasSprint2()
+    And petugas menyiapkan data pembelian loket yang valid # FeatureContext::menyiapkanDataLoketSprint2()
+    When petugas meminta preview harga tiket loket         # FeatureContext::previewHargaLoketSprint2()
+    Then preview loket berhasil menampilkan rincian harga  # FeatureContext::previewLoketBerhasilSprint2()
+
+  Scenario: Petugas berhasil membuat transaksi Cash             # features\pembelian_loket_sprint2.feature:26
+    Given saya sudah login sebagai wisatawan                    # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran                   # FeatureContext::loginPetugasSprint2()
+    And petugas menyiapkan data pembelian loket yang valid      # FeatureContext::menyiapkanDataLoketSprint2()
+    When petugas melakukan checkout tiket loket                 # FeatureContext::checkoutLoketSprint2()
+    Then pesanan loket tersimpan dengan pembayaran Cash pending # FeatureContext::checkoutCashPendingLoketSprint2()
+
+  Scenario: Petugas mengonfirmasi pembayaran Cash loket    # features\pembelian_loket_sprint2.feature:33
+    Given saya sudah login sebagai wisatawan               # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran              # FeatureContext::loginPetugasSprint2()
+    And petugas menyiapkan data pembelian loket yang valid # FeatureContext::menyiapkanDataLoketSprint2()
+    When petugas melakukan checkout tiket loket            # FeatureContext::checkoutLoketSprint2()
+    And petugas mengonfirmasi pembayaran Cash loket        # FeatureContext::konfirmasiCashLoketSprint2()
+    Then transaksi loket dan pembayaran berstatus lunas    # FeatureContext::transaksiLoketLunasSprint2()
+
+  Scenario: Checkout loket menolak identitas wisatawan tidak cocok    # features\pembelian_loket_sprint2.feature:41
+    Given saya sudah login sebagai wisatawan                          # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran                         # FeatureContext::loginPetugasSprint2()
+    And petugas menyiapkan data pembelian loket yang valid            # FeatureContext::menyiapkanDataLoketSprint2()
+    When petugas checkout menggunakan identitas wisatawan tidak cocok # FeatureContext::checkoutIdentitasSalahLoketSprint2()
+    Then checkout loket ditolak tanpa membuat pesanan                 # FeatureContext::checkoutIdentitasDitolakLoketSprint2()
+
+  Scenario: Checkout loket menolak jumlah pengunjung tidak sesuai # features\pembelian_loket_sprint2.feature:48
+    Given saya sudah login sebagai wisatawan                      # FeatureContext::loggedInAsTourist()
+    And saya login sebagai petugas pembayaran                     # FeatureContext::loginPetugasSprint2()
+    And petugas menyiapkan data pembelian loket yang valid        # FeatureContext::menyiapkanDataLoketSprint2()
+    When petugas checkout dengan jumlah pengunjung tidak sesuai   # FeatureContext::checkoutPengunjungSalahLoketSprint2()
+    Then validasi checkout loket menolak jumlah pengunjung        # FeatureContext::pengunjungDitolakLoketSprint2()
+
+@postgres_purchase @sprint2 @webhook_qris
+Feature: Pembayaran QRIS otomatis melalui Midtrans
+  Sebagai wisatawan
+  Saya ingin pembayaran QRIS dikonfirmasi secara otomatis
+  Agar status pesanan diperbarui dengan aman
+
+  Scenario: Sistem menyiapkan QRIS untuk pembayaran           # features\qris_webhook_sprint2.feature:7
+    Given saya memiliki pesanan QRIS dari gateway simulasi    # FeatureContext::pesananQrisDariGatewaySimulasi()
+    Then QRIS simulasi tersedia dan pembayaran masih menunggu # FeatureContext::qrisSimulasiTersedia()
+
+  Scenario: Midtrans mengonfirmasi pembayaran berhasil      # features\qris_webhook_sprint2.feature:11
+    Given saya memiliki pesanan QRIS dari gateway simulasi  # FeatureContext::pesananQrisDariGatewaySimulasi()
+    When webhook Midtrans simulasi mengonfirmasi settlement # FeatureContext::webhookSettlementSprint2()
+    Then pembayaran QRIS otomatis lunas                     # FeatureContext::qrisOtomatisLunasSprint2()
+
+  Scenario: Webhook dengan signature palsu ditolak         # features\qris_webhook_sprint2.feature:16
+    Given saya memiliki pesanan QRIS dari gateway simulasi # FeatureContext::pesananQrisDariGatewaySimulasi()
+    When webhook Midtrans memakai signature palsu          # FeatureContext::webhookSignaturePalsuSprint2()
+    Then webhook ditolak karena signature tidak valid      # FeatureContext::webhookSignatureDitolakSprint2()
+
+  Scenario: Webhook dengan nominal pembayaran berbeda ditolak # features\qris_webhook_sprint2.feature:21
+    Given saya memiliki pesanan QRIS dari gateway simulasi    # FeatureContext::pesananQrisDariGatewaySimulasi()
+    When webhook Midtrans melaporkan nominal berbeda          # FeatureContext::webhookNominalBerbedaSprint2()
+    Then webhook ditolak karena nominal tidak cocok           # FeatureContext::webhookNominalDitolakSprint2()
+
+  Scenario: Midtrans melaporkan QRIS kedaluwarsa             # features\qris_webhook_sprint2.feature:26
+    Given saya memiliki pesanan QRIS dari gateway simulasi   # FeatureContext::pesananQrisDariGatewaySimulasi()
+    When webhook Midtrans melaporkan QRIS kedaluwarsa        # FeatureContext::webhookQrisKedaluwarsaSprint2()
+    Then attempt QRIS kedaluwarsa dan pembayaran belum lunas # FeatureContext::attemptQrisExpiredSprint2()
+
+  Scenario: Webhook settlement yang sama diterima dua kali      # features\qris_webhook_sprint2.feature:31
+    Given saya memiliki pesanan QRIS dari gateway simulasi      # FeatureContext::pesananQrisDariGatewaySimulasi()
+    When webhook settlement Midtrans yang sama dikirim dua kali # FeatureContext::webhookSettlementDuplikatSprint2()
+    Then pembayaran tetap lunas tanpa percobaan QRIS tambahan   # FeatureContext::qrisDuplikatAmanSprint2()
+
+@postgres_purchase @sprint2 @riwayat_pesanan
+Feature: Melihat riwayat pesanan tiket
+  Sebagai wisatawan
+  Saya ingin melihat riwayat pembelian tiket
+  Agar saya dapat memantau transaksi dan membuka detail pesanan
+
+  Background:                                # features\riwayat_pesanan_sprint2.feature:7
+    Given saya sudah login sebagai wisatawan # FeatureContext::loggedInAsTourist()
+
+  Scenario: Wisatawan belum memiliki riwayat pesanan # features\riwayat_pesanan_sprint2.feature:10
+    When saya membuka halaman riwayat pesanan tiket  # FeatureContext::membukaRiwayatPesananSprint2()
+    Then daftar riwayat tiket masih kosong           # FeatureContext::riwayatTiketKosongSprint2()
+
+  Scenario: Wisatawan melihat riwayat pesanan miliknya              # features\riwayat_pesanan_sprint2.feature:14
+    Given saya memiliki pesanan tiket yang belum dibayar            # FeatureContext::memilikiPesananSprint2()
+    When saya membuka halaman riwayat pesanan tiket                 # FeatureContext::membukaRiwayatPesananSprint2()
+    Then riwayat mencantumkan pesanan saya yang menunggu pembayaran # FeatureContext::riwayatPendingSprint2()
+
+  Scenario: Riwayat menampilkan status pembayaran lunas         # features\riwayat_pesanan_sprint2.feature:19
+    Given saya memiliki pesanan tiket yang belum dibayar        # FeatureContext::memilikiPesananSprint2()
+    And pembayaran Cash pesanan saya telah dikonfirmasi petugas # FeatureContext::cashSudahDikonfirmasiUntukETiket()
+    When saya membuka halaman riwayat pesanan tiket             # FeatureContext::membukaRiwayatPesananSprint2()
+    Then riwayat mencantumkan pesanan saya yang sudah lunas     # FeatureContext::riwayatLunasSprint2()
+
+  Scenario: Wisatawan membuka detail pesanannya sendiri  # features\riwayat_pesanan_sprint2.feature:25
+    Given saya memiliki pesanan tiket yang belum dibayar # FeatureContext::memilikiPesananSprint2()
+    When saya membuka detail pesanan tiket saya          # FeatureContext::membukaDetailPesananSayaSprint2()
+    Then detail transaksi sesuai dengan pesanan saya     # FeatureContext::detailPesananSesuaiSprint2()
+
+  Scenario: Wisatawan tidak melihat pesanan akun lain         # features\riwayat_pesanan_sprint2.feature:30
+    Given saya memiliki pesanan tiket yang belum dibayar      # FeatureContext::memilikiPesananSprint2()
+    And saya beralih ke akun wisatawan lain                   # FeatureContext::beralihAkunWisatawanLainSprint2()
+    When saya membuka halaman riwayat pesanan tiket           # FeatureContext::membukaRiwayatPesananSprint2()
+    Then pesanan wisatawan pertama tidak muncul dalam riwayat # FeatureContext::riwayatAkunLainTerisolasiSprint2()
+
+  Scenario: Wisatawan tidak dapat membuka detail akun lain # features\riwayat_pesanan_sprint2.feature:36
+    Given saya memiliki pesanan tiket yang belum dibayar   # FeatureContext::memilikiPesananSprint2()
+    And saya beralih ke akun wisatawan lain                # FeatureContext::beralihAkunWisatawanLainSprint2()
+    When saya membuka detail pesanan wisatawan pertama     # FeatureContext::membukaDetailAkunLainSprint2()
+    Then akses detail pesanan tersebut ditolak             # FeatureContext::detailAkunLainDitolakSprint2()
+
+@postgres_purchase @sprint2 @validasi_tiket
+Feature: Validasi QR dan check-in E-Tiket
+  Sebagai petugas
+  Saya ingin memverifikasi dan memproses check-in E-Tiket
+  Agar hanya tiket yang sah dapat digunakan untuk masuk
+
+  Background:                                                   # features\validasi_tiket_sprint2.feature:7
+    Given saya sudah login sebagai wisatawan                    # FeatureContext::loggedInAsTourist()
+    And saya memiliki pesanan tiket yang belum dibayar          # FeatureContext::memilikiPesananSprint2()
+    And pembayaran Cash pesanan saya telah dikonfirmasi petugas # FeatureContext::cashSudahDikonfirmasiUntukETiket()
+    And listener penerbitan memproses event pembayaran lunas    # FeatureContext::listenerMenerbitkanETiketSprint2()
+    And tanggal kunjungan pesanan disetel ke hari ini           # FeatureContext::tanggalKunjunganHariIniSprint2()
+    And saya masuk sebagai petugas validasi tiket               # FeatureContext::loginPetugasValidasiSprint2()
+
+  Scenario: Petugas memverifikasi E-Tiket yang valid # features\validasi_tiket_sprint2.feature:15
+    When petugas memverifikasi token QR E-Tiket      # FeatureContext::verifikasiQrAktifSprint2()
+    Then hasil verifikasi menyatakan tiket valid     # FeatureContext::hasilQrValidSprint2()
+
+  Scenario: Petugas memverifikasi token QR tidak dikenal # features\validasi_tiket_sprint2.feature:19
+    When petugas memverifikasi token QR tidak dikenal    # FeatureContext::verifikasiQrTidakDikenalSprint2()
+    Then hasil verifikasi menolak token tidak ditemukan  # FeatureContext::hasilQrTidakDitemukanSprint2()
+
+  Scenario: Petugas memverifikasi tiket yang belum lunas                  # features\validasi_tiket_sprint2.feature:23
+    Given status pembayaran tiket diubah menjadi menunggu untuk pengujian # FeatureContext::pembayaranBelumLunasValidasiSprint2()
+    When petugas memverifikasi token QR E-Tiket                           # FeatureContext::verifikasiQrAktifSprint2()
+    Then hasil verifikasi menolak pembayaran belum lunas                  # FeatureContext::hasilPembayaranBelumLunasSprint2()
+
+  Scenario: Petugas memverifikasi tanggal kunjungan berbeda # features\validasi_tiket_sprint2.feature:28
+    Given tanggal kunjungan tiket diubah menjadi hari lain  # FeatureContext::tanggalBerbedaSprint2()
+    When petugas memverifikasi token QR E-Tiket             # FeatureContext::verifikasiQrAktifSprint2()
+    Then hasil verifikasi menolak tanggal tidak sesuai      # FeatureContext::hasilTanggalBerbedaSprint2()
+
+  Scenario: Petugas berhasil melakukan check-in               # features\validasi_tiket_sprint2.feature:33
+    When petugas melakukan check-in E-Tiket                   # FeatureContext::checkInPertamaSprint2()
+    Then E-Tiket berstatus used dan waktu penggunaan tercatat # FeatureContext::checkInBerhasilSprint2()
+
+  Scenario: E-Tiket tidak dapat digunakan untuk check-in dua kali   # features\validasi_tiket_sprint2.feature:37
+    When petugas melakukan check-in E-Tiket                         # FeatureContext::checkInPertamaSprint2()
+    And petugas mengulangi check-in pada E-Tiket yang sama          # FeatureContext::checkInKeduaSprint2()
+    Then check-in kedua ditolak dan tiket tetap digunakan satu kali # FeatureContext::checkInKeduaDitolakSprint2()
+
+33 scenarios (33 passed)
+169 steps (169 passed)
+0m13.38s (50.91Mb)

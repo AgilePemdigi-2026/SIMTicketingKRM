@@ -198,7 +198,11 @@
 
 @section('content')
 <div class="purchase-page krm-container history-page">
-    <h1 class="history-title">Riwayat Pesanan</h1>
+    <div class="mb-7 sm:mb-11">
+        <h1 class="krm-page-title">
+            Riwayat Pesanan
+        </h1>
+    </div>
 
     <div class="history-tabs" role="tablist" aria-label="Jenis riwayat pesanan">
         <button
@@ -246,9 +250,40 @@ $latestAttempt = $order->payment?->method === 'qris'
                     . str_pad((string) $order->id, 4, '0', STR_PAD_LEFT);
                 $detailUrl = $isPaid
                     ? route('ticket-payment.e-ticket-placeholder', $order->code)
-                    : ($order->status === 'pending_payment'
-                        ? route('ticket-payment.show', $order->code)
-                        : route('ticket-purchase.show', $order->code));
+                    : (
+                        $order->status === 'pending_payment'
+                        ? (
+                            $order->payment?->method === 'cash'
+                                ? route('ticket-payment.e-ticket-temporary', $order->code)
+                                : route('ticket-payment.show', $order->code)
+                        )
+                        : route('ticket-purchase.show', $order->code)
+                    );
+                // Status check-in berdasarkan E-Tiket asli dan tanggal kunjungan.
+                $today = now('Asia/Jakarta')->toDateString();
+                $visitDate = $order->visit_date->toDateString();
+
+                $issuedTickets = $order->issuedTickets;
+                $totalIssued = $issuedTickets->count();
+                $usedCount = $issuedTickets->where('status', 'used')->count();
+
+                if (! $isPaid) {
+                    $checkInLabel = 'Belum dapat Check-in';
+                } elseif ($totalIssued === 0) {
+                    $checkInLabel = 'E-Tiket belum terbit';
+                } elseif ($usedCount === $totalIssued) {
+                    $checkInLabel = 'Sudah Check-in';
+                } elseif ($visitDate < $today) {
+                    $checkInLabel = $usedCount > 0
+                        ? 'Check-in Sebagian (sisa kedaluwarsa)'
+                        : 'Kedaluwarsa';
+                } elseif ($usedCount > 0) {
+                    $checkInLabel = 'Check-in Sebagian';
+                } elseif ($visitDate > $today) {
+                    $checkInLabel = 'Terjadwal';
+                } else {
+                    $checkInLabel = 'Belum Check-in';
+                }
             @endphp
 
             <article class="history-card" aria-label="Pesanan {{ $displayCode }}">
@@ -282,19 +317,42 @@ $latestAttempt = $order->payment?->method === 'qris'
 
                     <div class="history-statuses" aria-label="Status pesanan">
                         <span class="history-status {{ $isPaid ? 'is-paid' : '' }}">{{ $paymentLabel }}</span>
-                        <span class="history-status is-neutral" title="Status check-in menunggu integrasi modul validasi tiket">Check-in belum tersedia</span>
+                        <span class="history-status is-neutral">
+                            {{ $checkInLabel }}
+                        </span>
                     </div>
                 </div>
 
                 <div class="history-actions">
-                    <a class="history-action" href="{{ $detailUrl }}">Lihat Detail</a>
-                    <button
-                        class="history-action"
-                        type="button"
-                        disabled
-                        title="Download E-Tiket tersedia setelah modul penerbitan diintegrasikan"
-                    >Download E-Tiket</button>
+                    <a class="history-action" href="{{ $detailUrl }}">
+                        Lihat Detail
+                    </a>
+
+                    @if (
+                        $order->status === 'paid'
+                        && $order->payment?->status === 'paid'
+                        && $order->issuedTickets()->exists()
+                    )
+                        <a
+                            class="history-action"
+                            href="{{ route('ticket-payment.e-ticket.download', [
+                                'code' => $order->code
+                            ]) }}"
+                        >
+                            Download E-Tiket
+                        </a>
+                    @else
+                        <button
+                            class="history-action"
+                            type="button"
+                            disabled
+                            title="E-Tiket tersedia setelah pembayaran lunas dan tiket diterbitkan"
+                        >
+                            Download E-Tiket
+                        </button>
+                    @endif
                 </div>
+
             </article>
         @empty
             <div class="history-empty">
@@ -307,12 +365,227 @@ $latestAttempt = $order->payment?->method === 'qris'
         <div class="history-pagination">{{ $orders->links() }}</div>
     </section>
 
-    <section id="history-panel-reservasi" role="tabpanel" aria-labelledby="history-tab-reservasi" hidden>
-        <div class="history-empty">
-            <h2>Riwayat Reservasi</h2>
-            <p>Data reservasi belum terhubung ke halaman ini. Riwayat tiket tetap bisa dilihat melalui tab Tiket.</p>
-        </div>
+    {{-- ==========================================
+        RIWAYAT RESERVASI - SPRINT 3
+    ========================================== --}}
+    <section
+        id="history-panel-reservasi"
+        role="tabpanel"
+        aria-labelledby="history-tab-reservasi"
+        hidden
+    >
+        @forelse ($reservations as $reservation)
+            @php
+                $payment = $reservation->payment;
+
+                $latestAttempt = $payment?->attempts?->first();
+
+                $isPaid = $payment?->status === 'paid';
+
+                // Pengajuan Reschedule yang masih menunggu persetujuan Admin.
+                $pendingReschedule = $reservation->pendingRescheduleRequest;
+
+                // Status pembayaran dan administrasi
+                // ditampilkan secara terpisah.
+                $paymentLabel = match (true) {
+                    $isPaid => 'Lunas',
+                    $latestAttempt?->status === 'expired'
+                        => 'QRIS Kedaluwarsa',
+                    $latestAttempt?->status === 'failed'
+                        => 'Pembayaran Gagal',
+                    $latestAttempt?->status === 'cancelled'
+                        => 'Pembayaran Dibatalkan',
+                    $payment?->status === 'pending'
+                        => 'Menunggu Pembayaran',
+                    default => 'Belum Dibayar',
+                };
+
+                $administrativeLabel = match (
+                    $reservation->administrative_status
+                ) {
+                    'pending' => 'Menunggu Persetujuan',
+                    'approved' => 'Disetujui',
+                    'confirmed' => 'Dikonfirmasi',
+                    'rejected' => 'Ditolak',
+                    'cancelled' => 'Dibatalkan',
+                    default => ucfirst(
+                        str_replace(
+                            '_',
+                            ' ',
+                            $reservation->administrative_status
+                        )
+                    ),
+                };
+
+                // Reservasi lunas menuju invoice asli.
+                // Reservasi belum lunas menuju detail pembayaran.
+                $detailUrl = $isPaid
+                    ? route(
+                        'facility-reservation.payment.invoice',
+                        ['code' => $reservation->code]
+                    )
+                    : route(
+                        'facility-reservation.payment.show',
+                        ['code' => $reservation->code]
+                    );
+            @endphp
+
+            <article
+                class="history-card"
+                aria-label="Reservasi {{ $reservation->invoice_number }}"
+            >
+                <div class="history-card-grid">
+
+                    {{-- NOMOR RESERVASI --}}
+                    <div>
+                        <p class="history-date">
+                            {{ $reservation->created_at
+                                ->locale('id')
+                                ->translatedFormat('d M Y') }}
+                        </p>
+
+                        <div class="history-code">
+                            {{ $reservation->invoice_number }}
+                        </div>
+                    </div>
+
+                    {{-- FASILITAS --}}
+                    <dl>
+                        <dt>Fasilitas</dt>
+                        <dd>{{ $reservation->facility_name }}</dd>
+                    </dl>
+
+                    {{-- TANGGAL PENGGUNAAN --}}
+                    <dl>
+                        <dt>Tgl Penggunaan</dt>
+                        <dd>
+                            {{ $reservation->visit_date
+                                ->locale('id')
+                                ->translatedFormat('d M Y') }}
+                        </dd>
+                    </dl>
+
+                    {{-- JUMLAH PESERTA --}}
+                    <dl>
+                        <dt>Jumlah</dt>
+                        <dd>
+                            {{ $reservation->participant_count }}
+                            peserta
+                        </dd>
+                    </dl>
+
+                    {{-- TOTAL --}}
+                    <dl>
+                        <dt>Total</dt>
+                        <dd>
+                            Rp {{ number_format(
+                                (float) $reservation->total_amount,
+                                0,
+                                ',',
+                                '.'
+                            ) }}
+                        </dd>
+                    </dl>
+
+                    {{-- STATUS --}}
+                    <div
+                        class="history-statuses"
+                        aria-label="Status reservasi"
+                    >
+                        <span
+                            class="history-status {{ $isPaid ? 'is-paid' : '' }}"
+                        >
+                            {{ $paymentLabel }}
+                        </span>
+
+                        <span class="history-status is-neutral">
+                            {{ $administrativeLabel }}
+                        </span>
+
+                        @if ($pendingReschedule)
+                            <span
+                                class="history-status is-neutral"
+                                title="Pengajuan perubahan jadwal sedang menunggu persetujuan Admin"
+                            >
+                                Reschedule Menunggu Persetujuan
+                            </span>
+                        @endif
+                    </div>
+
+                </div>
+
+                {{-- TOMBOL AKSI --}}
+                <div class="history-actions">
+
+                    <a
+                        class="history-action"
+                        href="{{ $detailUrl }}"
+                    >
+                        {{ $isPaid
+                            ? 'Lihat Invoice'
+                            : 'Lihat Pembayaran' }}
+                    </a>
+
+                    {{-- Reschedule hanya untuk reservasi yang memenuhi syarat --}}
+                    @if (
+                        $isPaid
+                        && $reservation->visit_date->toDateString()
+                            > now('Asia/Jakarta')->toDateString()
+                        && ! in_array(
+                            $reservation->administrative_status,
+                            ['cancelled', 'rejected'],
+                            true
+                        )
+                    )
+                        <a
+                            class="history-action"
+                            href="{{ route(
+                                'wisatawan.reservasi.reschedule.create',
+                                ['code' => $reservation->code]
+                            ) }}"
+                        >
+                            {{ $pendingReschedule
+                                ? 'Lihat Pengajuan Reschedule'
+                                : 'Ajukan Reschedule' }}
+                        </a>
+                    @endif
+
+                </div>
+            </article>
+
+        @empty
+
+            {{-- Jika wisatawan belum pernah reservasi --}}
+            <div class="history-empty">
+
+                <h2 class="text-lg font-bold text-[#193B31]">
+                    Belum Ada Riwayat Reservasi
+                </h2>
+
+                <p class="mt-2 text-sm leading-relaxed text-gray-500">
+                    Reservasi fasilitas yang telah kamu buat
+                    akan muncul di halaman ini.
+                </p>
+
+                <a
+                    href="{{ route('wisatawan.reservasi.index') }}"
+                    class="krm-btn krm-btn-primary"
+                >
+                    Reservasi Fasilitas
+                </a>
+
+            </div>
+
+        @endforelse
+
+        @if ($reservations->hasPages())
+            <div class="history-pagination">
+                {{ $reservations->links() }}
+            </div>
+        @endif
+
     </section>
+
 </div>
 @endsection
 
@@ -337,6 +610,14 @@ $latestAttempt = $order->payment?->method === 'qris'
             panels[i].hidden = !selected;
         });
     };
+
+    // Jika membuka pagination reservasi,
+    // tampilkan tab Reservasi secara otomatis.
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has('reservasi_page')) {
+        activate(1);
+    }
 
     tabs.forEach((tab, index) => {
         tab.addEventListener('click', () => activate(index));
