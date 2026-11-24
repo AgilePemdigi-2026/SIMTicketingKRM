@@ -202,6 +202,7 @@ class AdminNavigationTest extends PostgresTicketTestCase
             'admin.konten-berita.index',
             'admin.reports.index',
             'admin.audit-log.index',
+            'admin.revenue-monitoring.index',
         ];
 
         foreach ($routes as $name) {
@@ -222,43 +223,42 @@ class AdminNavigationTest extends PostgresTicketTestCase
     }
 
     // NAV-12
-    public function test_unavailable_modules_are_not_links(): void
-    {
-        $xpath = $this->page('admin.dashboard');
+public function test_monitoring_pendapatan_is_available_navigation_link(): void
+{
+    $xpath = $this->page('admin.dashboard');
 
-        foreach ([
-            'Navigasi Admin Desktop',
-            'Navigasi Admin Mobile',
-        ] as $label) {
-            $disabled = $xpath->query(
-                '//nav[@aria-label="'.$label.'"]'
-                .'//span[@aria-disabled="true"]'
-            );
+    $this->assertTrue(
+        Route::has('admin.revenue-monitoring.index')
+    );
 
-            $this->assertSame(3, $disabled->length);
+    foreach ([
+        'Navigasi Admin Desktop',
+        'Navigasi Admin Mobile',
+    ] as $label) {
+        $links = $xpath->query(
+            '//nav[@aria-label="'.$label.'"]'
+            .'//a[@href="'.route('admin.revenue-monitoring.index').'"]'
+        );
 
-            $text = '';
+        $this->assertSame(
+            1,
+            $links->length,
+            'Monitoring Pendapatan harus menjadi link aktif pada '.$label
+        );
 
-            foreach ($disabled as $node) {
-                $text .= $node->textContent;
-            }
+        $disabled = $xpath->query(
+            '//nav[@aria-label="'.$label.'"]'
+            .'//span[@aria-disabled="true"]'
+        );
 
-            $this->assertStringContainsString(
-                'Transaksi',
-                $text
-            );
-
-            $this->assertStringContainsString(
+        foreach ($disabled as $node) {
+            $this->assertStringNotContainsString(
                 'Monitoring Pendapatan',
-                $text
-            );
-
-            $this->assertStringContainsString(
-                'Manajemen Pengguna',
-                $text
+                $node->textContent
             );
         }
     }
+}
 
     // NAV-13
     public function test_mobile_menu_has_accessible_structure(): void

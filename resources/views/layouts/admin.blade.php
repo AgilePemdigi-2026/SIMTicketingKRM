@@ -43,14 +43,14 @@
         ],
         [
             'label' => 'Transaksi',
-            'route' => null,
-            'active' => null,
+            'route' => 'admin.transaksi.index',
+            'active' => 'admin.transaksi.*',
             'icon' => 'transaction',
         ],
         [
             'label' => 'Monitoring Pendapatan',
-            'route' => null,
-            'active' => null,
+            'route' => 'admin.revenue-monitoring.index',
+            'active' => 'admin.revenue-monitoring.*',
             'icon' => 'chart',
         ],
         [
@@ -111,6 +111,7 @@
         mb_substr($adminName, 0, 1)
     );
 @endphp
+
 
 <div class="min-h-screen lg:flex">
 

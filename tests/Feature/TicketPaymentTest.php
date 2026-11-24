@@ -420,8 +420,19 @@ WORKER;
             DB::table('ticket_payment_events')->whereIn('ticket_payment_id', $payments)->delete();
             DB::table('ticket_payment_submissions')->whereIn('ticket_payment_id', $payments)->delete();
             DB::table('ticket_payments')->whereIn('id', $payments)->delete();
-            $items = DB::table('ticket_order_items')->where('ticket_order_id', $orderId)->pluck('id');
-            DB::table('ticket_order_visitors')->whereIn('ticket_order_item_id', $items)->delete();
+
+$items = DB::table('ticket_order_items')
+    ->where('ticket_order_id', $orderId)
+    ->pluck('id');
+
+// Hapus e-tiket sebelum pengunjung dan item pesanan.
+DB::table('issued_tickets')
+    ->where('ticket_order_id', $orderId)
+    ->delete();
+
+DB::table('ticket_order_visitors')
+    ->whereIn('ticket_order_item_id', $items)
+    ->delete();
             DB::table('ticket_order_items')->whereIn('id', $items)->delete();
             DB::table('ticket_orders')->where('id', $orderId)->delete();
             DB::table('users')->whereIn('id', $userIds)->delete();

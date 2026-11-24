@@ -19,6 +19,8 @@ use App\Http\Controllers\Wisatawan\BeritaController;
 use App\Http\Controllers\Wisatawan\FacilityReservationController;
 use App\Http\Controllers\Petugas\TransactionHistoryController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\TransactionController;
+use App\Http\Controllers\Admin\TicketRevenueMonitoringController;
 
 // Home Publik bagi Pengguna Publik (Tidak Login)
 Route::get('/', [HomeController::class, 'index'])
@@ -394,6 +396,29 @@ Route::middleware('auth')->group(function () {
             'read',
         ])->whereNumber('auditLog')
           ->name('notifications.read');
+
+        // Manajemen Transaksi Admin.
+        Route::get('/transaksi', [TransactionController::class, 'index'])
+            ->name('transaksi.index');
+
+        Route::get('/transaksi/{payment}', [TransactionController::class, 'show'])
+    ->name('transaksi.show');
+
+    // Monitoring Pendapatan Admin.
+Route::get('/monitoring-pendapatan', [
+    TicketRevenueMonitoringController::class,
+    'index',
+])->name('revenue-monitoring.index');
+
+Route::get('/monitoring-pendapatan/export/excel', [
+    TicketRevenueMonitoringController::class,
+    'exportExcel',
+])->name('revenue-monitoring.export.excel');
+
+Route::get('/monitoring-pendapatan/export/pdf', [
+    TicketRevenueMonitoringController::class,
+    'exportPdf',
+])->name('revenue-monitoring.export.pdf');
 
         // Laporan Operasional Admin.
         Route::get('/reports', [OperationalReportController::class, 'index'])
