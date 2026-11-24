@@ -85,8 +85,8 @@
         ],
         [
             'label' => 'Manajemen Pengguna',
-            'route' => null,
-            'active' => null,
+            'route' => 'admin.pengguna.index',
+            'active' => 'admin.pengguna.*',
             'icon' => 'users',
         ],
         [

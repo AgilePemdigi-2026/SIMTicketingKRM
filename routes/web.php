@@ -18,6 +18,7 @@ use App\Http\Controllers\Wisatawan\WahanaController;
 use App\Http\Controllers\Wisatawan\BeritaController;
 use App\Http\Controllers\Wisatawan\FacilityReservationController;
 use App\Http\Controllers\Petugas\TransactionHistoryController;
+use App\Http\Controllers\Admin\UserManagementController;
 
 // Home Publik bagi Pengguna Publik (Tidak Login)
 Route::get('/', [HomeController::class, 'index'])
@@ -471,6 +472,21 @@ Route::middleware('auth')->group(function () {
             [InfoKontakController::class, 'update']
         )->name('konten-kontak.update');
 
+        // Manajemen Pengguna
+        Route::get('/pengguna', [UserManagementController::class, 'index'])
+            ->name('pengguna.index');
+
+        Route::get('/pengguna/{user}', [UserManagementController::class, 'show'])
+            ->whereNumber('user')
+            ->name('pengguna.show');
+
+        Route::patch('/pengguna/{user}/role', [UserManagementController::class, 'updateRole'])
+            ->whereNumber('user')
+            ->name('pengguna.update-role');
+
+        Route::patch('/pengguna/{user}/status', [UserManagementController::class, 'updateStatus'])
+            ->whereNumber('user')
+            ->name('pengguna.update-status');
     });
 
 });

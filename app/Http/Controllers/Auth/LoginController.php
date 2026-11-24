@@ -33,13 +33,14 @@ class LoginController extends Controller
             FILTER_VALIDATE_EMAIL
         ) ? 'email' : 'phone';
 
-        // Memeriksa email/telepon dan password.
+        // Memeriksa email/telepon dan password
         if (! Auth::attempt([
             $field => $validated['login'],
             'password' => $validated['password'],
+            'is_active' => true,
         ])) {
             throw ValidationException::withMessages([
-                'login' => 'Email/nomor telepon atau password salah.',
+                'login' => 'Email/nomor telepon atau password salah, atau akun Anda sedang dinonaktifkan.',
             ]);
         }
 
