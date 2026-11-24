@@ -589,4 +589,833 @@ class AdminDashboardTest extends PostgresTicketTestCase
         $this->assertSame(1, $after['reservasi_hari_ini']);
     }
 
+
+    // ==========================================
+    // DASHBOARD ANALYTICS HELPERS
+    // ==========================================
+
+    private function dashboardAnalytics()
+    {
+        $response = $this->actingAs(
+            $this->account('admin')
+        )->get(route('admin.dashboard'));
+
+        $response
+            ->assertOk()
+            ->assertViewIs('admin.dashboard')
+            ->assertViewHasAll([
+                'stats',
+                'today',
+                'overview',
+                'operations',
+                'monthlyReport',
+                'monthlyVisitors',
+                'popularTickets',
+                'popularFacilities',
+                'paidOrders',
+                'paidReservations',
+                'revenueGrowth',
+            ]);
+
+        return $response;
+    }
+
+    private function analyticsOrder(
+        string $method = 'cash',
+        string $status = 'paid',
+        array $overrides = []
+    ): TicketOrder {
+        $order = $this->createOrder($overrides);
+
+        $this->createPayment(
+            $order,
+            $method,
+            $status
+        );
+
+        return $order;
+    }
+
+    private function analyticsReservationPayment(
+        FacilityReservation $reservation,
+        string $status = 'paid'
+    ): void {
+        $reservation->payment()->create([
+            'method' => 'qris',
+            'status' => $status,
+            'amount' => $reservation->total_amount,
+            'paid_at' => $status === 'paid'
+                ? now('UTC')
+                : null,
+        ]);
+    }
+
+    // ==========================================
+    // OVERALL STATISTICS
+    // ==========================================
+
+    // AT-23: Total paid ticket quantities.
+    public function test_overview_counts_paid_ticket_quantities(): void
+    {
+        $paid = $this->analyticsOrder();
+
+        $paid->items()->create([
+            'ticket_reference' => 'master:1',
+            'ticket_name' => 'Tiket Reguler Tes',
+            'ticket_category' => 'Reguler',
+            'adult_quantity' => 2,
+            'child_quantity' => 1,
+            'adult_unit_price' => '50000.00',
+            'child_unit_price' => '25000.00',
+            'subtotal' => '125000.00',
+        ]);
+
+        $pending = $this->analyticsOrder(
+            'cash',
+            'pending'
+        );
+
+        $pending->items()->create([
+            'ticket_reference' => 'master:1',
+            'ticket_name' => 'Tiket Reguler Tes',
+            'ticket_category' => 'Reguler',
+            'adult_quantity' => 4,
+            'child_quantity' => 2,
+            'adult_unit_price' => '50000.00',
+            'child_unit_price' => '25000.00',
+            'subtotal' => '250000.00',
+        ]);
+
+        $overview = $this->dashboardAnalytics()
+            ->viewData('overview');
+
+        $this->assertSame(
+            3,
+            $overview['total_tiket']
+        );
+    }
+
+    // AT-24: Registered visitor records.
+    public function test_overview_counts_registered_visitors(): void
+    {
+        $order = $this->analyticsOrder();
+
+        $this->createIssuedTicket($order);
+        $this->createIssuedTicket($order, 'used');
+
+        $overview = $this->dashboardAnalytics()
+            ->viewData('overview');
+
+        $this->assertSame(
+            2,
+            $overview['total_pengunjung']
+        );
+    }
+
+    // AT-25: All orders versus successful orders.
+    public function test_overview_counts_all_ticket_orders(): void
+    {
+        $this->analyticsOrder();
+        $this->analyticsOrder('qris');
+
+        $this->analyticsOrder(
+            'cash',
+            'pending'
+        );
+
+        $response = $this->dashboardAnalytics();
+
+        $this->assertSame(
+            3,
+            $response->viewData('overview')['total_transaksi']
+        );
+
+        $this->assertSame(
+            2,
+            $response->viewData('paidOrders')
+        );
+    }
+
+    // AT-26: Combined revenue and decimal precision.
+    public function test_overview_combines_paid_revenue_exactly(): void
+    {
+        $this->analyticsOrder(
+            'cash',
+            'paid',
+            ['total' => '50000.25']
+        );
+
+        $this->analyticsOrder(
+            'qris',
+            'paid',
+            ['total' => '75000.50']
+        );
+
+        $this->analyticsOrder(
+            'cash',
+            'pending',
+            ['total' => '90000.00']
+        );
+
+        $reservation = $this->createReservation([
+            'unit_price' => '25000.25',
+            'total_amount' => '25000.25',
+        ]);
+
+        $this->analyticsReservationPayment(
+            $reservation
+        );
+
+        $unpaidReservation = $this->createReservation();
+
+        $this->analyticsReservationPayment(
+            $unpaidReservation,
+            'pending'
+        );
+
+        $overview = $this->dashboardAnalytics()
+            ->viewData('overview');
+
+        $this->assertSame(
+            '150001.00',
+            $overview['total_pendapatan']
+        );
+    }
+
+    // AT-27: Total and paid facility reservations.
+    public function test_overview_counts_all_and_paid_reservations(): void
+    {
+        $paid = $this->createReservation();
+
+        $this->analyticsReservationPayment($paid);
+
+        $this->createReservation([
+            'visit_date' => '2026-11-26',
+        ]);
+
+        $response = $this->dashboardAnalytics();
+
+        $this->assertSame(
+            2,
+            $response->viewData('overview')['total_reservasi']
+        );
+
+        $this->assertSame(
+            1,
+            $response->viewData('paidReservations')
+        );
+    }
+
+    // AT-28: Historical and current check-ins.
+    public function test_overview_counts_all_used_tickets(): void
+    {
+        $order = $this->analyticsOrder();
+
+        $this->createIssuedTicket($order, 'active');
+        $this->createIssuedTicket($order, 'used');
+
+        $historical = $this->createIssuedTicket(
+            $order,
+            'used'
+        );
+
+        $historical->forceFill([
+            'used_at' => CarbonImmutable::parse(
+                '2026-10-20 08:00:00',
+                'UTC'
+            ),
+        ])->save();
+
+        $response = $this->dashboardAnalytics();
+
+        $this->assertSame(
+            2,
+            $response->viewData('overview')['total_checkin']
+        );
+
+        $this->assertSame(
+            1,
+            $response->viewData('operations')['checkin']
+        );
+    }
+
+    // ==========================================
+    // DAILY OPERATIONS
+    // ==========================================
+
+    // AT-29: Today's paid visit tickets.
+    public function test_operations_count_paid_visitors_today(): void
+    {
+        $todayOrder = $this->analyticsOrder();
+
+        $this->createIssuedTicket($todayOrder);
+        $this->createIssuedTicket($todayOrder, 'used');
+
+        $futureOrder = $this->analyticsOrder(
+            'cash',
+            'paid',
+            ['visit_date' => '2026-11-25']
+        );
+
+        $this->createIssuedTicket($futureOrder);
+
+        $operations = $this->dashboardAnalytics()
+            ->viewData('operations');
+
+        $this->assertSame(
+            2,
+            $operations['pengunjung']
+        );
+    }
+
+    // AT-30: Actual check-ins today.
+    public function test_operations_count_actual_daily_checkins(): void
+    {
+        $order = $this->analyticsOrder();
+
+        $this->createIssuedTicket($order, 'used');
+
+        $previous = $this->createIssuedTicket(
+            $order,
+            'used'
+        );
+
+        $previous->forceFill([
+            'used_at' => CarbonImmutable::parse(
+                '2026-11-23 16:59:59',
+                'UTC'
+            ),
+        ])->save();
+
+        $operations = $this->dashboardAnalytics()
+            ->viewData('operations');
+
+        $this->assertSame(
+            1,
+            $operations['checkin']
+        );
+    }
+
+    // AT-31: Unused active tickets for today's visits.
+    public function test_operations_count_unused_tickets_today(): void
+    {
+        $order = $this->analyticsOrder();
+
+        $this->createIssuedTicket($order, 'active');
+        $this->createIssuedTicket($order, 'used');
+
+        $future = $this->analyticsOrder(
+            'cash',
+            'paid',
+            ['visit_date' => '2026-11-25']
+        );
+
+        $this->createIssuedTicket($future, 'active');
+
+        $operations = $this->dashboardAnalytics()
+            ->viewData('operations');
+
+        $this->assertSame(
+            1,
+            $operations['unused']
+        );
+    }
+
+    // AT-32: Pending online cash bookings only.
+    public function test_operations_count_pending_online_cash(): void
+    {
+        $this->analyticsOrder(
+            'cash',
+            'pending'
+        );
+
+        $this->analyticsOrder(
+            'qris',
+            'pending'
+        );
+
+        $this->analyticsOrder(
+            'cash',
+            'paid'
+        );
+
+        $this->analyticsOrder(
+            'cash',
+            'pending',
+            [
+                'sale_channel' => 'counter',
+                'staff_user_id' =>
+                    $this->account('petugas')->id,
+            ]
+        );
+
+        $operations = $this->dashboardAnalytics()
+            ->viewData('operations');
+
+        $this->assertSame(
+            1,
+            $operations['pending']
+        );
+    }
+
+    // AT-33: Reservations use scheduled visit date.
+    public function test_operations_count_reservations_today(): void
+    {
+        $this->createReservation();
+
+        $paid = $this->createReservation();
+
+        $this->analyticsReservationPayment($paid);
+
+        $this->createReservation([
+            'visit_date' => '2026-11-25',
+        ]);
+
+        $operations = $this->dashboardAnalytics()
+            ->viewData('operations');
+
+        $this->assertSame(
+            2,
+            $operations['reservasi']
+        );
+    }
+
+    // ==========================================
+    // DASHBOARD CHARTS AND STATISTICS
+    // ==========================================
+
+    // AT-34: Daily visitor chart includes zero days.
+    public function test_analytics_daily_visitors_use_calendar_dates(): void
+    {
+        $order = $this->analyticsOrder();
+
+        $this->createIssuedTicket($order, 'used');
+
+        $earlier = $this->createIssuedTicket(
+            $order,
+            'used'
+        );
+
+        $earlier->forceFill([
+            'used_at' => CarbonImmutable::parse(
+                '2026-11-10 08:00:00',
+                'UTC'
+            ),
+        ])->save();
+
+        $report = $this->dashboardAnalytics()
+            ->viewData('monthlyReport');
+
+        $this->assertSame(
+            '2026-11-01',
+            $report['period']['from']
+        );
+
+        $this->assertSame(
+            '2026-11-24',
+            $report['period']['until']
+        );
+
+        $this->assertCount(
+            24,
+            $report['daily']
+        );
+
+        $daily = array_column(
+            $report['daily'],
+            'pengunjung_checkin',
+            'date'
+        );
+
+        $this->assertSame(
+            0,
+            $daily['2026-11-01']
+        );
+
+        $this->assertSame(
+            1,
+            $daily['2026-11-10']
+        );
+
+        $this->assertSame(
+            1,
+            $daily['2026-11-24']
+        );
+    }
+
+    // AT-35: Monthly visitor aggregation.
+    public function test_analytics_monthly_visitors_are_grouped_correctly(): void
+    {
+        $order = $this->analyticsOrder();
+
+        $this->createIssuedTicket($order, 'used');
+
+        $october = $this->createIssuedTicket(
+            $order,
+            'used'
+        );
+
+        $october->forceFill([
+            'used_at' => CarbonImmutable::parse(
+                '2026-10-15 08:00:00',
+                'UTC'
+            ),
+        ])->save();
+
+        $previousYear = $this->createIssuedTicket(
+            $order,
+            'used'
+        );
+
+        $previousYear->forceFill([
+            'used_at' => CarbonImmutable::parse(
+                '2025-12-31 08:00:00',
+                'UTC'
+            ),
+        ])->save();
+
+        $months = $this->dashboardAnalytics()
+            ->viewData('monthlyVisitors');
+
+        $this->assertCount(11, $months);
+
+        $this->assertSame(
+            0,
+            $months['2026-01']
+        );
+
+        $this->assertSame(
+            1,
+            $months['2026-10']
+        );
+
+        $this->assertSame(
+            1,
+            $months['2026-11']
+        );
+
+        $this->assertArrayNotHasKey(
+            '2025-12',
+            $months
+        );
+    }
+
+    // AT-36: Revenue chart combines paid ticket and facility revenue.
+    public function test_analytics_revenue_chart_combines_payments(): void
+    {
+        $this->analyticsOrder(
+            'cash',
+            'paid'
+        );
+
+        $reservation = $this->createReservation([
+            'unit_price' => '75000.00',
+            'total_amount' => '75000.00',
+        ]);
+
+        $this->analyticsReservationPayment(
+            $reservation
+        );
+
+        $report = $this->dashboardAnalytics()
+            ->viewData('monthlyReport');
+
+        $daily = array_column(
+            $report['daily'],
+            'total_pendapatan',
+            'date'
+        );
+
+        $this->assertSame(
+            '125000.00',
+            $daily['2026-11-24']
+        );
+
+        $this->assertSame(
+            '0.00',
+            $daily['2026-11-23']
+        );
+
+        $this->assertSame(
+            '125000.00',
+            $report['summary']['total_pendapatan']
+        );
+    }
+
+    // AT-37: Paid payment method distribution.
+    public function test_analytics_payment_method_distribution(): void
+    {
+        $this->analyticsOrder('cash');
+        $this->analyticsOrder('cash');
+        $this->analyticsOrder('qris');
+
+        $this->analyticsOrder(
+            'cash',
+            'pending'
+        );
+
+        $this->analyticsReservationPayment(
+            $this->createReservation()
+        );
+
+        $response = $this->dashboardAnalytics();
+
+        $methods = $response
+            ->viewData('monthlyReport')['payment_methods'];
+
+        $this->assertSame(
+            2,
+            $methods['cash']['total_transaksi']
+        );
+
+        $this->assertSame(
+            2,
+            $methods['qris']['total_transaksi']
+        );
+
+        $this->assertSame(
+            0,
+            $methods['other']['total_transaksi']
+        );
+
+        $response->assertSee(
+            'aria-label="Distribusi metode pembayaran"',
+            false
+        );
+    }
+
+    // AT-38: Popular ticket types use paid quantities.
+    public function test_analytics_popular_tickets_use_paid_quantities(): void
+    {
+        $paid = $this->analyticsOrder();
+
+        $this->createIssuedTicket($paid);
+        $this->createIssuedTicket($paid);
+
+        $second = $this->analyticsOrder(
+            'qris'
+        );
+
+        $second->items()->create([
+            'ticket_reference' => 'master:1',
+            'ticket_name' => 'Tiket Alternatif Tes',
+            'ticket_category' => 'Reguler',
+            'adult_quantity' => 1,
+            'child_quantity' => 0,
+            'adult_unit_price' => '50000.00',
+            'child_unit_price' => '0.00',
+            'subtotal' => '50000.00',
+        ]);
+
+        $pending = $this->analyticsOrder(
+            'cash',
+            'pending'
+        );
+
+        $pending->items()->create([
+            'ticket_reference' => 'master:1',
+            'ticket_name' => 'Tiket Pending Tes',
+            'ticket_category' => 'Reguler',
+            'adult_quantity' => 10,
+            'child_quantity' => 0,
+            'adult_unit_price' => '50000.00',
+            'child_unit_price' => '0.00',
+            'subtotal' => '500000.00',
+        ]);
+
+        $tickets = $this->dashboardAnalytics()
+            ->viewData('popularTickets');
+
+        $this->assertCount(2, $tickets);
+
+        $this->assertSame(
+            'Tiket Reguler Tes',
+            $tickets->first()->ticket_name
+        );
+
+        $this->assertSame(
+            2,
+            (int) $tickets->first()->quantity
+        );
+
+        $this->assertSame(
+            'Tiket Alternatif Tes',
+            $tickets->last()->ticket_name
+        );
+
+        $this->assertNotContains(
+            'Tiket Pending Tes',
+            $tickets->pluck('ticket_name')->all()
+        );
+    }
+
+    // AT-39: Facility popularity uses all reservations.
+    public function test_analytics_popular_facilities_are_ranked(): void
+    {
+        $this->createReservation();
+        $this->createReservation();
+
+        $this->createReservation([
+            'facility_name' => 'Fasilitas Alternatif Tes',
+        ]);
+
+        $facilities = $this->dashboardAnalytics()
+            ->viewData('popularFacilities');
+
+        $this->assertCount(
+            2,
+            $facilities
+        );
+
+        $this->assertSame(
+            'Gazebo Uji Coba',
+            $facilities->first()->facility_name
+        );
+
+        $this->assertSame(
+            2,
+            (int) $facilities->first()->quantity
+        );
+
+        $this->assertSame(
+            1,
+            (int) $facilities->last()->quantity
+        );
+    }
+
+    // ==========================================
+    // REVENUE GROWTH
+    // ==========================================
+
+    // AT-40: Revenue growth against previous month.
+    public function test_analytics_revenue_growth_is_calculated(): void
+    {
+        $previous = $this->createOrder([
+            'total' => '50000.00',
+        ]);
+
+        $payment = $this->createPayment($previous);
+
+        $payment->forceFill([
+            'paid_at' => CarbonImmutable::parse(
+                '2026-10-20 08:00:00',
+                'UTC'
+            ),
+        ])->save();
+
+        $this->analyticsOrder(
+            'qris',
+            'paid',
+            ['total' => '75000.00']
+        );
+
+        $response = $this->dashboardAnalytics();
+
+        $this->assertEqualsWithDelta(
+            50.0,
+            $response->viewData('revenueGrowth'),
+            0.000001
+        );
+
+        $response->assertSee(
+            '+50,0% dibanding bulan lalu'
+        );
+    }
+
+    // AT-41: Zero previous revenue has no growth percentage.
+    public function test_analytics_growth_is_null_without_previous_revenue(): void
+    {
+        $this->analyticsOrder();
+
+        $response = $this->dashboardAnalytics();
+
+        $this->assertNull(
+            $response->viewData('revenueGrowth')
+        );
+
+        $response->assertSee(
+            'Pendapatan tiket dan reservasi lunas'
+        );
+    }
+
+    // ==========================================
+    // DASHBOARD CONSISTENCY
+    // ==========================================
+
+    // AT-42: Dashboard sections and report values.
+    public function test_analytics_dashboard_matches_report_data(): void
+    {
+        $order = $this->analyticsOrder();
+
+        $this->createIssuedTicket(
+            $order,
+            'used'
+        );
+
+        $this->analyticsOrder(
+            'cash',
+            'pending'
+        );
+
+        $this->analyticsReservationPayment(
+            $this->createReservation()
+        );
+
+        $response = $this->dashboardAnalytics();
+
+        $report = $response->viewData(
+            'monthlyReport'
+        );
+
+        $expected = app(
+            \App\Services\OperationalReportService::class
+        )->generate(
+            '2026-11-01',
+            '2026-11-24'
+        );
+
+        foreach ([
+            'period',
+            'summary',
+            'daily',
+            'payment_methods',
+            'sales_channels',
+        ] as $key) {
+            $this->assertSame(
+                $expected[$key],
+                $report[$key]
+            );
+        }
+
+        $this->assertSame(
+            '100000.00',
+            $response->viewData('overview')['total_pendapatan']
+        );
+
+        $this->assertSame(
+            $response->viewData('stats')['pengunjung_checkin'],
+            $response->viewData('operations')['checkin']
+        );
+
+        $response
+            ->assertSee('Total Tiket Terjual')
+            ->assertSee('Total Pengunjung')
+            ->assertSee('Total Transaksi')
+            ->assertSee('Total Pendapatan')
+            ->assertSee('Total Reservasi')
+            ->assertSee('Pengunjung Check-in')
+            ->assertSee('Operasional Hari Ini')
+            ->assertSee('Grafik & Statistik')
+            ->assertSee('Pengunjung per Hari')
+            ->assertSee('Pengunjung per Bulan')
+            ->assertSee('Grafik Pendapatan')
+            ->assertSee('Metode Pembayaran')
+            ->assertSee('Jenis Tiket Terpopuler')
+            ->assertSee('Reservasi Fasilitas')
+            ->assertSee('Manajemen Transaksi')
+            ->assertSee('Monitoring Pendapatan')
+            ->assertSee(route('admin.reports.index'))
+            ->assertDontSee('Pemesan Monitoring Tes')
+            ->assertDontSee('TES-PENGUNJUNG');
+    }
 }
