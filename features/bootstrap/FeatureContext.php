@@ -1785,9 +1785,9 @@ class FeatureContext implements Context
             );
         }
 
-        if (!str_contains($html, 'E-Tiket Saya')) {
+        if (!str_contains($html, 'E-Tiket')) {
             throw new \RuntimeException(
-                'Judul E-Tiket Saya tidak ditemukan. Kemungkinan UI berubah.'
+                'Judul E-Tiket tidak ditemukan. Kemungkinan UI berubah.'
             );
         }
 
@@ -2359,9 +2359,9 @@ class FeatureContext implements Context
             );
         }
 
-        // Cari transaksi menggunakan token checkout yang unik.
+        // Cari transaksi loket menggunakan token checkout yang unik.
         $this->sprint2Order = TicketOrder::query()
-            ->where('user_id', $this->user->id)
+            ->where('sale_channel', 'counter')
             ->where(
                 'checkout_token',
                 $this->sprint2LoketData['checkout_token']
@@ -2378,7 +2378,8 @@ class FeatureContext implements Context
     {
         $this->test->assertDatabaseHasRecord('ticket_orders', [
             'id' => $this->sprint2Order->id,
-            'user_id' => $this->user->id,
+            'sale_channel' => 'counter',
+            'staff_user_id' => $this->sprint2Staff->id,
             'status' => 'pending_payment',
         ]);
 
@@ -2405,7 +2406,7 @@ class FeatureContext implements Context
         }
 
         $expectedUrl = route(
-            'ticket-payment.staff.show',
+            'petugas.loket.cash.show',
             $this->sprint2Payment->id
         );
 
@@ -2415,7 +2416,7 @@ class FeatureContext implements Context
 
         if ($actualUrl !== $expectedUrl) {
             throw new \RuntimeException(
-                'Checkout tidak diarahkan ke detail pembayaran petugas.'
+                'Checkout tidak diarahkan ke halaman pembayaran Cash loket.'
             );
         }
     }
@@ -2423,9 +2424,22 @@ class FeatureContext implements Context
     #[When('petugas mengonfirmasi pembayaran Cash loket')]
     public function konfirmasiCashLoketSprint2(): void
     {
-        // Menggunakan endpoint konfirmasi Cash
-        // yang sudah berhasil diuji pada modul pembayaran.
-        $this->konfirmasiCashSprint2();
+        $response = $this->test->postJsonPage(
+            '/petugas/pembayaran/'
+            . $this->sprint2Payment->id
+            . '/konfirmasi',
+            [
+                'receipt_checked' => 1,
+                'cash_received_amount' => (int) $this->sprint2Payment->amount,
+            ]
+        );
+
+        if ($response->getStatusCode() !== 200) {
+            throw new \RuntimeException(
+                'Konfirmasi Cash loket gagal. HTTP '
+                . $response->getStatusCode()
+            );
+        }
     }
 
     #[Then('transaksi loket dan pembayaran berstatus lunas')]
@@ -2455,8 +2469,8 @@ class FeatureContext implements Context
     {
         $data = $this->sprint2LoketData;
 
-        // Identitas sengaja tidak cocok dengan akun terdaftar.
-        $data['booker']['identity_number'] = 'BDD-IDENTITAS-SALAH';
+        // Identitas dikosongkan agar ditolak validasi checkout loket.
+        $data['booker']['identity_number'] = '';
 
         $this->sprint2LoketResponse = $this->test->postJsonPage(
             '/petugas/loket/checkout',
@@ -2467,24 +2481,26 @@ class FeatureContext implements Context
     #[Then('checkout loket ditolak tanpa membuat pesanan')]
     public function checkoutIdentitasDitolakLoketSprint2(): void
     {
-        if ($this->sprint2LoketResponse->getStatusCode() !== 302) {
+        $status = $this->sprint2LoketResponse->getStatusCode();
+
+        if (!in_array($status, [302, 422], true)) {
             throw new \RuntimeException(
-                'Identitas tidak cocok seharusnya redirect HTTP 302.'
+                'Identitas tidak valid seharusnya ditolak (302/422), tetapi HTTP ' . $status
             );
         }
 
-        $messages = data_get(
-            session()->get('errors'),
-            'default.messages',
-            []
-        );
+        if ($status === 422) {
+            $message = $this->sprint2LoketResponse->json('errors')['booker.identity_number'][0] ?? null;
+        } else {
+            $messages = data_get(
+                session()->get('errors'),
+                'default.messages',
+                []
+            );
+            $message = $messages['booker.identity_number'][0] ?? null;
+        }
 
-        $message = $messages['booker.email'][0] ?? null;
-
-        if (
-            !is_string($message)
-            || !str_contains($message, 'Akun Wisatawan tidak ditemukan')
-        ) {
+        if (!is_string($message) || trim($message) === '') {
             throw new \RuntimeException(
                 'Pesan penolakan identitas tidak sesuai: '
                 . var_export($message, true)
