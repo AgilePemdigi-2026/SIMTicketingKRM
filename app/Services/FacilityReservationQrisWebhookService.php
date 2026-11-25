@@ -190,11 +190,35 @@ class FacilityReservationQrisWebhookService
                     'paid_at' => $paidAt,
                 ]);
 
+                // Snapshot status pembayaran sebelum konfirmasi.
+                $previousStatus = $lockedPayment->status;
+
                 // Konfirmasi pembayaran reservasi.
                 $lockedPayment->update([
                     'status' => 'paid',
                     'paid_at' => $paidAt,
                 ]);
+
+                // Audit log pembayaran reservasi otomatis.
+                app(AuditLogService::class)->record(
+                    actor: null,
+                    module: 'Reservasi',
+                    action: 'reservation_payment_confirmed',
+                    description: 'Pembayaran QRIS reservasi berhasil dikonfirmasi oleh sistem.',
+                    subjectType: 'FacilityReservationPayment',
+                    subjectId: $lockedPayment->getKey(),
+                    oldValues: [
+                        'status' => $previousStatus,
+                        'administrative_status' => $reservation->administrative_status,
+                    ],
+                    newValues: [
+                        'status' => $lockedPayment->status,
+                        'method' => $lockedPayment->method,
+                        'amount' => (string) $lockedPayment->amount,
+                        'paid_at' => $paidAt->toIso8601String(),
+                        'administrative_status' => $reservation->administrative_status,
+                    ]
+                );
 
                 // Status administratif reservasi tidak
                 // diubah otomatis menjadi approved.

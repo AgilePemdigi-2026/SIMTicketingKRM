@@ -1,0 +1,884 @@
+@extends('layouts.admin')
+
+@section('title', 'Laporan Operasional - Kebun Raya Mangrove')
+
+@section('content')
+
+@php
+    $formatNumber = static fn ($value) =>
+        number_format($value, 0, ',', '.');
+
+    $formatMoney = static function ($value) {
+        [$whole, $fraction] = array_pad(
+            explode('.', (string) $value, 2),
+            2,
+            '00'
+        );
+
+        $formatted = preg_replace(
+            '/\B(?=(\d{3})+(?!\d))/',
+            '.',
+            $whole
+        );
+
+        return 'Rp '.$formatted
+            .($fraction !== '00' ? ','.$fraction : '');
+    };
+
+    $formatDate = static fn ($value) =>
+        \Carbon\CarbonImmutable::parse(
+            $value,
+            'Asia/Jakarta'
+        )->locale('id')->translatedFormat('d F Y');
+
+    $methodLabels = [
+        'cash' => 'Cash',
+        'qris' => 'QRIS',
+        'other' => 'Lainnya',
+    ];
+
+    $channelLabels = [
+        'online' => 'Online',
+        'counter' => 'Loket',
+        'other' => 'Lainnya',
+    ];
+
+    $metrics = [
+        [
+            'label' => 'Pesanan Tiket',
+            'key' => 'transaksi_tiket',
+            'money' => false,
+            'description' => 'Pesanan dibuat dalam periode laporan.',
+        ],
+        [
+            'label' => 'Pembayaran Tiket Lunas',
+            'key' => 'pembayaran_lunas',
+            'money' => false,
+            'description' => 'Pembayaran tiket yang telah lunas.',
+        ],
+        [
+            'label' => 'Pendapatan Tiket',
+            'key' => 'pendapatan_tiket',
+            'money' => true,
+            'description' => 'Nominal pembayaran tiket lunas.',
+        ],
+        [
+            'label' => 'E-Tiket Terbit',
+            'key' => 'tiket_terbit',
+            'money' => false,
+            'description' => 'E-Tiket diterbitkan dalam periode.',
+        ],
+        [
+            'label' => 'Pengunjung Check-in',
+            'key' => 'pengunjung_checkin',
+            'money' => false,
+            'description' => 'E-Tiket yang telah digunakan.',
+        ],
+        [
+            'label' => 'Reservasi Terjadwal',
+            'key' => 'reservasi_terjadwal',
+            'money' => false,
+            'description' => 'Reservasi berdasarkan tanggal kunjungan, semua status.',
+        ],
+        [
+            'label' => 'Reservasi Lunas',
+            'key' => 'reservasi_lunas',
+            'money' => false,
+            'description' => 'Pembayaran reservasi yang telah lunas.',
+        ],
+        [
+            'label' => 'Pendapatan Reservasi',
+            'key' => 'pendapatan_reservasi',
+            'money' => true,
+            'description' => 'Nominal pembayaran reservasi lunas.',
+        ],
+    ];
+
+    $dailyColumns = [
+        ['key' => 'transaksi_tiket', 'label' => 'Pesanan Tiket', 'money' => false],
+        ['key' => 'pembayaran_lunas', 'label' => 'Tiket Lunas', 'money' => false],
+        ['key' => 'pendapatan_tiket', 'label' => 'Pendapatan Tiket', 'money' => true],
+        ['key' => 'tiket_terbit', 'label' => 'Tiket Terbit', 'money' => false],
+        ['key' => 'pengunjung_checkin', 'label' => 'Check-in', 'money' => false],
+        ['key' => 'reservasi_terjadwal', 'label' => 'Reservasi Terjadwal', 'money' => false],
+        ['key' => 'reservasi_lunas', 'label' => 'Reservasi Lunas', 'money' => false],
+        ['key' => 'pendapatan_reservasi', 'label' => 'Pendapatan Reservasi', 'money' => true],
+        ['key' => 'total_pendapatan', 'label' => 'Total Pendapatan', 'money' => true],
+    ];
+
+    $hasActivity =
+        $summary['transaksi_tiket'] > 0
+        || $summary['pembayaran_lunas'] > 0
+        || $summary['tiket_terbit'] > 0
+        || $summary['pengunjung_checkin'] > 0
+        || $summary['reservasi_terjadwal'] > 0
+        || $summary['reservasi_lunas'] > 0;
+@endphp
+
+<div class="mx-auto max-w-[1800px]">
+
+    <a
+        href="{{ route('admin.reports.index', $filters) }}"
+        class="mb-4 inline-flex items-center gap-2 border border-[#174B38] bg-white px-3 py-2 text-[11px] font-semibold text-[#174B38] hover:bg-[#E9F0EB]"
+    >
+        &#8592; Kembali ke Laporan
+    </a>
+
+    {{-- HEADER HALAMAN --}}
+    <div class="mb-6 border-b border-[#D4DED7] pb-6">
+
+        <p class="mb-2 text-[10px] font-bold uppercase tracking-[0.15em] text-[#668977]">
+            Administrasi Kebun Raya Mangrove
+        </p>
+
+        <h1 class="text-2xl font-semibold text-[#173D30]">
+            Laporan Operasional
+        </h1>
+
+        <p class="mt-2 text-sm leading-6 text-[#74877B]">
+            Rekapitulasi transaksi, pendapatan, dan kunjungan
+            Kebun Raya Mangrove Surabaya.
+        </p>
+
+    </div>
+
+    {{-- FILTER PERIODE --}}
+    <section class="mb-6 rounded-lg border border-[#DCE5DE] bg-white">
+
+        <div class="border-b border-[#E2E9E4] px-5 py-5">
+
+            <h2 class="text-sm font-bold uppercase tracking-[0.08em] text-[#173D30]">
+                Filter Periode Laporan
+            </h2>
+
+            <p class="mt-1 text-xs text-[#819187]">
+                Pilih periode untuk menampilkan laporan operasional.
+            </p>
+
+        </div>
+
+        <form
+            id="report-period-form"
+            method="GET"
+            action="{{ route('admin.reports.index') }}"
+            class="p-5"
+        >
+            <input type="hidden" name="view" value="detail">
+
+            @if ($errors->any())
+
+                <div class="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700" role="alert">
+
+                    <p class="mb-2 font-semibold">
+                        Periode laporan tidak valid.
+                    </p>
+
+                    <ul class="list-disc space-y-1 pl-4">
+
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+
+                    </ul>
+
+                </div>
+
+            @endif
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+
+                <div>
+
+                    <label for="period" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                        Periode
+                    </label>
+
+                    <select
+                        name="period"
+                        id="period"
+                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65]"
+                    >
+
+                        <option value="daily" @selected($filters['period'] === 'daily')>
+                            Harian
+                        </option>
+
+                        <option value="weekly" @selected($filters['period'] === 'weekly')>
+                            Mingguan
+                        </option>
+
+                        <option value="monthly" @selected($filters['period'] === 'monthly')>
+                            Bulanan
+                        </option>
+
+                        <option value="custom" @selected($filters['period'] === 'custom')>
+                            Rentang Tanggal Custom
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label for="from" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                        Dari Tanggal
+                    </label>
+
+                    <input
+                        type="date"
+                        name="from"
+                        id="from"
+                        value="{{ $filters['from'] }}"
+                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] disabled:bg-[#F0F4F0] disabled:text-[#819187]"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label for="until" class="mb-2 block text-xs font-semibold text-[#355D47]">
+                        Sampai Tanggal
+                    </label>
+
+                    <input
+                        type="date"
+                        name="until"
+                        id="until"
+                        value="{{ $filters['until'] }}"
+                        class="h-11 w-full rounded-sm border border-[#CBD9CF] bg-white px-3 text-sm text-[#173D30] outline-none focus:border-[#527A65] disabled:bg-[#F0F4F0] disabled:text-[#819187]"
+                    >
+
+                </div>
+
+            </div>
+
+            <div class="mt-5 flex flex-wrap items-center justify-between gap-4">
+
+                <p class="text-xs leading-5 text-[#819187]">
+                    Periode maksimal 366 hari.
+                    Pilih Custom untuk menentukan tanggal secara manual.
+                    Semua tanggal menggunakan WIB.
+                </p>
+
+                <div class="flex flex-wrap gap-2">
+
+                    <a
+                        href="{{ route('admin.reports.index', ['view' => 'detail']) }}"
+                        class="inline-flex min-h-10 items-center justify-center border border-[#CBD9CF] px-4 py-2.5 text-xs font-semibold text-[#355D47] hover:bg-[#EAF2EC]"
+                    >
+                        Reset Filter
+                    </a>
+
+                    <button
+                        type="submit"
+                        class="inline-flex min-h-10 items-center justify-center bg-[#174B38] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#073B2D]"
+                    >
+                        Tampilkan Laporan
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </section>
+
+    {{-- PERIODE LAPORAN --}}
+    <section class="mb-6 rounded-lg border border-[#DCE5DE] bg-white p-5">
+
+        <div class="flex flex-wrap items-center justify-between gap-4">
+
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-[#74877B]">
+                    Periode Laporan
+                </p>
+
+                <p class="mt-2 text-lg font-bold text-[#173D30]">
+                    {{ $formatDate($period['from']) }}
+                    -
+                    {{ $formatDate($period['until']) }}
+                </p>
+
+                <p class="mt-2 text-xs text-[#819187]">
+                    {{ $formatNumber($period['days']) }} hari
+                    | Zona waktu WIB
+                </p>
+            </div>
+
+            <span class="rounded-sm bg-[#E9F4EC] px-3 py-2 text-xs font-semibold text-[#355D47]">
+                {{ match ($filters['period']) {
+                    'daily' => 'Hari Ini',
+                    'weekly' => '7 Hari Terakhir',
+                    'monthly' => 'Bulan Berjalan',
+                    'custom' => 'Periode Custom',
+                } }}
+            </span>
+
+        </div>
+
+        {{-- EXPORT LAPORAN --}}
+        <div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#E2E9E4] pt-4">
+
+            <div>
+                <p class="text-xs font-semibold text-[#355D47]">
+                    Unduh Laporan Operasional
+                </p>
+
+                <p class="mt-1 text-[11px] leading-5 text-[#819187]">
+                    File laporan mengikuti periode yang sedang ditampilkan.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+
+                <a
+                    href="{{ route('admin.reports.export.excel', [
+                        'period' => 'custom',
+                        'from' => $period['from'],
+                        'until' => $period['until'],
+                    ]) }}"
+                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-[#217346] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#185C37]"
+                >
+
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="h-4 w-4"
+                        aria-hidden="true"
+                    >
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                        <path d="M8 12h8M8 16h8M12 12v8M8 20h8"/>
+                    </svg>
+
+                    Export Excel
+
+                </a>
+
+                <a
+                    href="{{ route('admin.reports.export.pdf', [
+                        'period' => 'custom',
+                        'from' => $period['from'],
+                        'until' => $period['until'],
+                    ]) }}"
+                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-[#B84646] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#963737]"
+                >
+
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="h-4 w-4"
+                        aria-hidden="true"
+                    >
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                        <path d="M8 13h8M8 17h8"/>
+                    </svg>
+
+                    Export PDF
+
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="mt-4 border-t border-[#E2E9E4] pt-3 text-xs text-[#819187]">
+            Data dihitung pada
+            {{ \Carbon\CarbonImmutable::parse($generatedAt)->timezone('Asia/Jakarta')->format('d/m/Y H:i:s') }}
+            WIB.
+        </div>
+
+    </section>
+
+    {{-- TOTAL PENDAPATAN --}}
+    <section class="mb-6 rounded-lg bg-[#174B38] p-6 text-white">
+
+        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-white/75">
+            Total Pendapatan Operasional
+        </p>
+
+        <p class="mt-3 break-words text-3xl font-bold sm:text-4xl">
+            {{ $formatMoney($summary['total_pendapatan']) }}
+        </p>
+
+        <p class="mt-3 text-xs leading-6 text-white/75">
+            Gabungan pendapatan tiket dan reservasi fasilitas
+            dari pembayaran berstatus lunas dalam periode laporan.
+        </p>
+
+        <div class="mt-6 grid grid-cols-1 gap-4 border-t border-white/20 pt-5 sm:grid-cols-2">
+
+            <div>
+                <p class="text-xs text-white/70">Pendapatan Tiket</p>
+                <p class="mt-2 break-words text-xl font-bold">
+                    {{ $formatMoney($summary['pendapatan_tiket']) }}
+                </p>
+            </div>
+
+            <div>
+                <p class="text-xs text-white/70">Pendapatan Reservasi</p>
+                <p class="mt-2 break-words text-xl font-bold">
+                    {{ $formatMoney($summary['pendapatan_reservasi']) }}
+                </p>
+            </div>
+
+        </div>
+
+    </section>
+
+    {{-- RINGKASAN OPERASIONAL --}}
+    <section class="mb-6">
+
+        <h2 class="mb-4 text-sm font-bold uppercase tracking-[0.08em] text-[#173D30]">
+            Ringkasan Operasional
+        </h2>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+            @foreach ($metrics as $metric)
+
+                <div class="min-w-0 rounded-lg border border-[#DCE5DE] bg-white p-5">
+
+                    <p class="text-xs font-medium text-[#74877B]">
+                        {{ $metric['label'] }}
+                    </p>
+
+                    <p class="mt-3 break-words text-2xl font-bold text-[#173D30]">
+
+                        @if ($metric['money'])
+                            {{ $formatMoney($summary[$metric['key']]) }}
+                        @else
+                            {{ $formatNumber($summary[$metric['key']]) }}
+                        @endif
+
+                    </p>
+
+                    <p class="mt-3 text-[11px] leading-5 text-[#819187]">
+                        {{ $metric['description'] }}
+                    </p>
+
+                </div>
+
+            @endforeach
+
+        </div>
+
+    </section>
+
+    @if (! $hasActivity)
+
+        <div class="mb-6 border border-[#D5E5DA] bg-[#EFF6F0] px-5 py-4 text-sm text-[#355D47]">
+            <p class="font-semibold">
+                Belum ada aktivitas operasional pada periode ini.
+            </p>
+
+            <p class="mt-2 text-xs leading-5">
+                Seluruh indikator tetap ditampilkan dengan nilai nol.
+            </p>
+        </div>
+
+    @endif
+
+    {{-- GRAFIK OPERASIONAL --}}
+    <div class="mb-6 grid grid-cols-1 gap-5">
+
+        @include('admin.reports.partials.chart', [
+            'title' => 'Grafik Pendapatan Harian',
+            'description' => 'Perbandingan pendapatan tiket dan reservasi lunas berdasarkan tanggal pembayaran (Rp).',
+            'isMoney' => true,
+            'emptyMessage' => 'Belum ada pendapatan pada periode ini.',
+            'series' => [
+                [
+                    'key' => 'pendapatan_tiket',
+                    'label' => 'Pendapatan Tiket',
+                    'color' => '#174B38',
+                ],
+                [
+                    'key' => 'pendapatan_reservasi',
+                    'label' => 'Pendapatan Reservasi',
+                    'color' => '#A1C977',
+                ],
+            ],
+        ])
+
+        @include('admin.reports.partials.chart', [
+            'title' => 'Grafik Tiket dan Kunjungan',
+            'description' => 'Perbandingan E-Tiket yang diterbitkan dan kunjungan aktual berdasarkan check-in.',
+            'isMoney' => false,
+            'emptyMessage' => 'Belum ada penerbitan tiket atau check-in pada periode ini.',
+            'series' => [
+                [
+                    'key' => 'tiket_terbit',
+                    'label' => 'E-Tiket Terbit',
+                    'color' => '#527A65',
+                ],
+                [
+                    'key' => 'pengunjung_checkin',
+                    'label' => 'Pengunjung Check-in',
+                    'color' => '#A1C977',
+                ],
+            ],
+        ])
+
+    </div>
+
+    {{-- METODE PEMBAYARAN --}}
+    <section class="mb-6 overflow-hidden border border-[#DCE5DE] bg-white">
+
+        <div class="border-b border-[#E2E9E4] px-5 py-5">
+
+            <h2 class="text-sm font-bold uppercase tracking-[0.08em] text-[#173D30]">
+                Rincian Metode Pembayaran
+            </h2>
+
+            <p class="mt-1 text-xs leading-5 text-[#819187]">
+                Pembayaran tiket dan reservasi berdasarkan metode pembayaran.
+            </p>
+
+        </div>
+
+        <div tabindex="0" role="region" aria-label="Tabel data yang dapat digeser" class="min-w-0 max-w-full overflow-x-auto focus-visible:outline-2 focus-visible:outline-[#527A65]">
+
+            <table class="w-full min-w-[950px] border-collapse text-xs">
+
+                <thead class="bg-[#E9F0EB] text-[#4A695A]">
+                    <tr>
+                        <th scope="col" class="px-4 py-4 text-left font-bold">Metode</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold">Transaksi Tiket</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold">Transaksi Reservasi</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold">Total Transaksi</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold">Pendapatan Tiket</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold">Pendapatan Reservasi</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold">Total Pendapatan</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-[#E3EAE5] text-[#405A4D]">
+
+                    @foreach ($paymentMethods as $method => $data)
+
+                        <tr class="hover:bg-[#F8FAF8]">
+
+                            <th scope="row" class="px-4 py-4 text-left font-semibold text-[#173D30]">
+                                {{ $methodLabels[$method] ?? ucfirst($method) }}
+                            </th>
+
+                            <td class="px-4 py-4 text-right">
+                                {{ $formatNumber($data['transaksi_tiket']) }}
+                            </td>
+
+                            <td class="px-4 py-4 text-right">
+                                {{ $formatNumber($data['transaksi_reservasi']) }}
+                            </td>
+
+                            <td class="px-4 py-4 text-right">
+                                {{ $formatNumber($data['total_transaksi']) }}
+                            </td>
+
+                            <td class="whitespace-nowrap px-4 py-4 text-right">
+                                {{ $formatMoney($data['pendapatan_tiket']) }}
+                            </td>
+
+                            <td class="whitespace-nowrap px-4 py-4 text-right">
+                                {{ $formatMoney($data['pendapatan_reservasi']) }}
+                            </td>
+
+                            <td class="whitespace-nowrap px-4 py-4 text-right font-semibold text-[#173D30]">
+                                {{ $formatMoney($data['total_pendapatan']) }}
+                            </td>
+
+                        </tr>
+
+                    @endforeach
+
+                </tbody>
+
+                <tfoot class="border-t border-[#CBD9CF] bg-[#EFF6F0] font-bold text-[#173D30]">
+
+                    <tr>
+                        <th scope="row" class="px-4 py-4 text-left">Total</th>
+
+                        <td class="px-4 py-4 text-right">
+                            {{ $formatNumber($summary['pembayaran_lunas']) }}
+                        </td>
+
+                        <td class="px-4 py-4 text-right">
+                            {{ $formatNumber($summary['reservasi_lunas']) }}
+                        </td>
+
+                        <td class="px-4 py-4 text-right">
+                            {{ $formatNumber($summary['pembayaran_lunas'] + $summary['reservasi_lunas']) }}
+                        </td>
+
+                        <td class="whitespace-nowrap px-4 py-4 text-right">
+                            {{ $formatMoney($summary['pendapatan_tiket']) }}
+                        </td>
+
+                        <td class="whitespace-nowrap px-4 py-4 text-right">
+                            {{ $formatMoney($summary['pendapatan_reservasi']) }}
+                        </td>
+
+                        <td class="whitespace-nowrap px-4 py-4 text-right">
+                            {{ $formatMoney($summary['total_pendapatan']) }}
+                        </td>
+
+                    </tr>
+
+                </tfoot>
+
+            </table>
+
+        </div>
+
+    </section>
+
+    {{-- KANAL PENJUALAN --}}
+    <section class="mb-6 overflow-hidden border border-[#DCE5DE] bg-white">
+
+        <div class="border-b border-[#E2E9E4] px-5 py-5">
+
+            <h2 class="text-sm font-bold uppercase tracking-[0.08em] text-[#173D30]">
+                Rincian Kanal Penjualan Tiket
+            </h2>
+
+            <p class="mt-1 text-xs leading-5 text-[#819187]">
+                Penjualan tiket lunas berdasarkan kanal Online dan Loket.
+                Reservasi fasilitas tidak termasuk dalam tabel ini.
+            </p>
+
+        </div>
+
+        <div tabindex="0" role="region" aria-label="Tabel data yang dapat digeser" class="min-w-0 max-w-full overflow-x-auto focus-visible:outline-2 focus-visible:outline-[#527A65]">
+
+            <table class="w-full min-w-[500px] border-collapse text-xs">
+
+                <thead class="bg-[#E9F0EB] text-[#4A695A]">
+                    <tr>
+                        <th scope="col" class="px-4 py-4 text-left font-bold">Kanal Penjualan</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold">Transaksi Lunas</th>
+                        <th scope="col" class="px-4 py-4 text-right font-bold">Pendapatan Tiket</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-[#E3EAE5] text-[#405A4D]">
+
+                    @foreach ($salesChannels as $channel => $data)
+
+                        <tr class="hover:bg-[#F8FAF8]">
+
+                            <th scope="row" class="px-4 py-4 text-left font-semibold text-[#173D30]">
+                                {{ $channelLabels[$channel] ?? ucfirst($channel) }}
+                            </th>
+
+                            <td class="px-4 py-4 text-right">
+                                {{ $formatNumber($data['transaksi_lunas']) }}
+                            </td>
+
+                            <td class="whitespace-nowrap px-4 py-4 text-right">
+                                {{ $formatMoney($data['pendapatan_tiket']) }}
+                            </td>
+
+                        </tr>
+
+                    @endforeach
+
+                </tbody>
+
+                <tfoot class="border-t border-[#CBD9CF] bg-[#EFF6F0] font-bold text-[#173D30]">
+
+                    <tr>
+                        <th scope="row" class="px-4 py-4 text-left">Total</th>
+
+                        <td class="px-4 py-4 text-right">
+                            {{ $formatNumber($summary['pembayaran_lunas']) }}
+                        </td>
+
+                        <td class="whitespace-nowrap px-4 py-4 text-right">
+                            {{ $formatMoney($summary['pendapatan_tiket']) }}
+                        </td>
+
+                    </tr>
+
+                </tfoot>
+
+            </table>
+
+        </div>
+
+    </section>
+
+    {{-- REKAP HARIAN --}}
+    <section class="mb-6 overflow-hidden border border-[#DCE5DE] bg-white">
+
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#E2E9E4] px-5 py-5">
+
+            <div>
+
+                <h2 class="text-sm font-bold uppercase tracking-[0.08em] text-[#173D30]">
+                    Rekapitulasi Harian
+                </h2>
+
+                <p class="mt-1 text-xs leading-5 text-[#819187]">
+                    Data dikelompokkan berdasarkan tanggal WIB.
+                    Tanggal tanpa aktivitas tetap ditampilkan.
+                </p>
+
+            </div>
+
+            <span class="rounded-sm bg-[#E9F0EB] px-3 py-2 text-xs font-medium text-[#355D47]">
+                {{ $formatNumber(count($daily)) }} hari
+            </span>
+
+        </div>
+
+        <div tabindex="0" role="region" aria-label="Tabel data yang dapat digeser" class="min-w-0 max-w-full overflow-x-auto focus-visible:outline-2 focus-visible:outline-[#527A65]">
+
+            <table class="w-full min-w-[1450px] border-collapse text-xs">
+
+                <thead class="bg-[#E9F0EB] text-[#4A695A]">
+
+                    <tr>
+
+                        <th scope="col" class="whitespace-nowrap px-4 py-4 text-left font-bold">
+                            Tanggal
+                        </th>
+
+                        @foreach ($dailyColumns as $column)
+
+                            <th scope="col" class="px-4 py-4 text-right font-bold">
+                                {{ $column['label'] }}
+                            </th>
+
+                        @endforeach
+
+                    </tr>
+
+                </thead>
+
+                <tbody class="divide-y divide-[#E3EAE5] text-[#405A4D]">
+
+                    @foreach ($daily as $day)
+
+                        <tr class="hover:bg-[#F8FAF8]">
+
+                            <th scope="row" class="whitespace-nowrap px-4 py-4 text-left font-semibold text-[#173D30]">
+                                {{ $formatDate($day['date']) }}
+                            </th>
+
+                            @foreach ($dailyColumns as $column)
+
+                                <td class="whitespace-nowrap px-4 py-4 text-right {{ $column['key'] === 'total_pendapatan' ? 'font-semibold text-[#173D30]' : '' }}">
+
+                                    @if ($column['money'])
+                                        {{ $formatMoney($day[$column['key']]) }}
+                                    @else
+                                        {{ $formatNumber($day[$column['key']]) }}
+                                    @endif
+
+                                </td>
+
+                            @endforeach
+
+                        </tr>
+
+                    @endforeach
+
+                </tbody>
+
+                <tfoot class="border-t border-[#CBD9CF] bg-[#EFF6F0] font-bold text-[#173D30]">
+
+                    <tr>
+
+                        <th scope="row" class="px-4 py-4 text-left">
+                            Total
+                        </th>
+
+                        @foreach ($dailyColumns as $column)
+
+                            <td class="whitespace-nowrap px-4 py-4 text-right">
+
+                                @if ($column['money'])
+                                    {{ $formatMoney($summary[$column['key']]) }}
+                                @else
+                                    {{ $formatNumber($summary[$column['key']]) }}
+                                @endif
+
+                            </td>
+
+                        @endforeach
+
+                    </tr>
+
+                </tfoot>
+
+            </table>
+
+        </div>
+
+    </section>
+
+    {{-- CATATAN LAPORAN --}}
+    <section class="border border-[#D5E5DA] bg-[#EFF6F0] p-5">
+
+        <h2 class="text-xs font-bold uppercase tracking-wider text-[#355D47]">
+            Catatan Perhitungan
+        </h2>
+
+        <ul class="mt-3 list-disc space-y-2 pl-4 text-xs leading-6 text-[#527A65]">
+            <li>Pesanan tiket dihitung berdasarkan waktu pembuatan pesanan.</li>
+            <li>Pendapatan dihitung berdasarkan waktu pembayaran lunas, bukan tanggal kunjungan.</li>
+            <li>E-Tiket terbit dihitung berdasarkan waktu penerbitan tiket.</li>
+            <li>Kunjungan aktual dihitung berdasarkan E-Tiket yang telah digunakan untuk check-in.</li>
+            <li>Reservasi terjadwal dihitung berdasarkan tanggal kunjungan dan mencakup semua status administratif.</li>
+            <li>Total pendapatan merupakan pendapatan bruto, sebelum biaya gateway atau pengembalian dana.</li>
+            <li>Seluruh pengelompokan tanggal menggunakan zona waktu WIB.</li>
+        </ul>
+
+    </section>
+
+</div>
+
+@endsection
+
+@push('scripts')
+<script>
+    (() => {
+        const form = document.getElementById('report-period-form');
+
+        if (!form) {
+            return;
+        }
+
+        const period = form.querySelector('#period');
+        const from = form.querySelector('#from');
+        const until = form.querySelector('#until');
+
+        function syncReportPeriod() {
+            const custom = period.value === 'custom';
+
+            from.disabled = !custom;
+            until.disabled = !custom;
+
+            from.required = custom;
+            until.required = custom;
+        }
+
+        period.addEventListener('change', syncReportPeriod);
+
+        syncReportPeriod();
+    })();
+</script>
+@endpush

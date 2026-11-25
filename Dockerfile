@@ -11,13 +11,13 @@ FROM composer:2 AS composer
 FROM php:8.5-apache-bookworm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev unzip \
+    && apt-get install -y --no-install-recommends libpq-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libzip-dev unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" pdo_pgsql gd \
+    && docker-php-ext-install -j"$(nproc)" pdo_pgsql gd zip \
     && rm -rf /var/lib/apt/lists/* \
     && a2enmod rewrite \
     && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
-    && printf 'upload_max_filesize=5M\npost_max_size=16M\n' > "$PHP_INI_DIR/conf.d/uploads.ini"
+    && printf 'upload_max_filesize=5M\npost_max_size=16M\nmemory_limit=256M\n' > "$PHP_INI_DIR/conf.d/uploads.ini"
 
 WORKDIR /var/www/html
 

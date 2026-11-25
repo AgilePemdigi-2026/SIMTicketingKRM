@@ -412,11 +412,27 @@ WORKER;
         $this->assertSame('simticketingkrm_purchase_test', $this->testConnection->getDatabaseName());
         DB::transaction(function () use ($orderId, $userIds): void {
             $payments = DB::table('ticket_payments')->where('ticket_order_id', $orderId)->pluck('id');
+            DB::table('audit_logs')
+                ->where('subject_type', 'TicketPayment')
+                ->whereIn('subject_id', $payments->map(fn ($id) => (string) $id)->all())
+                ->delete();
+
             DB::table('ticket_payment_events')->whereIn('ticket_payment_id', $payments)->delete();
             DB::table('ticket_payment_submissions')->whereIn('ticket_payment_id', $payments)->delete();
             DB::table('ticket_payments')->whereIn('id', $payments)->delete();
-            $items = DB::table('ticket_order_items')->where('ticket_order_id', $orderId)->pluck('id');
-            DB::table('ticket_order_visitors')->whereIn('ticket_order_item_id', $items)->delete();
+
+$items = DB::table('ticket_order_items')
+    ->where('ticket_order_id', $orderId)
+    ->pluck('id');
+
+// Hapus e-tiket sebelum pengunjung dan item pesanan.
+DB::table('issued_tickets')
+    ->where('ticket_order_id', $orderId)
+    ->delete();
+
+DB::table('ticket_order_visitors')
+    ->whereIn('ticket_order_item_id', $items)
+    ->delete();
             DB::table('ticket_order_items')->whereIn('id', $items)->delete();
             DB::table('ticket_orders')->where('id', $orderId)->delete();
             DB::table('users')->whereIn('id', $userIds)->delete();

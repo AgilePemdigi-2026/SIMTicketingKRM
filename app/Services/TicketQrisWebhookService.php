@@ -200,6 +200,8 @@ class TicketQrisWebhookService
 
             // 2. Konfirmasi pembayaran.
             // confirmed_by null karena otomatis oleh gateway.
+            $previousStatus = $lockedPayment->status;
+
             $lockedPayment->update([
                 'status' => 'paid',
                 'merchant_reference' => $providerId,
@@ -211,6 +213,28 @@ class TicketQrisWebhookService
             $lockedOrder->update([
                 'status' => 'paid',
             ]);
+
+            // Audit log terpusat untuk konfirmasi QRIS otomatis.
+            // Pencatatan dilakukan sebelum transaksi database selesai.
+            app(AuditLogService::class)->record(
+                actor: null,
+                module: 'Pembayaran',
+                action: 'qris_payment_confirmed',
+                description: 'Pembayaran QRIS berhasil dikonfirmasi oleh sistem.',
+                subjectType: 'TicketPayment',
+                subjectId: $lockedPayment->id,
+                oldValues: [
+                    'status' => $previousStatus,
+                ],
+                newValues: [
+                    'status' => $lockedPayment->status,
+                    'method' => $lockedPayment->method,
+                    'amount' => (string) $lockedPayment->amount,
+                    'sale_channel' => $lockedOrder->sale_channel,
+                    'confirmed_by' => null,
+                    'paid_at' => $paidAt->toIso8601String(),
+                ]
+            );
 
             // 4. Gunakan event yang sama dengan Cash.
             // Event ini memiliki ShouldDispatchAfterCommit.

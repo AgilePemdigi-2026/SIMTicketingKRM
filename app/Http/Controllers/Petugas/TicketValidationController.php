@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Petugas;
 
 use App\Http\Controllers\Controller;
 use App\Models\IssuedTicket;
+use App\Services\AuditLogService;
 use App\Support\TicketPurchaseDatabase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -97,9 +98,10 @@ class TicketValidationController extends Controller
         ]);
 
         // Ambil ID petugas yang sedang login.
-        $staffId = $request->user()->getAuthIdentifier();
+        $staff = $request->user();
+        $staffId = $staff->getAuthIdentifier();
 
-        $result = $database->connection()->transaction(function () use ($validated, $staffId) {
+        $result = $database->connection()->transaction(function () use ($validated, $staffId, $staff) {
             // Lock tetap penting agar dua petugas tidak dapat
             // melakukan check-in pada tiket yang sama.
             $ticket = IssuedTicket::query()
@@ -117,12 +119,39 @@ class TicketValidationController extends Controller
                 return $result;
             }
 
+            // Snapshot kondisi tiket sebelum check-in.
+            $previousStatus = $ticket->status;
+            $previousUsedAt = $ticket->used_at;
+            $previousStaffId = $ticket->checked_in_by;
+
             // Simpan status, waktu, dan petugas validasi.
             $ticket->update([
                 'status' => 'used',
                 'used_at' => now(),
                 'checked_in_by' => $staffId,
             ]);
+
+            // Audit log disimpan dalam transaksi check-in yang sama.
+            app(AuditLogService::class)->record(
+                actor: $staff,
+                module: 'Validasi Tiket',
+                action: 'ticket_checked_in',
+                description: 'Petugas berhasil melakukan check-in E-Tiket.',
+                subjectType: 'IssuedTicket',
+                subjectId: $ticket->getKey(),
+                oldValues: [
+                    'status' => $previousStatus,
+                    'used_at' => $previousUsedAt?->toIso8601String(),
+                    'checked_in_by' => $previousStaffId,
+                ],
+                newValues: [
+                    'status' => $ticket->status,
+                    'used_at' => $ticket->used_at->toIso8601String(),
+                    'checked_in_by' => $staffId,
+                    'visit_date' => $ticket->order->visit_date->toDateString(),
+                    'sale_channel' => $ticket->order->sale_channel,
+                ]
+            );
 
             return [
                 'valid' => true,
